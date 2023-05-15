@@ -1,0 +1,37 @@
+name: "Release"
+
+on:
+  release:
+    types:
+      - "published"
+
+permissions: {}
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+    steps:
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v3.5.2"
+
+      - id: download-release-asset
+        name: Download release asset
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          version: tags/0.0.1
+          file: energy-assistant-frontend.zip
+          target: energy-assistant-frontend.zip
+          token: ${{ secrets.DEPLOY_TOKEN }}
+
+      - name: "Fetch Frontend"
+        shell: "bash"
+        run: |
+          ./scripts/fetch-client.sh
+
+      - name: "List files"
+        shell: "bash"
+        run: |
+          ls -la && ls ./client/ -la

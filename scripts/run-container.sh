@@ -1,0 +1,1 @@
+docker run -p 8080:80 -rm docker.io/pail23/energy-assistant:0.1

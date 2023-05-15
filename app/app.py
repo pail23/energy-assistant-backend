@@ -20,6 +20,7 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///energyassistant.db"
+app.config.from_prefixed_env()
 
 db.init_app(app)
 socketio = SocketIO(app, async_mode=None, cors_allowed_origins="*")
@@ -140,7 +141,10 @@ def initialize():
     scheduler.api_enabled = True
     scheduler.init_app(app)
     scheduler.start()    
-    with open("config.yaml", "r") as stream:
+    config_file = app.config.get("CONFIGFILE")
+    if config_file is None:
+        config_file = "config.yaml"
+    with open(config_file, "r") as stream:
         try:
             config = yaml.safe_load(stream)
             print(config)

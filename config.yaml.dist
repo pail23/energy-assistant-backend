@@ -1,0 +1,8 @@
+mqtt:
+  host: example.org
+  username: x
+  password: y
+  topic: energyassistant
+
+home:
+  name: "My Home"

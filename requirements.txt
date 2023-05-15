@@ -3,6 +3,5 @@ Flask-Cors==3.0.10
 Flask-SQLAlchemy
 flask-socketio
 Flask-APScheduler
-gunicorn
 pyyaml
 paho-mqtt
