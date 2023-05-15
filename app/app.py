@@ -143,7 +143,7 @@ def initialize():
     scheduler.start()    
     config_file = app.config.get("CONFIGFILE")
     if config_file is None:
-        config_file = "config.yaml"
+        config_file = "/config/config.yaml"
     with open(config_file, "r") as stream:
         try:
             config = yaml.safe_load(stream)

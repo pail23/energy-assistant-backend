@@ -1,1 +1,1 @@
-docker run -p 8080:80 -rm docker.io/pail23/energy-assistant:0.1
+docker run -p 8080:80 --rm  -v "$(pwd)/config.yaml:/config/config.yaml" energy-assistant:latest
