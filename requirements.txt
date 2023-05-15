@@ -1,0 +1,8 @@
+Flask[async]==2.3.2
+Flask-Cors==3.0.10
+Flask-SQLAlchemy
+flask-socketio
+Flask-APScheduler
+gunicorn
+pyyaml
+paho-mqtt
