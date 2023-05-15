@@ -1,4 +1,4 @@
-FROM nginx:stable-alpine as production
+FROM nginx:stable-alpine
 WORKDIR /app
 RUN apk update && apk add --no-cache python3 && \
     python3 -m ensurepip && \
