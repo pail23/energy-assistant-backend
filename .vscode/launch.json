@@ -10,7 +10,8 @@
             "request": "launch",
             "module": "flask",
             "env": {
-                "FLASK_CONFIGFILE": "config.yaml",
+                "FLASK_CONFIGFILE": "energy_assistant.yaml",
+                "FLASK_DATAFILE": "energy_assistant.db",
                 "FLASK_APP": "app/app.py",
                 "FLASK_DEBUG": "1"
             },

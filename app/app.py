@@ -19,8 +19,12 @@ db = SQLAlchemy()
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///energyassistant.db"
 app.config.from_prefixed_env()
+
+DATA_FILE = app.config.get("DATAFILE")
+if DATA_FILE is None:
+    DATA_FILE = "/data/energy_assistant.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DATA_FILE}"
 
 db.init_app(app)
 socketio = SocketIO(app, async_mode=None, cors_allowed_origins="*")
@@ -143,7 +147,8 @@ def initialize():
     scheduler.start()    
     config_file = app.config.get("CONFIGFILE")
     if config_file is None:
-        config_file = "/config/config.yaml"
+        config_file = "/config/energy_assistant.yaml"
+       
     with open(config_file, "r") as stream:
         try:
             config = yaml.safe_load(stream)

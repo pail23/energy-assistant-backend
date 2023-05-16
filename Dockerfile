@@ -10,7 +10,7 @@ RUN apk update && apk add --no-cache python3 && \
 RUN apk update && apk add gcc python3-dev musl-dev
 COPY ./client /usr/share/nginx/html
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY ./config.yaml.dist /config/config.yaml
+COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 RUN pip install gunicorn

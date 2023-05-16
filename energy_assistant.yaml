@@ -1,0 +1,8 @@
+mqtt:
+  host: homeassistant.stadel15.net
+  username: smarthome
+  password: smarthome!23
+  topic: energyassistant
+
+home:
+  name: "Stadel 15"
