@@ -10,8 +10,6 @@ import json
 import paho.mqtt.client as mqtt
 from devices import EvccDevice, Home
 
-import logging
-
 
 # instantiate the app
 db = SQLAlchemy()
@@ -37,16 +35,11 @@ scheduler = APScheduler()
 
 class HomeMeasurement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    solar_production = db.Column(db.Float)
-    solar_self_consumption = db.Column(db.Float)
-    home_consumption = db.Column(db.Float)
-    self_sufficiency = db.Column(db.Float)
-
+    name = db.Column(db.String, unique=True, nullable=False)
+    solar_energy = db.Column(db.Float)
+    solar_consumed_energy = db.Column(db.Float)
+ 
     
-class MeasurementDevice(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    deviceId = db.Column(db.String, nullable=False)
-    value = db.Column(db.Float)
    
 
 # cron examples
@@ -66,6 +59,7 @@ def job1():
 
 energyassistant_topic = "energyassistant"
 home = None
+home_measurement = None
 # enable CORS
 CORS(app, resources={r'/*': {'origins': '*'}})
 
@@ -123,6 +117,15 @@ def on_message(client, userdata, message):
     home.update_state(message.topic, str(message.payload.decode("utf-8")))
     socketio.emit('refresh',
                   {'data': get_home_message()})
+    global home_measurement
+    with app.app_context():
+        if home_measurement is None:
+            home_measurement = HomeMeasurement(name = home.name)
+            db.session.add(home_measurement)
+        home_measurement.solar_energy = home.solar_energy
+        home_measurement.consumed_energy = home.consumed_energy
+        
+        db.session.commit()
 
 
 def on_disconnect(client, userdata, rc):
