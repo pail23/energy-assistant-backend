@@ -5,7 +5,7 @@ class Integrator:
     def __init__(self):
         self.last_measurement = None
         self.last_timestamp = None
-        self._value = None
+        self._value = 0
 
 
     @property

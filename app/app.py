@@ -8,7 +8,7 @@ from flask_apscheduler import APScheduler
 import yaml
 import json
 import paho.mqtt.client as mqtt
-from devices import EvccDevice, Home
+from devices import Device, EvccDevice, Home
 
 
 # instantiate the app
@@ -30,7 +30,7 @@ scheduler = APScheduler()
 
 
 
-class HomeMeasurement(db.Model):
+class DeviceMeasurement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
     solar_energy = db.Column(db.Float)
@@ -86,7 +86,14 @@ def get_home_message():
     devices_message = []
     for device in home.devices:
         devices_message.append(
-            {"name": device.name, "state": device.state, "icon": "mdi:mdi-car-electric"})    
+            {
+                "name": device.name, 
+                "state": device.state, 
+                "icon": "mdi:mdi-car-electric", 
+                "solar_energy": device.solar_energy,
+                "consumed_energy": device.consumed_energy,
+                "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
+            })    
     home_message = {
         "name": home.name,
         "solar_production": home.solar_production,
@@ -106,6 +113,14 @@ def get_home():
     return get_home_message()
 
 
+def store_measurement(device: Device):
+    device_measurement = DeviceMeasurement.query.filter_by(name=device.name).first()
+    if device_measurement is None:
+        device_measurement = DeviceMeasurement(name = device.name)
+        db.session.add(device_measurement)
+    device_measurement.solar_energy = device.solar_energy
+    device_measurement.consumed_energy = device.consumed_energy
+
 def on_message(client, userdata, message):
    
     home.update_state(message.topic, str(message.payload.decode("utf-8")))
@@ -113,11 +128,10 @@ def on_message(client, userdata, message):
                   {'data': get_home_message()})
     global home_measurement
     with app.app_context():
-        if home_measurement is None:
-            home_measurement = HomeMeasurement(name = home.name)
-            db.session.add(home_measurement)
-        home_measurement.solar_energy = home.solar_energy
-        home_measurement.consumed_energy = home.consumed_energy
+        store_measurement(home)
+
+        for device in home.devices:
+            store_measurement(device)
         
         db.session.commit()
 
@@ -162,7 +176,7 @@ def initialize():
                     "Keba", "evcc/loadpoints/1/chargePower"))
                 with app.app_context():            
                     global home_measurement
-                    home_measurement = HomeMeasurement.query.filter_by(name=home.name).first()                     
+                    home_measurement = DeviceMeasurement.query.filter_by(name=home.name).first()                     
 
                 mqtt_config = config.get("mqtt")
                 if mqtt_config is not None:
