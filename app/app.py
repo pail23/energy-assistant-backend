@@ -19,10 +19,7 @@ app.config.from_object(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 app.config.from_prefixed_env()
 
-DATA_FILE = app.config.get("DATAFILE")
-if DATA_FILE is None:
-    DATA_FILE = "/data/energy_assistant.db"
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DATA_FILE}"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///energy_assistant.db"
 
 db.init_app(app)
 socketio = SocketIO(app, async_mode=None, cors_allowed_origins="*")
@@ -110,10 +107,7 @@ def get_home():
 
 
 def on_message(client, userdata, message):
-    # print("message received ", str(message.payload.decode("utf-8")))
-    # print("message topic=", message.topic)
-    # print("message qos=", message.qos)
-    # print("message retain flag=", message.retain)
+   
     home.update_state(message.topic, str(message.payload.decode("utf-8")))
     socketio.emit('refresh',
                   {'data': get_home_message()})
@@ -161,11 +155,15 @@ def initialize():
         else:
             global home
             home_config = config.get("home")
-            if home_config is not None:
+            if home_config is not None and home_config.get("name") is not None:
                 home = Home(home_config.get("name"), "homeassistant/sensor/solaredge_i1_ac_power",
                 "homeassistant/sensor/solaredge_m1_ac_power")
                 home.add_device(EvccDevice(
                     "Keba", "evcc/loadpoints/1/chargePower"))
+                with app.app_context():            
+                    global home_measurement
+                    home_measurement = HomeMeasurement.query.filter_by(name=home.name).first()                     
+
                 mqtt_config = config.get("mqtt")
                 if mqtt_config is not None:
                     homeassistant_host = mqtt_config.get("host")
@@ -185,6 +183,7 @@ def initialize():
                     mqttc.on_connect = on_connect
                     mqttc.on_disconnect = on_disconnect
                     mqttc.loop_start()
+               
 
 
 initialize()
