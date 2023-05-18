@@ -7,7 +7,7 @@ from flask_apscheduler import APScheduler
 import yaml
 import json
 import paho.mqtt.client as mqtt
-from devices import Device, EvccDevice, Home
+from devices import Device, EvccDevice, StiebelEltronDevice, Home
 from datetime import date
 import time
 import logging
@@ -79,18 +79,25 @@ def test_disconnect():
     logging.info('Socket IO client disconnected')
 
 
+def get_device_message(device: Device) -> dict:
+    result = {
+        "name": device.name, 
+        "type": device.__class__.__name__,
+        "state": device.state, 
+        "icon": device.icon, 
+        "solar_energy": device.solar_energy,
+        "consumed_energy": device.consumed_energy,
+        "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
+        "extra_attibutes": json.dumps(device.extra_attributes)
+    }    
+    if isinstance(device, StiebelEltronDevice):
+        result["actual_temperature"] = device.actual_temperature
+    return result
+
 def get_home_message():
     devices_message = []
     for device in home.devices:
-        devices_message.append(
-            {
-                "name": device.name, 
-                "state": device.state, 
-                "icon": "mdi:mdi-car-electric", 
-                "solar_energy": device.solar_energy,
-                "consumed_energy": device.consumed_energy,
-                "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
-            })    
+        devices_message.append(get_device_message(device))    
     home_message = {
         "name": home.name,
         "solar_production": home.solar_production,
@@ -213,6 +220,8 @@ def initialize():
                     "homeassistant/sensor/solaredge_m1_ac_power")
                     home.add_device(EvccDevice(
                         "Keba", "evcc/loadpoints/1/chargePower"))
+                    home.add_device(StiebelEltronDevice("Warm Wasser", "homeassistant/binary_sensor/stiebel_eltron_isg_is_heating_boiler", "homeassistant/sensor/stiebel_eltron_isg_actual_temperature_water" ))
+                    home.add_device(StiebelEltronDevice("Heizung", "homeassistant/binary_sensor/stiebel_eltron_isg_is_heating", "homeassistant/sensor/stiebel_eltron_isg_actual_temperature_fek" ))
                     restore_home_state(home)
                     mqtt_config = config.get("mqtt")
                     if mqtt_config is not None:

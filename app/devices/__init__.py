@@ -56,17 +56,54 @@ class Device:
         self._solar_energy.restore_state(solar_energy * (3600 * 1000))
         self._consumed_energy.restore_state(consumed_energy * (3600 * 1000))
 
+    @property
+    def extra_attributes(self):
+        return {}
+
 class HomeassitantDevice(Device):
     def __init__(self, name, mqtt_topic):
         super().__init__(name)
-        self.name = name
         self.mqtt_topic = mqtt_topic
         self.state = None
 
 
-    def update_state(self, topic: str, message: str):
+    def update_state(self, topic: str, message: str, self_sufficiency: float):
         if topic == self.mqtt_topic + "/state":
             self.state = float(message)
+
+    @property
+    def icon(self):
+        return "mdi:mdi-car-electric"
+
+
+STIEBEL_ELTRON_POWER = 5000
+class StiebelEltronDevice(HomeassitantDevice):
+    def __init__(self, name, state_mqtt_topic, actual_temp_mqtt_topic):
+        super().__init__(name, state_mqtt_topic)    
+        self._actual_temp_mqtt_topic = actual_temp_mqtt_topic
+        self._actual_temp = 0
+        self.state = 0
+
+    def update_state(self, topic: str, message: str, self_sufficiency: float):
+        if topic == self.mqtt_topic + "/state":
+            self.state = STIEBEL_ELTRON_POWER if message == 'on' else 0.0
+            time_stamp = datetime.now().timestamp()
+            self._solar_energy.add_measurement(self.state * self_sufficiency, time_stamp)
+            self._consumed_energy.add_measurement(self.state, time_stamp)     
+        elif topic == self._actual_temp_mqtt_topic + "/state":
+            self._actual_temp = float(message)
+
+    @property
+    def actual_temperature(self):
+        return self._actual_temp
+    
+    @property
+    def icon(self):
+        return "mdi:mdi-heat-pump"
+    
+    @property
+    def extra_attributes(self):
+        return {"actual_temperature": self.actual_temperature}
 
 class EvccDevice(Device):
     def __init__(self, name, mqtt_topic):
@@ -80,6 +117,10 @@ class EvccDevice(Device):
             time_stamp = datetime.now().timestamp()
             self._solar_energy.add_measurement(self.state * self_sufficiency, time_stamp)
             self._consumed_energy.add_measurement(self.state, time_stamp)   
+
+    @property
+    def icon(self):
+        return "mdi:mdi-car-electric"
 
 class Home(Device):
     def __init__(self, name, solar_mqtt_topic, grid_supply_mqtt_topic):
@@ -140,4 +181,6 @@ class Home(Device):
             result.append(device.mqtt_topic)        
         return result
 
-
+    @property
+    def icon(self):
+        return "mdi:mdi-home"
