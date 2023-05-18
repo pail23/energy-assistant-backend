@@ -178,6 +178,8 @@ def initialize():
             logging.debug(f"config file {config_file} successfully loaded")
         except yaml.YAMLError as exc:
             logging.error(exc)
+        except Exception as exc:
+            logging.error(exc)
         else:
             global home
             home_config = config.get("home")
