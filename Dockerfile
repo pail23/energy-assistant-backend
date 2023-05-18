@@ -16,4 +16,4 @@ RUN pip install -r requirements.txt
 RUN pip install gunicorn
 COPY ./app .
 EXPOSE 80
-CMD nginx -g 'daemon off;' && gunicorn -b 0.0.0.0:5000 app:app --access-logfile -
+CMD gunicorn -b 0.0.0.0:5000 app:app --access-logfile - && nginx -g 'daemon off;'
