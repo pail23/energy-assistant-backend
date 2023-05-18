@@ -16,16 +16,20 @@ class Integrator:
         if self.last_measurement is None:
             self.last_measurement = measurement
             self.last_timestamp = timestamp
-            self._value = 0
         else:
             delta_t = timestamp - self.last_timestamp
             self.last_timestamp = timestamp
-            print("Delta t: "+ str(delta_t))
+            # print("Delta t: "+ str(delta_t))
             if delta_t > 0.1:
                 if measurement > self.last_measurement:
                     self._value = self._value + (delta_t * (self.last_measurement + (measurement - self.last_measurement) / 2))
                 else:
                     self._value = self._value + (delta_t * (measurement + (self.last_measurement - measurement) / 2))
+
+
+    def restore_state(self, state: float):
+        self._value = state
+
 
 
 class Device:
@@ -47,6 +51,10 @@ class Device:
     def consumed_energy(self):
         """Consumed energy in kWh"""
         return self._consumed_energy.value / (3600 * 1000)
+    
+    def restore_state(self, solar_energy, consumed_energy):
+        self._solar_energy.restore_state(solar_energy * (3600 * 1000))
+        self._consumed_energy.restore_state(consumed_energy * (3600 * 1000))
 
 class HomeassitantDevice(Device):
     def __init__(self, name, mqtt_topic):
@@ -119,7 +127,7 @@ class Home(Device):
             self._consumed_energy.add_measurement(self.home_consumption, time_stamp)            
         elif topic == self.grid_supply_mqtt_topic + "/state":
             self.grid_supply = float(message)    
-            print("Consumption: ", end='')
+            # print("Consumption: ", end='')
             self._solar_energy.add_measurement(self.solar_self_consumption, time_stamp)
             self._consumed_energy.add_measurement(self.home_consumption, time_stamp)                 
         for device in self.devices:

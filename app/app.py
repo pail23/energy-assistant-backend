@@ -1,4 +1,3 @@
-from threading import Lock
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -10,7 +9,9 @@ import json
 import paho.mqtt.client as mqtt
 from devices import Device, EvccDevice, Home
 from datetime import date
+import time
 import logging
+import random
 
 logging.basicConfig(filename='energy-assistant.log', encoding='utf-8', level=logging.DEBUG)
 
@@ -70,21 +71,12 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 @socketio.event
 def connect():
     logging.info('Socket IO client connected')
-    emit('connection', {'data': '{"Connected": true}', 'count': 0})
+    emit('connection',  {'data': get_home_message(), 'connected': True})
 
 
 @socketio.on('disconnect')
 def test_disconnect():
     logging.info('Socket IO client disconnected')
-
-# devices route
-@app.route('/api/devices', methods=['GET'])
-def get_devices():
-    devices_message = []
-    for device in home.devices:
-        devices_message.append(
-            {"name": device.name, "state": device.state, "icon": "mdi:mdi-car-electric"})
-    return jsonify(devices_message)
 
 
 def get_home_message():
@@ -127,6 +119,21 @@ def store_measurement(device: Device):
     device_measurement.solar_energy = device.solar_energy
     device_measurement.solar_consumed_energy = device.consumed_energy
 
+def restore_measurement(device: Device):
+    try:
+        device_measurement = DeviceMeasurement.query.filter_by(name=device.name).order_by(DeviceMeasurement.date.desc()).first()
+        if device_measurement is not None:
+            device.restore_state(device_measurement.solar_energy, device_measurement.solar_consumed_energy)
+    except Exception as ex:
+        logging.error(f"Error while restoring state of device {device.name}", ex)
+
+def restore_home_state(home: Home):
+    if home is not None:
+        with app.app_context():
+            restore_measurement(home)
+            for device in home.devices:
+                restore_measurement(device)
+
 def on_message(client, userdata, message):
    
     home.update_state(message.topic, str(message.payload.decode("utf-8")))
@@ -150,13 +157,29 @@ def on_message(client, userdata, message):
 def on_disconnect(client, userdata, rc):
     if rc != 0:
         logging.error('Unexpected disconnection from MQTT, trying to reconnect')
+        print("Connection returned result: "+mqtt.connack_string(rc))
+        re_connnect_mqtt(client)
 
+def mqtt_subscribe(client):
+    for topic in home.mqtt_topics():
+        client.subscribe(topic + "/#", 0)
 
 def on_connect(client, userdata, flags, rc):
     logging.info("mqtt connected")
     client.publish("{energyassistant_topic}/status", "online")
-    for topic in home.mqtt_topics():
-        client.subscribe(topic + "/#", 0)
+    mqtt_subscribe(client)
+
+def re_connnect_mqtt(client):
+    while True:
+        try:
+            client.reconnect()
+            logging.info('Successfull reconnected to the MQTT server')
+            mqtt_subscribe(client)
+            break
+        except:
+            logging.warning('Could not reconnect to the MQTT server. Trying again in 10 seconds')
+            time.sleep(10)
+           
 
 
 def initialize():
@@ -174,6 +197,7 @@ def initialize():
     logging.info(f"Loading config file {config_file}")
     try:
         with open(config_file, "r") as stream:
+            logging.debug(f"Successfully opened config file {config_file}")
             try:
                 config = yaml.safe_load(stream)
                 logging.debug(f"config file {config_file} successfully loaded")
@@ -189,7 +213,7 @@ def initialize():
                     "homeassistant/sensor/solaredge_m1_ac_power")
                     home.add_device(EvccDevice(
                         "Keba", "evcc/loadpoints/1/chargePower"))
-
+                    restore_home_state(home)
                     mqtt_config = config.get("mqtt")
                     if mqtt_config is not None:
                         homeassistant_host = mqtt_config.get("host")
@@ -199,15 +223,15 @@ def initialize():
                         if topic is not None:
                             energyassistant_topic = topic
                         try:
-                            mqttc = mqtt.Client("energy_assistant", 1883, 45)
+                            mqttc = mqtt.Client("energy_assistant"+str(random.randrange(1024)), 1883, 45)
                             mqttc.username_pw_set(mqtt_config.get(
                                 "username"), mqtt_config.get("password"))
                             mqttc.will_set(f"{energyassistant_topic}/status",
                                         payload="offline", qos=0, retain=True)
-                            mqttc.connect(homeassistant_host)
                             mqttc.on_message = on_message
                             mqttc.on_connect = on_connect
                             mqttc.on_disconnect = on_disconnect
+                            mqttc.connect(homeassistant_host)
                             mqttc.loop_start()
                         except Exception as ex:
                             logging.error("Error while connecting mqtt ", ex)
@@ -219,7 +243,11 @@ def initialize():
     except Exception as ex:
         logging.error(ex)
 
+
 initialize()
+
+
+
 
 if __name__ == '__main__':
     socketio.run(app)
