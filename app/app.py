@@ -172,54 +172,52 @@ def initialize():
         config_file = "/config/energy_assistant.yaml"
     
     logging.info(f"Loading config file {config_file}")
-    with open(config_file, "r") as stream:
-        try:
-            config = yaml.safe_load(stream)
-            logging.debug(f"config file {config_file} successfully loaded")
-        except yaml.YAMLError as exc:
-            logging.error(exc)
-        except Exception as exc:
-            logging.error(exc)
-        else:
-            global home
-            home_config = config.get("home")
-            if home_config is not None and home_config.get("name") is not None:
-                home = Home(home_config.get("name"), "homeassistant/sensor/solaredge_i1_ac_power",
-                "homeassistant/sensor/solaredge_m1_ac_power")
-                home.add_device(EvccDevice(
-                    "Keba", "evcc/loadpoints/1/chargePower"))
-                with app.app_context():            
-                    global home_measurement
-                    home_measurement = DeviceMeasurement.query.filter_by(name=home.name).first()                     
-
-                mqtt_config = config.get("mqtt")
-                if mqtt_config is not None:
-                    homeassistant_host = mqtt_config.get("host")
-
-                    topic = mqtt_config.get("topic")
-                    global energyassistant_topic
-                    if topic is not None:
-                        energyassistant_topic = topic
-                    try:
-                        mqttc = mqtt.Client("energy_assistant", 1883, 45)
-                        mqttc.username_pw_set(mqtt_config.get(
-                            "username"), mqtt_config.get("password"))
-                        mqttc.will_set(f"{energyassistant_topic}/status",
-                                    payload="offline", qos=0, retain=True)
-                        mqttc.connect(homeassistant_host)
-                        mqttc.on_message = on_message
-                        mqttc.on_connect = on_connect
-                        mqttc.on_disconnect = on_disconnect
-                        mqttc.loop_start()
-                    except Exception as ex:
-                        logging.error("Error while connecting mqtt ", ex)
-                else:
-                    logging.error(f"mqtt not found in config file: {config}")
+    try:
+        with open(config_file, "r") as stream:
+            try:
+                config = yaml.safe_load(stream)
+                logging.debug(f"config file {config_file} successfully loaded")
+            except yaml.YAMLError as exc:
+                logging.error(exc)
+            except Exception as exc:
+                logging.error(exc)
             else:
-                logging.error(f"home not found in config file: {config}");
-            logging.info("Initialization completed")
-               
+                global home
+                home_config = config.get("home")
+                if home_config is not None and home_config.get("name") is not None:
+                    home = Home(home_config.get("name"), "homeassistant/sensor/solaredge_i1_ac_power",
+                    "homeassistant/sensor/solaredge_m1_ac_power")
+                    home.add_device(EvccDevice(
+                        "Keba", "evcc/loadpoints/1/chargePower"))
 
+                    mqtt_config = config.get("mqtt")
+                    if mqtt_config is not None:
+                        homeassistant_host = mqtt_config.get("host")
+
+                        topic = mqtt_config.get("topic")
+                        global energyassistant_topic
+                        if topic is not None:
+                            energyassistant_topic = topic
+                        try:
+                            mqttc = mqtt.Client("energy_assistant", 1883, 45)
+                            mqttc.username_pw_set(mqtt_config.get(
+                                "username"), mqtt_config.get("password"))
+                            mqttc.will_set(f"{energyassistant_topic}/status",
+                                        payload="offline", qos=0, retain=True)
+                            mqttc.connect(homeassistant_host)
+                            mqttc.on_message = on_message
+                            mqttc.on_connect = on_connect
+                            mqttc.on_disconnect = on_disconnect
+                            mqttc.loop_start()
+                        except Exception as ex:
+                            logging.error("Error while connecting mqtt ", ex)
+                    else:
+                        logging.error(f"mqtt not found in config file: {config}")
+                else:
+                    logging.error(f"home not found in config file: {config}");
+                logging.info("Initialization completed")
+    except Exception as ex:
+        logging.error(ex)
 
 initialize()
 
