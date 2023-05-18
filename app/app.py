@@ -10,6 +10,9 @@ import json
 import paho.mqtt.client as mqtt
 from devices import Device, EvccDevice, Home
 from datetime import date
+import logging
+
+logging.basicConfig(filename='energy-assistant.log', encoding='utf-8', level=logging.DEBUG)
 
 # instantiate the app
 db = SQLAlchemy()
@@ -27,6 +30,7 @@ socketio = SocketIO(app, async_mode=None, cors_allowed_origins="*")
 
 # initialize scheduler
 scheduler = APScheduler()
+
 
 
 
@@ -125,32 +129,37 @@ def store_measurement(device: Device):
 def on_message(client, userdata, message):
    
     home.update_state(message.topic, str(message.payload.decode("utf-8")))
-    socketio.emit('refresh',
+    try:
+        socketio.emit('refresh',
                   {'data': get_home_message()})
-    global home_measurement
-    with app.app_context():
-        store_measurement(home)
+    except Exception as ex:
+        logging.error("error during sending refresh", ex)
+    try:
+        with app.app_context():
+            store_measurement(home)
 
-        for device in home.devices:
-            store_measurement(device)
-        
-        db.session.commit()
+            for device in home.devices:
+                store_measurement(device)
+            
+            db.session.commit()
+    except Exception as ex:
+        logging.error("error during updating database with measurements", ex)
 
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        print('Unexpected disconnection from MQTT, trying to reconnect')
+        logging.error('Unexpected disconnection from MQTT, trying to reconnect')
 
 
 def on_connect(client, userdata, flags, rc):
-    print("mqtt connected")
+    logging.info("mqtt connected")
     client.publish("{energyassistant_topic}/status", "online")
     for topic in home.mqtt_topics():
         client.subscribe(topic + "/#", 0)
 
 
 def initialize():
-    print("Hello from Energy Assistant")
+    logging.info("Hello from Energy Assistant")
     with app.app_context():
         db.create_all()    
     # if you don't wanna use a config, you can set options here:
@@ -164,9 +173,8 @@ def initialize():
     with open(config_file, "r") as stream:
         try:
             config = yaml.safe_load(stream)
-            print(config)
         except yaml.YAMLError as exc:
-            print(exc)
+            logging.error(exc)
         else:
             global home
             home_config = config.get("home")
