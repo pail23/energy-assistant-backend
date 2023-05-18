@@ -9,7 +9,7 @@ import yaml
 import json
 import paho.mqtt.client as mqtt
 from devices import Device, EvccDevice, Home
-
+from datetime import date
 
 # instantiate the app
 db = SQLAlchemy()
@@ -31,13 +31,13 @@ scheduler = APScheduler()
 
 
 class DeviceMeasurement(db.Model):
+    """Data model for a measurement"""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
     solar_energy = db.Column(db.Float)
     solar_consumed_energy = db.Column(db.Float)
- 
-    
-   
+    date = db.Column(db.Date)
+
 
 # cron examples
 @scheduler.task("cron", id="do_job_2", minute="*")
@@ -56,7 +56,7 @@ def job1():
 
 energyassistant_topic = "energyassistant"
 home = None
-home_measurement = None
+
 # enable CORS
 CORS(app, resources={r'/*': {'origins': '*'}})
 
@@ -114,12 +114,13 @@ def get_home():
 
 
 def store_measurement(device: Device):
-    device_measurement = DeviceMeasurement.query.filter_by(name=device.name).first()
+    today = date.today()
+    device_measurement = DeviceMeasurement.query.filter_by(name=device.name, date=today).first()
     if device_measurement is None:
-        device_measurement = DeviceMeasurement(name = device.name)
+        device_measurement = DeviceMeasurement(name = device.name, date=today)
         db.session.add(device_measurement)
     device_measurement.solar_energy = device.solar_energy
-    device_measurement.consumed_energy = device.consumed_energy
+    device_measurement.solar_consumed_energy = device.consumed_energy
 
 def on_message(client, userdata, message):
    
