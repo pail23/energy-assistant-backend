@@ -47,14 +47,14 @@ class DeviceMeasurement(db.Model):
 @scheduler.task("cron", id="do_job_2", minute="*")
 def job2():
     """Sample job 2."""
-    print("Job 2 executed")
+    logging.info("Job 2 executed")
 
 
 # interval examples
 @scheduler.task("interval", id="do_job_1", seconds=30, misfire_grace_time=900)
 def job1():
     """Sample job 1."""
-    print("Job 1 executed")  
+    logging.info("Job 1 executed")  
 
 
 
@@ -69,12 +69,13 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 
 @socketio.event
 def connect():
+    logging.info('Socket IO client connected')
     emit('connection', {'data': '{"Connected": true}', 'count': 0})
 
 
 @socketio.on('disconnect')
 def test_disconnect():
-    print('Client disconnected')
+    logging.info('Socket IO client disconnected')
 
 # devices route
 @app.route('/api/devices', methods=['GET'])
@@ -169,10 +170,12 @@ def initialize():
     config_file = app.config.get("CONFIGFILE")
     if config_file is None:
         config_file = "/config/energy_assistant.yaml"
-       
+    
+    logging.info(f"Loading config file {config_file}")
     with open(config_file, "r") as stream:
         try:
             config = yaml.safe_load(stream)
+            logging.debug(f"config file {config_file} successfully loaded")
         except yaml.YAMLError as exc:
             logging.error(exc)
         else:
@@ -195,17 +198,24 @@ def initialize():
                     global energyassistant_topic
                     if topic is not None:
                         energyassistant_topic = topic
-
-                    mqttc = mqtt.Client("energy_assistant", 1883, 45)
-                    mqttc.username_pw_set(mqtt_config.get(
-                        "username"), mqtt_config.get("password"))
-                    mqttc.will_set(f"{energyassistant_topic}/status",
-                                payload="offline", qos=0, retain=True)
-                    mqttc.connect(homeassistant_host)
-                    mqttc.on_message = on_message
-                    mqttc.on_connect = on_connect
-                    mqttc.on_disconnect = on_disconnect
-                    mqttc.loop_start()
+                    try:
+                        mqttc = mqtt.Client("energy_assistant", 1883, 45)
+                        mqttc.username_pw_set(mqtt_config.get(
+                            "username"), mqtt_config.get("password"))
+                        mqttc.will_set(f"{energyassistant_topic}/status",
+                                    payload="offline", qos=0, retain=True)
+                        mqttc.connect(homeassistant_host)
+                        mqttc.on_message = on_message
+                        mqttc.on_connect = on_connect
+                        mqttc.on_disconnect = on_disconnect
+                        mqttc.loop_start()
+                    except Exception as ex:
+                        logging.error("Error while connecting mqtt ", ex)
+                else:
+                    logging.error(f"mqtt not found in config file: {config}")
+            else:
+                logging.error(f"home not found in config file: {config}");
+            logging.info("Initialization completed")
                
 
 
