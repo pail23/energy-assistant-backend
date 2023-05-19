@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from flask_apscheduler import APScheduler
 
@@ -38,7 +38,7 @@ scheduler = APScheduler()
 class DeviceMeasurement(db.Model):
     """Data model for a measurement"""
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, unique=True, nullable=False)
+    name = db.Column(db.String, nullable=False)
     solar_energy = db.Column(db.Float)
     solar_consumed_energy = db.Column(db.Float)
     date = db.Column(db.Date)
@@ -71,7 +71,10 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 @socketio.event
 def connect():
     logging.info('Socket IO client connected')
-    emit('connection',  {'data': get_home_message(), 'connected': True})
+    print('Socket IO client connected')
+    #emit('connection',  {'data': get_home_message(), 'connected': True})
+    socketio.emit('refresh',
+                  {'data': get_home_message()})
 
 
 @socketio.on('disconnect')
@@ -97,7 +100,12 @@ def get_device_message(device: Device) -> dict:
 def get_home_message():
     devices_message = []
     for device in home.devices:
-        devices_message.append(get_device_message(device))    
+        if not isinstance(device, StiebelEltronDevice):
+            devices_message.append(get_device_message(device))    
+    heat_pump_message = []
+    for device in home.devices:
+        if isinstance(device, StiebelEltronDevice):
+            heat_pump_message.append(get_device_message(device))        
     home_message = {
         "name": home.name,
         "solar_production": home.solar_production,
@@ -108,7 +116,8 @@ def get_home_message():
         "solar_energy": home.solar_energy,
         "consumed_energy": home.consumed_energy,
         "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
-        "devices" : devices_message
+        "devices" : devices_message,
+        "heat_pumps": heat_pump_message
     }
     return json.dumps(home_message)
 
