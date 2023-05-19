@@ -8,12 +8,12 @@ import yaml
 import json
 import paho.mqtt.client as mqtt
 from devices import Device, EvccDevice, StiebelEltronDevice, Home
-from datetime import date
+from datetime import date, datetime
 import time
 import logging
 import random
+import os
 
-logging.basicConfig(filename='energy-assistant.log', encoding='utf-8', level=logging.DEBUG)
 
 # instantiate the app
 db = SQLAlchemy()
@@ -26,7 +26,16 @@ app.config.from_prefixed_env()
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///energy_assistant.db"
 
 db.init_app(app)
-socketio = SocketIO(app, async_mode=None, cors_allowed_origins="*")
+
+def intialize_logging():
+    config_file = app.config.get("CONFIGFILE")
+    if config_file is not None:
+        filename = os.path.join(os.path.dirname(config_file), 'energy-assistant.log')
+    else:
+        filename = 'energy-assistant.log'
+    logging.basicConfig(filename=filename, encoding='utf-8', level=logging.DEBUG)
+
+intialize_logging()
 
 
 # initialize scheduler
@@ -44,18 +53,13 @@ class DeviceMeasurement(db.Model):
     date = db.Column(db.Date)
 
 
-# cron examples
-@scheduler.task("cron", id="do_job_2", minute="*")
-def job2():
-    """Sample job 2."""
-    logging.info("Job 2 executed")
 
 
 # interval examples
 @scheduler.task("interval", id="do_job_1", seconds=30, misfire_grace_time=900)
 def job1():
     """Sample job 1."""
-    logging.info("Job 1 executed")  
+    print("Job 1 executed "+ datetime.now())  
 
 
 
@@ -64,6 +68,11 @@ home = None
 
 # enable CORS
 CORS(app, resources={r'/*': {'origins': '*'}})
+
+
+
+
+socketio = SocketIO(app, async_mode=None, cors_allowed_origins="*")
 
 
 
