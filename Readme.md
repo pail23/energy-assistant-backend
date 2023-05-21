@@ -3,3 +3,6 @@ docker run --name em -p 8080:80 -v "$(pwd)/config.yaml:/config/config.yaml" ghcr
 
 ## show all data for one device
 flask --app app/manage.py show-data 'Stadel 15'
+
+
+gunicorn -b 0.0.0.0:5000 --worker-class aiohttp.GunicornWebWorker app:init_app

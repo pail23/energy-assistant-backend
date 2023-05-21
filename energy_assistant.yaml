@@ -4,5 +4,9 @@ mqtt:
   password: smarthome!23
   topic: energyassistant
 
+homeassistant:
+  url: https://homeassistant.stadel15.net
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlNTI5NGVkYmUxMWI0NzZiOWFiZDNjZjBkMTAyNzA3MSIsImlhdCI6MTY4NDUyMzIzMSwiZXhwIjoxOTk5ODgzMjMxfQ.cGtRmfbT9hmk-_FwzkTeBRJZ4sJitM8eJixXb0y4NUg
+
 home:
   name: "Stadel 15"

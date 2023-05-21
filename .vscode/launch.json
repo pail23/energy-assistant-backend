@@ -5,13 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: App",
+            "type": "python",
+            "request": "launch",
+            "program": "./app/app.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "-c",
+                "/workspaces/backend/energy_assistant.yaml"
+            ]
+        },        
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: Flask",
             "type": "python",
             "request": "launch",
             "module": "flask",
             "env": {
                 "FLASK_CONFIGFILE": "energy_assistant.yaml",
-                "FLASK_APP": "app/app.py",
+                "FLASK_APP": "app/app-flask.py",
                 "FLASK_DEBUG": "1"
             },
             "args": [
