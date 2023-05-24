@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import yaml
-from datetime import datetime
+from datetime import date, timedelta
 
 from devices import Device
 from devices.homeassistant import Homeassistant, HomeassistantDevice, StiebelEltronDevice, Home
@@ -30,16 +30,21 @@ async def async_handle_state_update():
 
 async def background_task():
     """Periodically read the values from home assistant and process the update."""
+    last_update = date.today()
     while True:
         await sio.sleep(10)
-        delta_t = datetime.now().timestamp()
-        print("Start refresh from home assistant")
+        # delta_t = datetime.now().timestamp()
+        # print("Start refresh from home assistant")
+        today = date.today()
         try:
+            if today != last_update:
+                global home
+                home.store_energy_snapshot()
+            last_update = today
             await async_handle_state_update()
         except Exception as ex:
             logging.error("error in the background task: ", ex)
-        print(
-            f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
+        #print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
 
 
 def get_device_message(device: Device) -> dict:

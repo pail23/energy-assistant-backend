@@ -102,6 +102,10 @@ class Device:
     def energy_snapshot(self):
         """The last energy snapshot of the device"""
         return self._energy_snapshot
+    
+    def store_energy_snapshot(self):
+        """Stores the current values in the snapshot."""
+        self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
     @property
     def extra_attributes(self):

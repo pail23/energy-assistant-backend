@@ -103,7 +103,7 @@ class StiebelEltronDevice(HomeassistantDevice):
         self._consumed_energy = hass.get_state(self._consumed_energy_entity_id)
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = hass.get_state(self._actual_temp_entity_id)
-        
+
     @property
     def consumed_energy(self):
         """Consumed energy in kWh."""
@@ -244,6 +244,12 @@ class Home:
 
     def set_snapshot(self, consumed_solar_energy, consumed_energy):
         self._energy_snapshop = EnergySnapshot(consumed_solar_energy, consumed_energy)
+
+    def store_energy_snapshot(self):
+        """Stores the current values in the snapshot."""
+        self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)       
+        for device in self.devices:
+            device.store_energy_snapshot() 
 
     @property
     def energy_snapshop(self):
