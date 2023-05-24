@@ -1,15 +1,14 @@
+"""Main module for the energy assistant application."""
 from aiohttp import web
 import socketio
+import asyncio
 import json
-import random
 import logging
 import os
 import yaml
-import sys
-import getopt
+from datetime import datetime
 
 from devices import Device
-from devices.mqtt import EvccDevice
 from devices.homeassistant import Homeassistant, HomeassistantDevice, StiebelEltronDevice, Home
 from storage import Database
 
@@ -19,40 +18,54 @@ sio.attach(app)
 
 
 async def async_handle_state_update():
+    """Read the values from home assistant and process the update."""
     try:
-        await sio.emit('refresh', {'data': get_home_message()})
+        global hass
+        hass.update_states()
+        home.update_state_from_hass(hass)
+        await asyncio.gather(sio.emit('refresh', {'data': get_home_message()}), db.store_home_state(home))
     except Exception as ex:
         logging.error("error during sending refresh", ex)
-    try:
-        await db.store_home_state(home)
-    except Exception as ex:
-        logging.error("error during updating database with measurements", ex)
+
 
 async def background_task():
-    """Example of how to send server generated events to clients."""
+    """Periodically read the values from home assistant and process the update."""
     while True:
         await sio.sleep(10)
+        delta_t = datetime.now().timestamp()
         print("Start refresh from home assistant")
         try:
-            global hass
-            hass.update_states()
-            home.update_state_from_hass(hass)
             await async_handle_state_update()
         except Exception as ex:
             logging.error("error in the background task: ", ex)
-        print("refresh from home assistant completed")
+        print(
+            f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
 
 
 def get_device_message(device: Device) -> dict:
+    """Generate the update data message for a device."""
+    if device.energy_snapshot is not None:
+        consumed_energy_today = device.consumed_energy - device.energy_snapshot.consumed_energy
+        consumed_solar_energy_today = device.consumed_solar_energy - device.energy_snapshot.consumed_solar_energy
+    else:
+        consumed_energy_today = 0
+        consumed_solar_energy_today = 0
     result = {
         "name": device.name,
         "type": device.__class__.__name__,
-        "state": device.state,
         "icon": device.icon,
-        "consumed_solar_energy": device.consumed_solar_energy,
-        "consumed_energy": device.consumed_energy,
-        "self_sufficiency_today": round(device.consumed_solar_energy / device.consumed_energy * 100) if device.consumed_energy > 0 else 0.0,
-        "extra_attibutes": json.dumps(device.extra_attributes)
+        "power": device.power,
+        "overall": {
+            "consumed_solar_energy": device.consumed_solar_energy,
+            "consumed_energy": device.consumed_energy,
+            "self_sufficiency": round(device.consumed_solar_energy / device.consumed_energy * 100) if device.consumed_energy > 0 else 0.0
+        },
+        "today": {
+            "consumed_solar_energy":  consumed_solar_energy_today,
+            "consumed_energy": consumed_energy_today,
+            "self_sufficiency": round(consumed_solar_energy_today / consumed_energy_today * 100) if consumed_energy_today > 0 else 0.0
+        },
+        "extra_attibutes": json.dumps(device.extra_attributes),
     }
     if isinstance(device, StiebelEltronDevice):
         result["actual_temperature"] = device.actual_temperature
@@ -60,6 +73,7 @@ def get_device_message(device: Device) -> dict:
 
 
 def get_home_message():
+    """Generate the update data message for a home."""
     devices_message = []
     global home
     for device in home.devices:
@@ -69,16 +83,32 @@ def get_home_message():
     for device in home.devices:
         if isinstance(device, StiebelEltronDevice):
             heat_pump_message.append(get_device_message(device))
+
+    if home.energy_snapshop is not None:
+        consumed_energy_today = home.consumed_energy - home.energy_snapshop.consumed_energy
+        consumed_solar_energy_today = home.consumed_solar_energy - home.energy_snapshop.consumed_solar_energy
+    else:
+        consumed_energy_today = 0
+        consumed_solar_energy_today = 0
     home_message = {
         "name": home.name,
-        "solar_production": home.solar_production_power,
-        "grid_supply": home.grid_supply,
-        "solar_self_consumption": home.solar_self_consumption_power,
-        "home_consumption": home.home_consumption,
-        "self_sufficiency": round(home.self_sufficiency * 100),
-        "consumed_solar_energy": home.consumed_solar_energy,
-        "consumed_energy": home.consumed_energy,
-        "self_sufficiency_today": round(home.consumed_solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
+        "power": {
+            "solar_production": home.solar_production_power,
+            "grid_supply": home.grid_supply_power,
+            "solar_self_consumption": home.solar_self_consumption_power,
+            "home_consumption": home.home_consumption_power,
+            "self_sufficiency": round(home.self_sufficiency * 100)
+        },
+        "overall": {
+            "consumed_solar_energy": home.consumed_solar_energy,
+            "consumed_energy": home.consumed_energy,
+            "self_sufficiency": round(home.consumed_solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0
+        },
+        "today": {
+            "consumed_solar_energy":  consumed_solar_energy_today,
+            "consumed_energy": consumed_energy_today,
+            "self_sufficiency": round(consumed_solar_energy_today / consumed_energy_today * 100) if consumed_energy_today > 0 else 0.0
+        },
         "devices": devices_message,
         "heat_pumps": heat_pump_message
     }
@@ -87,18 +117,20 @@ def get_home_message():
 
 @sio.event
 async def connect(sid, environ):
-    print("connect ", sid)
+    """Handle the connect of a client via socket.io to the server."""
+    logging.info(f"connect {sid}")
     await sio.emit('refresh', {'data': get_home_message()}, room=sid)
 
 
 @sio.event
 def disconnect(sid):
-    print('Client disconnected')
-
+    """Handle the disconnect of a client via socket.io to the server."""
+    logging.info(f"Client disconnected {sid}")
 
 
 async def init_app():
-    #opts, args = getopt.getopt(sys.argv[1:],"c:",["config="])
+    """Initialize the application."""
+    # opts, args = getopt.getopt(sys.argv[1:],"c:",["config="])
     config_file = "/config/energy_assistant.yaml"
    # for opt, arg in opts:
    #   if opt in ("-c", "--config"):
@@ -120,7 +152,7 @@ async def init_app():
 
     logging.info(f"Loading config file {config_file}")
     try:
-        with open(config_file, "r") as stream:
+        with open(config_file) as stream:
             logging.debug(f"Successfully opened config file {config_file}")
             try:
                 config = yaml.safe_load(stream)
@@ -145,11 +177,11 @@ async def init_app():
                     home = Home(home_config.get("name"), "sensor.solaredge_i1_ac_power",
                                 "sensor.solaredge_m1_ac_power", "sensor.solaredge_i1_ac_energy_kwh", "sensor.solaredge_m1_imported_kwh", "sensor.solaredge_m1_exported_kwh")
                     home.add_device(HomeassistantDevice(
-                        "Keba", "sensor.keba_charge_power"))
+                        "Keba", "sensor.keba_charge_power", "sensor.keba_total_charged_energy"))
                     home.add_device(StiebelEltronDevice(
-                        "Warm Wasser", "binary_sensor.stiebel_eltron_isg_is_heating_boiler", "sensor.stiebel_eltron_isg_actual_temperature_water"))
+                        "Warm Wasser", "binary_sensor.stiebel_eltron_isg_is_heating_boiler", "sensor.stiebel_eltron_isg_consumed_water_heating_total", "sensor.stiebel_eltron_isg_consumed_water_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_water"))
                     home.add_device(StiebelEltronDevice(
-                        "Heizung", "binary_sensor.stiebel_eltron_isg_is_heating", "sensor.stiebel_eltron_isg_actual_temperature_fek"))
+                        "Heizung", "binary_sensor.stiebel_eltron_isg_is_heating","sensor.stiebel_eltron_isg_consumed_heating_total", "sensor.stiebel_eltron_isg_consumed_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_fek"))
                     await db.restore_home_state(home)
                     home.update_state_from_hass(hass)
                     await async_handle_state_update()
@@ -183,7 +215,7 @@ async def init_app():
                 logging.info("Initialization completed")
     except Exception as ex:
         logging.error(ex)
-    sio.start_background_task(background_task)        
+    sio.start_background_task(background_task)
     return app
 
 

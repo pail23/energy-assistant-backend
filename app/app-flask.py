@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
@@ -10,7 +10,7 @@ import paho.mqtt.client as mqtt
 from devices import Device
 from devices.mqtt import EvccDevice
 from devices.homeassistant import Homeassistant, StiebelEltronDevice, Home
-from datetime import date, datetime
+from datetime import date
 import time
 import logging
 import random
@@ -25,7 +25,7 @@ app.config.from_object(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 app.config.from_prefixed_env()
 
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///energy_assistant.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///energy_assistant.db"
 
 db.init_app(app)
 
@@ -47,7 +47,8 @@ scheduler = APScheduler()
 
 
 class DeviceMeasurement(db.Model):
-    """Data model for a measurement"""
+    """Data model for a measurement."""
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     solar_energy = db.Column(db.Float)
@@ -67,7 +68,7 @@ def handle_state_update():
 
             for device in home.devices:
                 store_measurement(device)
-            
+
             db.session.commit()
     except Exception as ex:
         logging.error("error during updating database with measurements", ex)
@@ -80,7 +81,7 @@ def job1():
     print("Update hass states")
     global hass
     hass.update_states()
-    home.update_state_from_hass(hass)    
+    home.update_state_from_hass(hass)
     handle_state_update()
 
 
@@ -116,15 +117,15 @@ def test_disconnect():
 
 def get_device_message(device: Device) -> dict:
     result = {
-        "name": device.name, 
+        "name": device.name,
         "type": device.__class__.__name__,
-        "state": device.state, 
-        "icon": device.icon, 
+        "state": device.state,
+        "icon": device.icon,
         "solar_energy": device.consumed_solar_energy,
         "consumed_energy": device.consumed_energy,
         "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
         "extra_attibutes": json.dumps(device.extra_attributes)
-    }    
+    }
     if isinstance(device, StiebelEltronDevice):
         result["actual_temperature"] = device.actual_temperature
     return result
@@ -134,11 +135,11 @@ def get_home_message():
     global home
     for device in home.devices:
         if not isinstance(device, StiebelEltronDevice):
-            devices_message.append(get_device_message(device))    
+            devices_message.append(get_device_message(device))
     heat_pump_message = []
     for device in home.devices:
         if isinstance(device, StiebelEltronDevice):
-            heat_pump_message.append(get_device_message(device))        
+            heat_pump_message.append(get_device_message(device))
     home_message = {
         "name": home.name,
         "solar_production": home.solar_production,
@@ -184,7 +185,7 @@ def restore_home_state(home: Home):
                 restore_measurement(device)
 
 def on_message(client, userdata, message):
-    """Handle the mqtt message"""
+    """Handle the mqtt message."""
     home.update_state_from_mqtt(message.topic, str(message.payload.decode("utf-8")))
     handle_state_update()
 
@@ -214,24 +215,24 @@ def re_connnect_mqtt(client):
         except:
             logging.warning('Could not reconnect to the MQTT server. Trying again in 10 seconds')
             time.sleep(10)
-           
+
 
 
 def initialize():
     logging.info("Hello from Energy Assistant")
     with app.app_context():
-        db.create_all()    
+        db.create_all()
     # if you don't wanna use a config, you can set options here:
     scheduler.api_enabled = True
     scheduler.init_app(app)
-    scheduler.start()    
+    scheduler.start()
     config_file = app.config.get("CONFIGFILE")
     if config_file is None:
         config_file = "/config/energy_assistant.yaml"
-    
+
     logging.info(f"Loading config file {config_file}")
     try:
-        with open(config_file, "r") as stream:
+        with open(config_file) as stream:
             logging.debug(f"Successfully opened config file {config_file}")
             try:
                 config = yaml.safe_load(stream)
@@ -246,7 +247,7 @@ def initialize():
                     url = hass_config.get("url")
                     token = hass_config.get("token")
                     if url is not None and token is not None:
-                        global hass                
+                        global hass
                         hass = Homeassistant(url, token)
                         hass.update_states()
 
@@ -260,7 +261,7 @@ def initialize():
                     home.add_device(StiebelEltronDevice("Warm Wasser", "binary_sensor.stiebel_eltron_isg_is_heating_boiler", "sensor.stiebel_eltron_isg_actual_temperature_water" ))
                     home.add_device(StiebelEltronDevice("Heizung", "binary_sensor.stiebel_eltron_isg_is_heating", "sensor.stiebel_eltron_isg_actual_temperature_fek" ))
                     restore_home_state(home)
-                    home.update_state_from_hass(hass)    
+                    home.update_state_from_hass(hass)
                     handle_state_update()
                     mqtt_config = config.get("mqtt")
                     if mqtt_config is not None:
@@ -286,7 +287,7 @@ def initialize():
                     else:
                         logging.error(f"mqtt not found in config file: {config}")
                 else:
-                    logging.error(f"home not found in config file: {config}");
+                    logging.error(f"home not found in config file: {config}")
                 logging.info("Initialization completed")
     except Exception as ex:
         logging.error(ex)

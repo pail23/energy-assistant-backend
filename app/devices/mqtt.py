@@ -16,7 +16,7 @@ class EvccDevice(MqttDevice):
             self.state = float(message)
             time_stamp = datetime.now().timestamp()
             self._consumed_solar_energy.add_measurement(self.state * self_sufficiency, time_stamp)
-            self._consumed_energy.add_measurement(self.state, time_stamp)   
+            self._consumed_energy.add_measurement(self.state, time_stamp)
 
     @property
     def icon(self):
