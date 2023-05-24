@@ -22,7 +22,7 @@ class DeviceMeasurement(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    solar_energy : Mapped[float]
+    consumed_energy : Mapped[float]
     solar_consumed_energy : Mapped[float]
     date : Mapped[date]
 
@@ -48,7 +48,7 @@ class Database:
                 result = await session.execute(statement)
                 device_measurement = result.scalar() 
                 if device_measurement is not None:
-                    device.restore_state(device_measurement.solar_consumed_energy, device_measurement.solar_energy)
+                    device.restore_state(device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
         except Exception as ex:
             logging.error(f"Error while restoring state of device {device.name}", ex)
 
@@ -60,7 +60,7 @@ class Database:
                 result = await session.execute(statement)
                 device_measurement = result.scalar() 
                 if device_measurement is not None:
-                    device.set_snapshot(device_measurement.solar_consumed_energy, device_measurement.solar_energy)
+                    device.set_snapshot(device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
         except Exception as ex:
             logging.error(f"Error while restoring state of device {device.name}", ex)
 
@@ -81,7 +81,7 @@ class Database:
             if device_measurement is None:
                 device_measurement = DeviceMeasurement(name = device.name, date=today)
                 session.add(device_measurement)
-            device_measurement.solar_energy = device.consumed_energy
+            device_measurement.consumed_energy = device.consumed_energy
             device_measurement.solar_consumed_energy = device.consumed_solar_energy
         except Exception as ex:
             logging.error(f"Error while storing state of device {device.name}", ex)
