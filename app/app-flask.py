@@ -120,7 +120,7 @@ def get_device_message(device: Device) -> dict:
         "type": device.__class__.__name__,
         "state": device.state, 
         "icon": device.icon, 
-        "solar_energy": device.solar_energy,
+        "solar_energy": device.consumed_solar_energy,
         "consumed_energy": device.consumed_energy,
         "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
         "extra_attibutes": json.dumps(device.extra_attributes)
@@ -165,7 +165,7 @@ def store_measurement(device: Device):
     if device_measurement is None:
         device_measurement = DeviceMeasurement(name = device.name, date=today)
         db.session.add(device_measurement)
-    device_measurement.solar_energy = device.solar_energy
+    device_measurement.solar_energy = device.consumed_solar_energy
     device_measurement.solar_consumed_energy = device.consumed_energy
 
 def restore_measurement(device: Device):

@@ -31,11 +31,35 @@ class Integrator:
         self._value = state
 
 
+class EnergyIntegrator:
+    def __init__(self):
+        self._last_consumed_energy = None
+        self._consumed_solar_energy = None
+        self._last_timestamp = None
+
+
+    @property
+    def consumed_solar_energy(self):
+        return self._consumed_solar_energy
+    
+    def add_measurement(self, consumed_energy: float, self_sufficiency: float):
+        if self._last_consumed_energy is not None:
+            if self._consumed_solar_energy is None:
+                self._consumed_solar_energy = self._last_consumed_energy
+            self._consumed_solar_energy = self._consumed_solar_energy + (consumed_energy - self._last_consumed_energy) * self_sufficiency
+        else:
+            self._consumed_solar_energy = consumed_energy
+        self._last_consumed_energy = consumed_energy
+
+
+    def restore_state(self, state: float):
+        self._consumed_solar_energy = state
+
 
 class Device:
     def __init__(self, name):
         self._name = name    
-        self._solar_energy = Integrator()
+        self._consumed_solar_energy = Integrator()
         self._consumed_energy = Integrator()      
 
     @property
@@ -43,17 +67,17 @@ class Device:
         return self._name      
     
     @property 
-    def solar_energy(self):
+    def consumed_solar_energy(self):
         """Solar energy in kWh"""
-        return self._solar_energy.value / (3600 * 1000)
+        return self._consumed_solar_energy.value / (3600 * 1000)
     
     @property
     def consumed_energy(self):
         """Consumed energy in kWh"""
         return self._consumed_energy.value / (3600 * 1000)
     
-    def restore_state(self, solar_energy, consumed_energy):
-        self._solar_energy.restore_state(solar_energy * (3600 * 1000))
+    def restore_state(self, consumed_solar_energy, consumed_energy):
+        self._consumed_solar_energy.restore_state(consumed_solar_energy * (3600 * 1000))
         self._consumed_energy.restore_state(consumed_energy * (3600 * 1000))
 
     @property

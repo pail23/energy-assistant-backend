@@ -32,17 +32,15 @@ async def background_task():
     """Example of how to send server generated events to clients."""
     while True:
         await sio.sleep(10)
+        print("Start refresh from home assistant")
         try:
             global hass
+            hass.update_states()
             home.update_state_from_hass(hass)
             await async_handle_state_update()
         except Exception as ex:
             logging.error("error in the background task: ", ex)
-
-async def index(request):
-    """Serve the client-side application."""
-    with open('/workspaces/backend/static/index.html') as f:
-        return web.Response(text=f.read(), content_type='text/html')
+        print("refresh from home assistant completed")
 
 
 def get_device_message(device: Device) -> dict:
@@ -51,9 +49,9 @@ def get_device_message(device: Device) -> dict:
         "type": device.__class__.__name__,
         "state": device.state,
         "icon": device.icon,
-        "solar_energy": device.solar_energy,
+        "consumed_solar_energy": device.consumed_solar_energy,
         "consumed_energy": device.consumed_energy,
-        "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
+        "self_sufficiency_today": round(device.consumed_solar_energy / device.consumed_energy * 100) if device.consumed_energy > 0 else 0.0,
         "extra_attibutes": json.dumps(device.extra_attributes)
     }
     if isinstance(device, StiebelEltronDevice):
@@ -73,14 +71,14 @@ def get_home_message():
             heat_pump_message.append(get_device_message(device))
     home_message = {
         "name": home.name,
-        "solar_production": home.solar_production,
+        "solar_production": home.solar_production_power,
         "grid_supply": home.grid_supply,
-        "solar_self_consumption": home.solar_self_consumption,
+        "solar_self_consumption": home.solar_self_consumption_power,
         "home_consumption": home.home_consumption,
         "self_sufficiency": round(home.self_sufficiency * 100),
-        "solar_energy": home.solar_energy,
+        "consumed_solar_energy": home.consumed_solar_energy,
         "consumed_energy": home.consumed_energy,
-        "self_sufficiency_today": round(home.solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
+        "self_sufficiency_today": round(home.consumed_solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0,
         "devices": devices_message,
         "heat_pumps": heat_pump_message
     }
@@ -145,7 +143,7 @@ async def init_app():
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config.get("name"), "sensor.solaredge_i1_ac_power",
-                                "sensor.solaredge_m1_ac_power")
+                                "sensor.solaredge_m1_ac_power", "sensor.solaredge_i1_ac_energy_kwh", "sensor.solaredge_m1_imported_kwh", "sensor.solaredge_m1_exported_kwh")
                     home.add_device(HomeassistantDevice(
                         "Keba", "sensor.keba_charge_power"))
                     home.add_device(StiebelEltronDevice(

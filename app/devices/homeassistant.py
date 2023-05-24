@@ -1,6 +1,6 @@
 import requests
 from datetime import datetime
-from . import Device
+from . import Device, EnergyIntegrator
 from .mqtt import MqttDevice
 
 
@@ -91,7 +91,7 @@ class StiebelEltronDevice(HomeassistantDevice):
     def update_state(self, hass:Homeassistant, self_sufficiency: float):
         self._state = hass.get_state(self._entity_id)
         time_stamp = datetime.now().timestamp()
-        self._solar_energy.add_measurement(self.state * self_sufficiency, time_stamp)
+        self._consumed_solar_energy.add_measurement(self.state * self_sufficiency, time_stamp)
         self._consumed_energy.add_measurement(self.state, time_stamp)     
         self._actual_temp = hass.get_state(self._actual_temp_entity_id)
 
@@ -115,50 +115,81 @@ class StiebelEltronDevice(HomeassistantDevice):
         return {"actual_temperature": self.actual_temperature}    
     
 
-class Home(Device):
-    def __init__(self, name, solar_entity_id, grid_supply_entity_id):
-        super().__init__(name)
-        self._solar_entity_id = solar_entity_id
-        self._grid_supply_entity_id = grid_supply_entity_id
-        self._solar_production = None
-        self._grid_supply = None
+class Home:
+    def __init__(self, name, solar_power_entity_id, grid_supply_power_entity_id, solar_energy_entity_id, grid_import_energy_entity_id, grid_export_energy_entity_id):
+        self._name = name
+        self._solar_power_entity_id = solar_power_entity_id
+        self._grid_supply_power_entity_id = grid_supply_power_entity_id
+        self._solar_energy_entity_id = solar_energy_entity_id
+        self._grid_import_energy_entity_id = grid_import_energy_entity_id
+        self._grid_export_energy_entity_id = grid_export_energy_entity_id
+
+        self._solar_production_power = None
+        self._grid_supply_power = None
+        self._consumed_energy = 0
+        self._last_consumed_solar_energy = None
+        self._consumed_solar_energy = EnergyIntegrator()
         self.devices = []
      
 
     def add_device(self, device):
         self.devices.append(device)
+
+    @property
+    def name(self) -> str:
+        return self._name      
+    
+    @property 
+    def solar_production_energy(self):
+        """Solar energy in kWh"""
+        return self._solar_production_energy.state if self._solar_production_energy is not None else 0.0
+    
+    @property
+    def consumed_energy(self):
+        """Consumed energy in kWh"""
+        return self._consumed_energy      
+    
+    @property
+    def consumed_solar_energy(self):
+        """Consumed solar energy in kWh"""
+        return self._consumed_solar_energy.consumed_solar_energy         
         
     @property
     def home_consumption(self):
-        result = self.solar_production - self.grid_supply
+        result = self.solar_production_power - self.grid_supply
         if result > 0:
             return result
         else:
             return 0
 
     @property
-    def solar_self_consumption(self):
+    def solar_self_consumption_power(self):
         if self.grid_supply < 0:
-            return self.solar_production
+            return self.solar_production_power
         else:
-            return self.solar_production - self.grid_supply
+            return self.solar_production_power - self.grid_supply
 
 
     @property
     def self_sufficiency(self):
         hc = self.home_consumption
         if hc > 0:
-            return self.solar_self_consumption / hc
+            return self.solar_self_consumption_power / hc
         else:
             return 0
 
 
     def update_state_from_hass(self, hass:Homeassistant):
-        time_stamp = datetime.now().timestamp()
-        self._solar_production = hass.get_state(self._solar_entity_id) 
-        self._grid_supply = hass.get_state(self._grid_supply_entity_id)    
-        self._solar_energy.add_measurement(self.solar_self_consumption, time_stamp)
-        self._consumed_energy.add_measurement(self.home_consumption, time_stamp)            
+        self._solar_production_power = hass.get_state(self._solar_power_entity_id) 
+        self._grid_supply_power = hass.get_state(self._grid_supply_power_entity_id) 
+
+
+        self._solar_production_energy = hass.get_state(self._solar_energy_entity_id) 
+        self._grid_import_energy = hass.get_state(self._grid_import_energy_entity_id)            
+        self._grid_export_energy = hass.get_state(self._grid_export_energy_entity_id)            
+        self._consumed_energy = self._grid_import_energy.state - self._grid_export_energy.state +  self._solar_production_energy.state 
+        self._consumed_solar_energy.add_measurement(self._consumed_energy, self.self_sufficiency) 
+
         for device in self.devices:
             if isinstance(device, HomeassistantDevice):
                 device.update_state(hass, self.self_sufficiency)
@@ -171,7 +202,7 @@ class Home(Device):
 
 
     def mqtt_topics(self):
-        result = [self._solar_entity_id, self._grid_supply_entity_id]
+        result = [self._solar_power_entity_id, self._grid_supply_power_entity_id]
         for device in self.devices:
             if isinstance(device, MqttDevice):
                 result.append(device.mqtt_topic)        
@@ -182,9 +213,13 @@ class Home(Device):
         return "mdi:mdi-home"
     
     @property
-    def solar_production(self)-> float:
-        return self._solar_production.state if self._solar_production is not None else 0.0
+    def solar_production_power(self)-> float:
+        return self._solar_production_power.state if self._solar_production_power is not None else 0.0
     
     @property
     def grid_supply(self)-> float:
-        return self._grid_supply.state if self._grid_supply is not None else 0.0
+        return self._grid_supply_power.state if self._grid_supply_power is not None else 0.0
+    
+    def restore_state(self, consumed_solar_energy, consumed_energy):
+        self._consumed_solar_energy.restore_state(consumed_solar_energy)
+        

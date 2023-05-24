@@ -45,11 +45,11 @@ class Database:
     async def restore_measurement(self, device: Device):
         try:
             async with self._async_session() as session: 
-                statement = select(DeviceMeasurement).filter_by(name=device.name).order_by(DeviceMeasurement.date.desc())
+                statement = select(DeviceMeasurement).filter_by(name=device.name).order_by(DeviceMeasurement.date.desc()).limit(1)
                 result = await session.execute(statement)
-                device_measurement = result.first() # scalar_one_or_none()
+                device_measurement = result.scalar() # scalar_one_or_none()
                 if device_measurement is not None:
-                    device.restore_state(device_measurement.solar_energy, device_measurement.solar_consumed_energy)
+                    device.restore_state(device_measurement.solar_consumed_energy, device_measurement.solar_energy)
         except Exception as ex:
             logging.error(f"Error while restoring state of device {device.name}", ex)
 
@@ -68,8 +68,8 @@ class Database:
             if device_measurement is None:
                 device_measurement = DeviceMeasurement(name = device.name, date=today)
                 session.add(device_measurement)
-            device_measurement.solar_energy = device.solar_energy
-            device_measurement.solar_consumed_energy = device.consumed_energy
+            device_measurement.solar_energy = device.consumed_energy
+            device_measurement.solar_consumed_energy = device.consumed_solar_energy
         except Exception as ex:
             logging.error(f"Error while storing state of device {device.name}", ex)
 
