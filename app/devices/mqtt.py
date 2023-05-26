@@ -1,5 +1,7 @@
 from datetime import datetime
+
 from . import Device
+
 
 class MqttDevice(Device):
     def __init__(self, name, mqtt_topic):

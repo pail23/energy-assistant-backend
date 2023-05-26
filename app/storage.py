@@ -1,16 +1,12 @@
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.future import select
-
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 import logging
 
 from devices import Device
 from devices.homeassistant import Home
+from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
+from sqlalchemy.future import select
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
 
 class Base(AsyncAttrs, DeclarativeBase):
     pass
@@ -46,7 +42,7 @@ class Database:
             async with self._async_session() as session:
                 statement = select(DeviceMeasurement).filter_by(name=device.name).order_by(DeviceMeasurement.date.desc()).limit(1)
                 result = await session.execute(statement)
-                device_measurement = result.scalar() 
+                device_measurement = result.scalar()
                 if device_measurement is not None:
                     device.restore_state(device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
         except Exception as ex:
@@ -58,7 +54,7 @@ class Database:
             async with self._async_session() as session:
                 statement = select(DeviceMeasurement).filter_by(name=device.name, date=yesterday).limit(1)
                 result = await session.execute(statement)
-                device_measurement = result.scalar() 
+                device_measurement = result.scalar()
                 if device_measurement is not None:
                     device.set_snapshot(device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
         except Exception as ex:

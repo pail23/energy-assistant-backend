@@ -1,16 +1,21 @@
 """Main module for the energy assistant application."""
-from aiohttp import web
-import socketio
 import asyncio
+from datetime import date
 import json
 import logging
 import os
-import yaml
-from datetime import date, timedelta
 
+from aiohttp import web
 from devices import Device
-from devices.homeassistant import Homeassistant, HomeassistantDevice, StiebelEltronDevice, Home
+from devices.homeassistant import (
+    Home,
+    Homeassistant,
+    HomeassistantDevice,
+    StiebelEltronDevice,
+)
+import socketio
 from storage import Database
+import yaml
 
 sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins="*")
 app = web.Application()
@@ -46,6 +51,9 @@ async def background_task():
             logging.error("error in the background task: ", ex)
         #print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
 
+def get_self_sufficiency(consumed_solar_energy:float, consumed_energy: float) -> float:
+    """Calulate the self sufficiency value."""
+    return min(round(consumed_solar_energy / consumed_energy * 100) if consumed_energy > 0 else 0.0, 100)
 
 def get_device_message(device: Device) -> dict:
     """Generate the update data message for a device."""
@@ -63,14 +71,13 @@ def get_device_message(device: Device) -> dict:
         "overall": {
             "consumed_solar_energy": device.consumed_solar_energy,
             "consumed_energy": device.consumed_energy,
-            "self_sufficiency": round(device.consumed_solar_energy / device.consumed_energy * 100) if device.consumed_energy > 0 else 0.0
+            "self_sufficiency": get_self_sufficiency(device.consumed_solar_energy, device.consumed_energy)
         },
         "today": {
             "consumed_solar_energy":  consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
-            "self_sufficiency": round(consumed_solar_energy_today / consumed_energy_today * 100) if consumed_energy_today > 0 else 0.0
+            "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
         },
-        "extra_attibutes": json.dumps(device.extra_attributes),
     }
     if isinstance(device, StiebelEltronDevice):
         result["actual_temperature"] = device.actual_temperature
@@ -107,12 +114,12 @@ def get_home_message():
         "overall": {
             "consumed_solar_energy": home.consumed_solar_energy,
             "consumed_energy": home.consumed_energy,
-            "self_sufficiency": round(home.consumed_solar_energy / home.consumed_energy * 100) if home.consumed_energy > 0 else 0.0
+            "self_sufficiency": get_self_sufficiency(home.consumed_solar_energy,home.consumed_energy)
         },
         "today": {
             "consumed_solar_energy":  consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
-            "self_sufficiency": round(consumed_solar_energy_today / consumed_energy_today * 100) if consumed_energy_today > 0 else 0.0
+            "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
         },
         "devices": devices_message,
         "heat_pumps": heat_pump_message

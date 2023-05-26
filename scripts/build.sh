@@ -1,2 +1,2 @@
 ./scripts/fetch-client.sh
-docker build -t energy-assistant:latest . 
+docker build -t energy-assistant:latest .

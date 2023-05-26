@@ -4,5 +4,10 @@ mqtt:
   password: y
   topic: energyassistant
 
+homeassistant:
+  url: https://homeassistant.local
+  token: xyz
+
+
 home:
   name: "My Home"

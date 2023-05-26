@@ -1,5 +1,7 @@
-import requests
 from datetime import datetime
+
+import requests
+
 from . import Device, EnergyIntegrator, EnergySnapshot
 from .mqtt import MqttDevice
 
@@ -96,7 +98,7 @@ class StiebelEltronDevice(HomeassistantDevice):
         self._actual_temp_entity_id = actual_temp_entity_id
         self._actual_temp = None
         self._state = None
-        
+
     def update_state(self, hass:Homeassistant, self_sufficiency: float):
         self._state = hass.get_state(self._power_entity_id)
         self._consumed_energy_today = hass.get_state(self._consumed_energy_today_entity_id)
@@ -126,10 +128,6 @@ class StiebelEltronDevice(HomeassistantDevice):
     @property
     def icon(self):
         return "mdi:mdi-heat-pump"
-
-    @property
-    def extra_attributes(self):
-        return {"actual_temperature": self.actual_temperature}
 
 
 class Home:
@@ -247,11 +245,11 @@ class Home:
 
     def store_energy_snapshot(self):
         """Stores the current values in the snapshot."""
-        self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)       
+        self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
         for device in self.devices:
-            device.store_energy_snapshot() 
+            device.store_energy_snapshot()
 
     @property
     def energy_snapshop(self):
-        """The last energy snapshot of the device"""
+        """The last energy snapshot of the device."""
         return self._energy_snapshop
