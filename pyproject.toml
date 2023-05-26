@@ -66,7 +66,10 @@ fixture-parentheses = false
 max-complexity = 25
 
 
-[tool.pytest]
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "app",
+]
 testpaths = [
     "tests"
 ]
