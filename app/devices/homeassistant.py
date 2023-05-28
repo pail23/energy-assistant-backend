@@ -244,7 +244,7 @@ class Home:
         self._energy_snapshop = EnergySnapshot(consumed_solar_energy, consumed_energy)
 
     def store_energy_snapshot(self):
-        """Stores the current values in the snapshot."""
+        """Store the current values in the snapshot."""
         self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
         for device in self.devices:
             device.store_energy_snapshot()
