@@ -84,6 +84,44 @@ class EnergySnapshot:
         """The total amount of consumed energy."""
         return self._consumed_energy
 
+class HomeEnergySnapshot(EnergySnapshot):
+    """Stores an snapshot of the current energy consumption values."""
+
+    def __init__(self, consumed_solar_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy:float, grid_exported_energy:float) -> None:
+        """Create an energy snapshot."""
+        self._consumed_solar_energy = consumed_solar_energy
+        self._consumed_energy = consumed_energy
+        self._produced_solar_energy = solar_produced_energy
+        self._grid_imported_energy = grid_imported_energy
+        self._grid_exported_energy = grid_exported_energy
+
+    @property
+    def consumed_solar_energy(self) -> float:
+        """The amount of consumed solar energy."""
+        return self._consumed_solar_energy
+
+    @property
+    def consumed_energy(self) -> float:
+        """The total amount of consumed energy."""
+        return self._consumed_energy
+
+    @property
+    def produced_solar_energy(self) -> float:
+        """The total amount of produced solar energy."""
+        return self._produced_solar_energy
+
+    @property
+    def grid_imported_energy(self) -> float:
+        """The total amount of energy imported from the grid."""
+        return self._grid_imported_energy
+
+    @property
+    def grid_exported_energy(self) -> float:
+        """The total amount of energy exported to the grid."""
+        return self._grid_exported_energy
+
+
+
 class Device:
     """A device which tracks energy consumption."""
 

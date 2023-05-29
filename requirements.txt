@@ -13,3 +13,4 @@ ruff
 pre-commit
 isort
 pytest-asyncio
+types-PyYAML

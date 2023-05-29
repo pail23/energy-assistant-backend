@@ -58,7 +58,7 @@ ignore = [
 [tool.ruff.per-file-ignores]
 "homeassistant.py" = ["D102", "D100", "D101", "D107"]
 "mqtt.py" = ["D102", "D100", "D101", "D107"]
-"storage.py" = ["D102", "D100", "D101", "D107"]
+# "storage.py" = ["D102", "D100", "D101", "D107"]
 
 
 [flake8-pytest-style]
