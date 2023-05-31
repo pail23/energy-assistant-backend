@@ -64,13 +64,16 @@ class Homeassistant:
 
 
 class HomeassistantDevice(Device):
-    def __init__(self, name, power_entity_id, consumed_energy_entity_id):
+    """A generic Homeassistant device."""
+
+    def __init__(self, name:str, power_entity_id:str, consumed_energy_entity_id:str, icon:str) -> None:
+        """Create a generic Homeassistant device."""
         super().__init__(name)
         self._power_entity_id = power_entity_id
         self._consumed_energy_entity_id = consumed_energy_entity_id
         self._power = None
         self._consumed_energy = None
-
+        self._icon = icon
 
     def update_state(self, hass:Homeassistant, self_sufficiency: float):
         self._power = hass.get_state(self._power_entity_id)
@@ -79,11 +82,11 @@ class HomeassistantDevice(Device):
 
 
     @property
-    def icon(self):
-        return "mdi:mdi-car-electric"
+    def icon(self) -> str:
+        return self._icon
 
     @property
-    def power(self):
+    def power(self) -> float:
         """The current power used by the device."""
         return self._power.state if self._power is not None else 0.0
 
@@ -91,8 +94,11 @@ class HomeassistantDevice(Device):
 
 STIEBEL_ELTRON_POWER = 5000
 class StiebelEltronDevice(HomeassistantDevice):
-    def __init__(self, name, state_entity_id, consumed_energy_entity_id, consumed_energy_today_entity_id, actual_temp_entity_id):
-        super().__init__(name, state_entity_id, consumed_energy_entity_id)
+    """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
+
+    def __init__(self, name:str, state_entity_id:str, consumed_energy_entity_id:str, consumed_energy_today_entity_id:str, actual_temp_entity_id:str):
+        """Create a Stiebel Eltron heatpump."""
+        super().__init__(name, state_entity_id, consumed_energy_entity_id, "mdi:mdi-heat-pump")
         self._consumed_energy_today = None
         self._consumed_energy_today_entity_id = consumed_energy_today_entity_id
         self._actual_temp_entity_id = actual_temp_entity_id
@@ -125,9 +131,6 @@ class StiebelEltronDevice(HomeassistantDevice):
     def actual_temperature(self):
         return self._actual_temp.state if self._actual_temp is not None else 0.0
 
-    @property
-    def icon(self):
-        return "mdi:mdi-heat-pump"
 
 
 class Home:
