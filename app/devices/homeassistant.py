@@ -98,7 +98,7 @@ class StiebelEltronDevice(HomeassistantDevice):
 
     def __init__(self, name:str, state_entity_id:str, consumed_energy_entity_id:str, consumed_energy_today_entity_id:str, actual_temp_entity_id:str):
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(name, state_entity_id, consumed_energy_entity_id, "mdi:mdi-heat-pump")
+        super().__init__(name, state_entity_id, consumed_energy_entity_id, "mdi-heat-pump")
         self._consumed_energy_today = None
         self._consumed_energy_today_entity_id = consumed_energy_today_entity_id
         self._actual_temp_entity_id = actual_temp_entity_id
@@ -248,7 +248,7 @@ class Home:
 
     @property
     def icon(self):
-        return "mdi:mdi-home"
+        return "mdi-home"
 
     @property
     def solar_production_power(self)-> float:

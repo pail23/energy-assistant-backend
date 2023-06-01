@@ -189,13 +189,13 @@ async def init_app():
                     home = Home(home_config.get("name"), "sensor.solaredge_i1_ac_power",
                                 "sensor.solaredge_m1_ac_power", "sensor.solaredge_i1_ac_energy_kwh", "sensor.solaredge_m1_imported_kwh", "sensor.solaredge_m1_exported_kwh")
                     home.add_device(HomeassistantDevice(
-                        "Keba", "sensor.keba_charge_power", "sensor.keba_total_charged_energy", "mdi:mdi-car-electric"))
+                        "Keba", "sensor.keba_charge_power", "sensor.keba_total_charged_energy", "mdi-car-electric"))
                     home.add_device(StiebelEltronDevice(
                         "Warm Wasser", "binary_sensor.stiebel_eltron_isg_is_heating_boiler", "sensor.stiebel_eltron_isg_consumed_water_heating_total", "sensor.stiebel_eltron_isg_consumed_water_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_water"))
                     home.add_device(StiebelEltronDevice(
                         "Heizung", "binary_sensor.stiebel_eltron_isg_is_heating","sensor.stiebel_eltron_isg_consumed_heating_total", "sensor.stiebel_eltron_isg_consumed_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_fek"))
                     home.add_device(HomeassistantDevice(
-                        "Tumbler", "sensor.tumbler_power", "sensor.laundry_tumbler_energy", "mdi:mdi-tumble-dryer"))
+                        "Tumbler", "sensor.tumbler_power", "sensor.laundry_tumbler_energy", "mdi-tumble-dryer"))
                     await db.restore_home_state(home)
                     home.update_state_from_hass(hass)
                     await async_handle_state_update()
