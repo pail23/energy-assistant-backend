@@ -140,12 +140,12 @@ class Device:
     @property
     def consumed_solar_energy(self) -> float:
         """Solar energy in kWh."""
-        return self._consumed_solar_energy.consumed_solar_energy
+        return self._consumed_solar_energy.consumed_solar_energy if self._consumed_solar_energy.consumed_solar_energy is not None else 0.0
 
     @property
     def consumed_energy(self) -> float:
         """Consumed energy in kWh."""
-        return self._consumed_energy.state if self._consumed_energy is not None else 0.0
+        return self._consumed_energy.state if self._consumed_energy is not None and self._consumed_energy.state is not None else 0.0
 
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float):
         """Restore a previously stored state of the device."""

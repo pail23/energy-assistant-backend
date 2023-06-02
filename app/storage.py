@@ -53,7 +53,7 @@ class Database:
     async def create_db_engine(self):
         """Create the database."""
         engine = create_async_engine(
-            "sqlite+aiosqlite:///energy_assistant.db",
+            "sqlite+aiosqlite:////data/energy_assistant.db",
             echo=self.sql_echo,
         )
 

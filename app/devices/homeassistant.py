@@ -8,15 +8,18 @@ from .mqtt import MqttDevice
 
 class State:
     def __init__(self, entity_id:str, state:str, attributes:dict):
-        try:
-            self._state = float(state)
-        except ValueError:
-            self._state = state
+        if state=="unavailable":
+            self._state = None
+        else:
+            try:
+                self._state = float(state)
+            except ValueError:
+                self._state = state
         self._attributes = attributes
         self._entity_id = entity_id
 
     @property
-    def state(self):
+    def state(self) -> float | None:
         return self._state
 
     @property
@@ -63,6 +66,8 @@ class Homeassistant:
         return self._states.get(entity_id)
 
 
+
+
 class HomeassistantDevice(Device):
     """A generic Homeassistant device."""
 
@@ -76,8 +81,12 @@ class HomeassistantDevice(Device):
         self._icon = icon
 
     def update_state(self, hass:Homeassistant, self_sufficiency: float):
-        self._power = hass.get_state(self._power_entity_id)
-        self._consumed_energy = hass.get_state(self._consumed_energy_entity_id)
+        state = hass.get_state(self._power_entity_id)
+        if state is not None and state.state != "unavailable":
+            self._power = state
+        state = hass.get_state(self._consumed_energy_entity_id)
+        if state is not None and state.state != "unavailable":
+            self._consumed_energy = state
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
 
 

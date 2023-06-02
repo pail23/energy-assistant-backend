@@ -14,6 +14,7 @@ COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 RUN pip install gunicorn
+RUN mkdir /data
 COPY ./app .
 EXPOSE 80
 CMD gunicorn --bind 0.0.0.0:5000 --worker-class aiohttp.GunicornWebWorker app:init_app --daemon && nginx -g 'daemon off;'
