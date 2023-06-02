@@ -3,6 +3,7 @@ import asyncio
 from datetime import date
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 
 from aiohttp import web
@@ -153,8 +154,27 @@ async def init_app():
             config_file), 'energy-assistant.log')
     else:
         logfilename = 'energy-assistant.log'
-    logging.basicConfig(filename=logfilename,
-                        encoding='utf-8', level=logging.DEBUG)
+   # logging.basicConfig(filename=logfilename, encoding='utf-8', level=logging.DEBUG)
+
+
+    rfh = RotatingFileHandler(
+        filename=logfilename,
+        mode='a',
+        maxBytes=5*1024*1024,
+        backupCount=2,
+        encoding='utf-8',
+        delay=0
+    )
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(name)-25s %(levelname)-8s %(message)s",
+        datefmt="%y-%m-%d %H:%M:%S",
+        handlers=[
+            rfh
+        ]
+    )
+
 
     logging.info("Hello from Energy Assistant")
 
