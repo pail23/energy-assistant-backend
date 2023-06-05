@@ -71,13 +71,14 @@ class Homeassistant:
 class HomeassistantDevice(Device):
     """A generic Homeassistant device."""
 
-    def __init__(self, name:str, power_entity_id:str, consumed_energy_entity_id:str, icon:str) -> None:
+    def __init__(self, name:str, power_entity_id:str, consumed_energy_entity_id:str, icon:str,  energy_scale: float = 1) -> None:
         """Create a generic Homeassistant device."""
         super().__init__(name)
         self._power_entity_id = power_entity_id
         self._consumed_energy_entity_id = consumed_energy_entity_id
         self._power = None
         self._consumed_energy = None
+        self._energy_scale = energy_scale
         self._icon = icon
 
     def update_state(self, hass:Homeassistant, self_sufficiency: float):
@@ -89,6 +90,9 @@ class HomeassistantDevice(Device):
             self._consumed_energy = state
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
 
+    @property
+    def consumed_energy(self) -> float:
+        return super().consumed_energy * self._energy_scale
 
     @property
     def icon(self) -> str:

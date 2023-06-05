@@ -216,6 +216,11 @@ async def init_app():
                         "Heizung", "binary_sensor.stiebel_eltron_isg_is_heating","sensor.stiebel_eltron_isg_consumed_heating_total", "sensor.stiebel_eltron_isg_consumed_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_fek"))
                     home.add_device(HomeassistantDevice(
                         "Tumbler", "sensor.tumbler_power", "sensor.laundry_tumbler_energy", "mdi-tumble-dryer"))
+                    home.add_device(HomeassistantDevice(
+                        "Desk", "sensor.officedesk_power", "sensor.desk_energy", "mdi-desk", 0.001))
+                    home.add_device(HomeassistantDevice(
+                        "Server Rack", "sensor.rack_power", "sensor.rack_energy", "mdi-server-network", 0.001))
+
                     await db.restore_home_state(home)
                     home.update_state_from_hass(hass)
                     await async_handle_state_update()
