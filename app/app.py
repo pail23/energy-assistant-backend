@@ -153,6 +153,9 @@ def disconnect(sid):
 
 async def init_app():
     """Initialize the application."""
+    app.home = None
+    app.hass = None
+
     # opts, args = getopt.getopt(sys.argv[1:],"c:",["config="])
     config_file = "/config/energy_assistant.yaml"
    # for opt, arg in opts:
@@ -211,6 +214,7 @@ async def init_app():
                     if url is not None and token is not None:
                         global hass
                         hass = Homeassistant(url, token)
+                        app.hass = hass
                         hass.update_states()
 
                 global home
@@ -218,6 +222,7 @@ async def init_app():
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config.get("name"), "sensor.solaredge_i1_ac_power",
                                 "sensor.solaredge_m1_ac_power", "sensor.solaredge_i1_ac_energy_kwh", "sensor.solaredge_m1_imported_kwh", "sensor.solaredge_m1_exported_kwh")
+                    app.home = home
                     home.add_device(HomeassistantDevice(
                         "Keba", "sensor.keba_charge_power", "sensor.keba_total_charged_energy", "mdi-car-electric"))
                     home.add_device(StiebelEltronDevice(
@@ -265,8 +270,6 @@ async def init_app():
                 logging.info("Initialization completed")
     except Exception as ex:
         logging.error(ex)
-    app.home = home
-    app.hass = hass
     return app
 
 
