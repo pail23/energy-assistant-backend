@@ -16,6 +16,7 @@ from devices.homeassistant import (
 )
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 #import socketio
 from fastapi_socketio import SocketManager
@@ -26,7 +27,8 @@ import yaml
 #sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins="*")
 #ws_app = web.Application()
 app = FastAPI(title="energy-assistant")
-sio = SocketManager(app=app, cors_allowed_origins="*") #, mount_location=""
+sio = SocketManager(app=app, cors_allowed_origins="*")
+app.mount("/", StaticFiles(directory="client", html = True), name="frontend")
 #sio.attach(ws_app)
 
 async def async_handle_state_update(home:Home, hass: Homeassistant):
@@ -268,14 +270,6 @@ async def init_app():
     return app
 
 
-
-async def main():
-    """Start the app."""
-    config = uvicorn.Config("app:app", port=5000, log_level="info")
-    server = uvicorn.Server(config)
-    await server.serve()
-
-
 @app.on_event("startup")
 async def startup():
     """Statup call back to initialize the app and start the background task."""
@@ -288,10 +282,17 @@ async def shutdown_event():
     """Stop call back to stop the app."""
     print("Shutdown app")
 
-@app.get("/", include_in_schema=False)
+@app.get("/api", include_in_schema=False)
 async def health() -> JSONResponse:
     """Test the web server with a ping."""
     return JSONResponse({"message": "It worked!!"})
+
+
+async def main():
+    """Start the app."""
+    config = uvicorn.Config("app:app", port=5000, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 if __name__ == '__main__':
     # web.run_app(init_app(), port=5000)

@@ -8,14 +8,20 @@ RUN apk update && apk add --no-cache python3 && \
     if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi && \
     rm -r /root/.cache
 RUN apk update && apk add gcc python3-dev musl-dev
+
 COPY ./client /usr/share/nginx/html
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
+
 COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
-RUN pip install gunicorn
+# RUN pip install gunicorn
 RUN mkdir /data
 COPY ./app .
+
+COPY ./client ./client
+
 EXPOSE 80
 ENV APP_CONFIG_FILE=local
-CMD gunicorn --bind 0.0.0.0:5000 --worker-class aiohttp.GunicornWebWorker app:init_app --daemon && nginx -g 'daemon off;'
+CMD uvicorn --host 0.0.0.0 --port 5000 app:app
+#CMD gunicorn --bind 0.0.0.0:5000 --worker-class aiohttp.GunicornWebWorker app:init_app --daemon && nginx -g 'daemon off;'

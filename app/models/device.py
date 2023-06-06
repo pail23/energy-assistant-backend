@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import AsyncIterator, Optional
+from typing import TYPE_CHECKING, AsyncIterator, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import ForeignKey, select
@@ -11,8 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
 
+if TYPE_CHECKING:
+    from .home import HomeMeasurement
+
 from .base import Base
-from .home import HomeMeasurement
 
 
 class DeviceMeasurement(Base):

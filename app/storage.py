@@ -29,19 +29,21 @@ class Database:
 
     async def restore_measurement(self, home_measurement: HomeMeasurement, device: Device):
         """Restore a previously stored measurement."""
-        for device_measurement in home_measurement.device_measurements:
-            if device_measurement.name == device.name:
-                device.restore_state(
-                    device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
-                break
+        if home_measurement is not None:
+            for device_measurement in home_measurement.device_measurements:
+                if device_measurement.name == device.name:
+                    device.restore_state(
+                        device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
+                    break
 
     async def restore_snapshot(self, home_measurement: HomeMeasurement, device: Device):
         """Restore a previously stored snapshot."""
-        for device_measurement in home_measurement.device_measurements:
-            if device_measurement.name == device.name:
-                device.set_snapshot(
-                    device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
-                break
+        if home_measurement is not None:
+            for device_measurement in home_measurement.device_measurements:
+                if device_measurement.name == device.name:
+                    device.set_snapshot(
+                        device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
+                    break
 
     async def restore_home_state(self, home: Home):
         """Restore the state of the home from the database."""

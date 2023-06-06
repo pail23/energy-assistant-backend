@@ -125,13 +125,13 @@ class HomeMeasurementSchema(BaseModel):
     grid_exported_energy: float
     date: date
 
-    device_measurements: list[DeviceMeasurementSchema]
+    device_measurements: list
 
     class Config:
         """Config class for the Home Measurement Scheme."""
 
         orm_mode = True
 
-from .device import DeviceMeasurement, DeviceMeasurementSchema  # noqa: E402
+from .device import DeviceMeasurement  # noqa: E402
 
 HomeMeasurementSchema.update_forward_refs()
