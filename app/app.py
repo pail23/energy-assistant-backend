@@ -6,7 +6,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
-from aiohttp import web
+#from aiohttp import web
 from devices import Device
 from devices.homeassistant import (
     Home,
@@ -14,27 +14,36 @@ from devices.homeassistant import (
     HomeassistantDevice,
     StiebelEltronDevice,
 )
-import socketio
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
+#import socketio
+from fastapi_socketio import SocketManager
 from storage import Database
+import uvicorn
 import yaml
 
-sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins="*")
-app = web.Application()
-sio.attach(app)
+#sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins="*")
+#ws_app = web.Application()
+app = FastAPI(title="energy-assistant")
+sio = SocketManager(app=app, cors_allowed_origins="*") #, mount_location=""
+#sio.attach(ws_app)
 
-
-async def async_handle_state_update():
+async def async_handle_state_update(home:Home, hass: Homeassistant):
     """Read the values from home assistant and process the update."""
     try:
-        global hass
         hass.update_states()
         home.update_state_from_hass(hass)
-        await asyncio.gather(sio.emit('refresh', {'data': get_home_message()}), db.store_home_state(home))
+        # print("Send refresh: " + get_home_message(home))
+        message = get_home_message(home)
+        await sio.emit('refresh', {'data': message})
+        await db.store_home_state(home)
+        # await asyncio.gather(sio.emit('refresh', {'data': get_home_message(home)}), db.store_home_state(home))
     except Exception as ex:
         logging.error("error during sending refresh", ex)
 
 
-async def background_task():
+async def background_task(home, hass):
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     while True:
@@ -44,10 +53,9 @@ async def background_task():
         today = date.today()
         try:
             if today != last_update:
-                global home
                 home.store_energy_snapshot()
             last_update = today
-            await async_handle_state_update()
+            await async_handle_state_update(home, hass)
         except Exception as ex:
             logging.error("error in the background task: ", ex)
         #print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
@@ -85,10 +93,9 @@ def get_device_message(device: Device) -> dict:
     return result
 
 
-def get_home_message():
+def get_home_message(home:Home):
     """Generate the update data message for a home."""
     devices_message = []
-    global home
     for device in home.devices:
         if not isinstance(device, StiebelEltronDevice):
             devices_message.append(get_device_message(device))
@@ -128,14 +135,15 @@ def get_home_message():
     return json.dumps(home_message)
 
 
-@sio.event
+
+@app.sio.event
 async def connect(sid, environ):
     """Handle the connect of a client via socket.io to the server."""
     logging.info(f"connect {sid}")
-    await sio.emit('refresh', {'data': get_home_message()}, room=sid)
+    await sio.emit('refresh', {'data': get_home_message(app.home)}, room=sid)
 
 
-@sio.event
+@app.sio.event
 def disconnect(sid):
     """Handle the disconnect of a client via socket.io to the server."""
     logging.info(f"Client disconnected {sid}")
@@ -222,8 +230,9 @@ async def init_app():
                         "Server Rack", "sensor.rack_power", "sensor.rack_energy", "mdi-server-network", 0.001))
 
                     await db.restore_home_state(home)
-                    home.update_state_from_hass(hass)
-                    await async_handle_state_update()
+                    # home.update_state_from_hass(hass)
+                    # await async_handle_state_update(home, hass)
+
                     """
                     mqtt_config = config.get("mqtt")
                     if mqtt_config is not None:
@@ -254,9 +263,36 @@ async def init_app():
                 logging.info("Initialization completed")
     except Exception as ex:
         logging.error(ex)
-    sio.start_background_task(background_task)
+    app.home = home
+    app.hass = hass
     return app
 
 
+
+async def main():
+    """Start the app."""
+    config = uvicorn.Config("app:app", port=5000, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
+@app.on_event("startup")
+async def startup():
+    """Statup call back to initialize the app and start the background task."""
+    await init_app()
+    sio.start_background_task(background_task, app.home, app.hass)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop call back to stop the app."""
+    print("Shutdown app")
+
+@app.get("/", include_in_schema=False)
+async def health() -> JSONResponse:
+    """Test the web server with a ping."""
+    return JSONResponse({"message": "It worked!!"})
+
 if __name__ == '__main__':
-    web.run_app(init_app(), port=5000)
+    # web.run_app(init_app(), port=5000)
+    asyncio.run(main())

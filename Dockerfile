@@ -17,4 +17,5 @@ RUN pip install gunicorn
 RUN mkdir /data
 COPY ./app .
 EXPOSE 80
+ENV APP_CONFIG_FILE=local
 CMD gunicorn --bind 0.0.0.0:5000 --worker-class aiohttp.GunicornWebWorker app:init_app --daemon && nginx -g 'daemon off;'

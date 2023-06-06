@@ -6,8 +6,13 @@ python-socketio
 aiohttp
 SQLAlchemy
 aiosqlite
+pydantic
+python-dotenv
 
-gunicorn
+fastapi
+fastapi-socketio
+uvicorn[standard]
+websockets
 
 ruff
 pre-commit

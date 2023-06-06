@@ -11,7 +11,9 @@
       "program": "./app/app.py",
       "console": "integratedTerminal",
       "justMyCode": true,
-      "args": ["-c", "/workspaces/backend/energy_assistant.yaml"]
+      "env": {
+        "APP_CONFIG_FILE": "local"
+      }
     },
     {
       "name": "Python: Current File",
