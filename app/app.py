@@ -31,21 +31,24 @@ sio = SocketManager(app=app, cors_allowed_origins="*")
 app.mount("/", StaticFiles(directory="client", html = True), name="frontend")
 #sio.attach(ws_app)
 
-async def async_handle_state_update(home:Home, hass: Homeassistant):
+async def async_handle_state_update(home:Home, hass: Homeassistant, db: Database) -> None:
     """Read the values from home assistant and process the update."""
     try:
         hass.update_states()
         home.update_state_from_hass(hass)
         # print("Send refresh: " + get_home_message(home))
-        message = get_home_message(home)
-        await sio.emit('refresh', {'data': message})
-        await db.store_home_state(home)
-        # await asyncio.gather(sio.emit('refresh', {'data': get_home_message(home)}), db.store_home_state(home))
+        if db:
+            if home:
+                await asyncio.gather(sio.emit('refresh', {'data': get_home_message(home)}), db.store_home_state(home))
+            else:
+                logging.error("The variable home is None in async_handle_state_update")
+        else:
+           logging.error("The variable db is None in async_handle_state_update")
     except Exception as ex:
         logging.error("error during sending refresh", ex)
 
 
-async def background_task(home, hass):
+async def background_task(home:Home, hass: Homeassistant, db: Database) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     while True:
@@ -57,7 +60,7 @@ async def background_task(home, hass):
             if today != last_update:
                 home.store_energy_snapshot()
             last_update = today
-            await async_handle_state_update(home, hass)
+            await async_handle_state_update(home, hass, db)
         except Exception as ex:
             logging.error("error in the background task: ", ex)
         #print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
@@ -155,6 +158,7 @@ async def init_app():
     """Initialize the application."""
     app.home = None
     app.hass = None
+    app.db = None
 
     # opts, args = getopt.getopt(sys.argv[1:],"c:",["config="])
     config_file = "/config/energy_assistant.yaml"
@@ -191,9 +195,9 @@ async def init_app():
 
     logging.info("Hello from Energy Assistant")
 
-    global db
     db = Database()
     await db.create_db_engine()
+    app.db = db
 
     logging.info(f"Loading config file {config_file}")
     try:
@@ -212,12 +216,10 @@ async def init_app():
                     url = hass_config.get("url")
                     token = hass_config.get("token")
                     if url is not None and token is not None:
-                        global hass
                         hass = Homeassistant(url, token)
                         app.hass = hass
                         hass.update_states()
 
-                global home
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config.get("name"), "sensor.solaredge_i1_ac_power",
@@ -238,7 +240,7 @@ async def init_app():
 
                     await db.restore_home_state(home)
                     # home.update_state_from_hass(hass)
-                    # await async_handle_state_update(home, hass)
+                    # await async_handle_state_update(home, hass, db)
 
                     """
                     mqtt_config = config.get("mqtt")
@@ -277,7 +279,7 @@ async def init_app():
 async def startup():
     """Statup call back to initialize the app and start the background task."""
     await init_app()
-    sio.start_background_task(background_task, app.home, app.hass)
+    sio.start_background_task(background_task, app.home, app.hass, app.db)
 
 
 @app.on_event("shutdown")
