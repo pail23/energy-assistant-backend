@@ -106,20 +106,25 @@ class HomeassistantDevice(Device):
 
 
 STIEBEL_ELTRON_POWER = 5000
-class StiebelEltronDevice(HomeassistantDevice):
+class StiebelEltronDevice(Device):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
     def __init__(self, name:str, state_entity_id:str, consumed_energy_entity_id:str, consumed_energy_today_entity_id:str, actual_temp_entity_id:str):
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(name, state_entity_id, consumed_energy_entity_id, "mdi-heat-pump")
+        super().__init__(name)
         self._consumed_energy_today = None
         self._consumed_energy_today_entity_id = consumed_energy_today_entity_id
         self._actual_temp_entity_id = actual_temp_entity_id
         self._actual_temp = None
         self._state = None
 
+        self._state_entity_id = state_entity_id
+        self._consumed_energy_entity_id = consumed_energy_entity_id
+        self._consumed_energy = None
+        self._icon = "mdi-heat-pump"
+
     def update_state(self, hass:Homeassistant, self_sufficiency: float):
-        self._state = hass.get_state(self._power_entity_id)
+        self._state = hass.get_state(self._state_entity_id)
         self._consumed_energy_today = hass.get_state(self._consumed_energy_today_entity_id)
         self._consumed_energy = hass.get_state(self._consumed_energy_entity_id)
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
@@ -132,19 +137,26 @@ class StiebelEltronDevice(HomeassistantDevice):
         energy_today =  self._consumed_energy_today.state if self._consumed_energy_today is not None else 0.0
         return energy + energy_today
 
+    @property
+    def state(self) -> str:
+        """The state of the device. The state is `on` in case the device is heating."""
+        return self._state.state if self._state else "unknown"
 
     @property
-    def power(self):
+    def power(self) -> float:
+        """Current power consumption of the device."""
         if self._state is not None:
             return STIEBEL_ELTRON_POWER if self._state.state == 'on' else 0.0
         else:
             return 0.0
 
     @property
-    def actual_temperature(self):
+    def actual_temperature(self) -> float:
         return self._actual_temp.state if self._actual_temp is not None else 0.0
 
-
+    @property
+    def icon(self) -> str:
+        return self._icon
 
 class Home:
     def __init__(self, name, solar_power_entity_id, grid_supply_power_entity_id, solar_energy_entity_id, grid_import_energy_entity_id, grid_export_energy_entity_id):
@@ -242,7 +254,7 @@ class Home:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy, self.produced_solar_energy, self.grid_imported_energy, self.grid_exported_energy)
 
         for device in self.devices:
-            if isinstance(device, HomeassistantDevice):
+            if isinstance(device, HomeassistantDevice) or isinstance(device, StiebelEltronDevice):
                 device.update_state(hass, self.self_sufficiency)
 
 

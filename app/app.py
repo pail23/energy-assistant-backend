@@ -95,6 +95,7 @@ def get_device_message(device: Device) -> dict:
     }
     if isinstance(device, StiebelEltronDevice):
         result["actual_temperature"] = device.actual_temperature
+        result["state"] = device.state
     return result
 
 
