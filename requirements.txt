@@ -2,9 +2,9 @@ pyyaml
 paho-mqtt
 requests
 
-python-socketio
 aiohttp
 SQLAlchemy
+alembic
 aiosqlite
 pydantic
 python-dotenv
