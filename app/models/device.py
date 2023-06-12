@@ -27,8 +27,6 @@ class DeviceMeasurement(Base):
     name: Mapped[str]
     consumed_energy: Mapped[float]
     solar_consumed_energy: Mapped[float]
-    # TODO: remove this property
-    device_date: Mapped[date] = mapped_column("date")
 
     home_measurement_id: Mapped[int] = mapped_column(
         "home_measurement_id", ForeignKey("HomeMeasurement.id"), nullable=False
@@ -38,9 +36,9 @@ class DeviceMeasurement(Base):
         "HomeMeasurement", back_populates="device_measurements")
 
     @hybrid_property
-    def date(self) -> str:
+    def date(self) -> date:
         """Date of a device measurement."""
-        return self.home_measurement.date
+        return self.home_measurement.measurement_date
 
     @classmethod
     async def read_all(cls, session: AsyncSession) -> AsyncIterator[DeviceMeasurement]:
@@ -81,8 +79,7 @@ class DeviceMeasurement(Base):
             name=name,
             home_measurement_id=home_measurement.id,
             solar_consumed_energy=solar_consumed_energy,
-            consumed_energy=consumed_energy,
-            device_date=home_measurement.date
+            consumed_energy=consumed_energy
         )
         session.add(measurement)
         await session.flush()

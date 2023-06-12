@@ -25,7 +25,7 @@ class HomeMeasurement(Base):
     solar_produced_energy: Mapped[float]
     grid_imported_energy: Mapped[float]
     grid_exported_energy: Mapped[float]
-    date: Mapped[date]
+    measurement_date: Mapped[date] = mapped_column("date")
 
     device_measurements: Mapped[list[DeviceMeasurement]] = relationship(
         "DeviceMeasurement",
@@ -61,17 +61,17 @@ class HomeMeasurement(Base):
         stmt = select(cls)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        return await session.scalar(stmt.order_by(cls.date.desc()).limit(1))
+        return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
     @classmethod
     async def read_by_date(
-            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> Optional[DeviceMeasurement]:
+            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
         """Read last home measurement by date."""
         stmt = select(cls).where(
-            cls.date==measurement_date)
+            cls.measurement_date==measurement_date)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        return await session.scalar(stmt.order_by(cls.date.desc()).limit(1))
+        return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
     @classmethod
     async def create(cls, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, date: date, device_measurements: list[DeviceMeasurement]) -> HomeMeasurement:
@@ -102,7 +102,7 @@ class HomeMeasurement(Base):
         self.solar_produced_energy = solar_produced_energy
         self.grid_imported_energy = grid_imported_energy
         self.grid_exported_energy = grid_exported_energy
-        self.date = date
+        self.measurement_date = date
         # self.device_measurements = device_measurements
         await session.flush()
 
@@ -125,13 +125,13 @@ class HomeMeasurementSchema(BaseModel):
     grid_exported_energy: float
     date: date
 
-    device_measurements: list
+    device_measurements: list[DeviceMeasurementSchema]
 
     class Config:
         """Config class for the Home Measurement Scheme."""
 
         orm_mode = True
 
-from .device import DeviceMeasurement  # noqa: E402
+from .device import DeviceMeasurement, DeviceMeasurementSchema  # noqa: E402
 
 HomeMeasurementSchema.update_forward_refs()

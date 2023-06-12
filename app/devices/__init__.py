@@ -1,13 +1,16 @@
 """The Device classes."""
+from abc import ABC, abstractmethod
+from typing import Optional
+
 
 class Integrator:
     """Integrate a measurement like power to get the energy."""
 
     def __init__(self) -> None:
         """Initialize the integrator."""
-        self.last_measurement = None
-        self.last_timestamp = None
-        self._value = 0
+        self.last_measurement : Optional[float] = None
+        self.last_timestamp : Optional[float] = None
+        self._value : float = 0.0
 
 
     @property
@@ -15,13 +18,13 @@ class Integrator:
         """The current value of the integrator."""
         return self._value
 
-    def add_measurement(self, measurement: float, timestamp: float):
+    def add_measurement(self, measurement: float, timestamp: float) -> None:
         """Update the value of the integrator with and new measuremenent value."""
         if self.last_measurement is None:
             self.last_measurement = measurement
             self.last_timestamp = timestamp
         else:
-            delta_t = timestamp - self.last_timestamp
+            delta_t = timestamp - self.last_timestamp if self.last_timestamp else 0.0
             self.last_timestamp = timestamp
             # print("Delta t: "+ str(delta_t))
             if delta_t > 0.1:
@@ -41,15 +44,15 @@ class EnergyIntegrator:
 
     def __init__(self) -> None:
         """Create an energy integrator."""
-        self._last_consumed_energy = None
-        self._consumed_solar_energy = None
-        self._last_timestamp = None
+        self._last_consumed_energy : Optional[float]  = None
+        self._consumed_solar_energy : Optional[float] = None
+        self._last_timestamp : Optional[float] = None
 
 
     @property
     def consumed_solar_energy(self) -> float:
         """The amount of solar energy which has been consumed."""
-        return self._consumed_solar_energy
+        return self._consumed_solar_energy if self._consumed_solar_energy else 0.0
 
     def add_measurement(self, consumed_energy: float, self_sufficiency: float) -> None:
         """Update the value of the integrator with and new measuremenent value."""
@@ -122,15 +125,15 @@ class HomeEnergySnapshot(EnergySnapshot):
 
 
 
-class Device:
+class Device(ABC):
     """A device which tracks energy consumption."""
 
     def __init__(self, name: str) -> None:
         """Create a device."""
         self._name = name
         self._consumed_solar_energy = EnergyIntegrator()
-        self._consumed_energy = None
-        self._energy_snapshot = None
+       # self._consumed_energy: Optional[float] = None
+        self._energy_snapshot: Optional[EnergySnapshot] = None
 
     @property
     def name(self) -> str:
@@ -143,24 +146,37 @@ class Device:
         return self._consumed_solar_energy.consumed_solar_energy if self._consumed_solar_energy.consumed_solar_energy is not None else 0.0
 
     @property
+    @abstractmethod
     def consumed_energy(self) -> float:
         """Consumed energy in kWh."""
-        return self._consumed_energy.state if self._consumed_energy is not None and self._consumed_energy.state is not None else 0.0
+        pass
 
-    def restore_state(self, consumed_solar_energy: float, consumed_energy: float):
+    @property
+    @abstractmethod
+    def power(self) -> float:
+        """Current consumed power."""
+        pass
+
+    @property
+    @abstractmethod
+    def icon(self) -> str:
+        """Icon for the device."""
+        pass
+
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state of the device."""
         self._consumed_solar_energy.restore_state(consumed_solar_energy * (3600 * 1000))
         self.set_snapshot(consumed_solar_energy, consumed_energy)
 
-    def set_snapshot(self, consumed_solar_energy: float, consumed_energy: float):
+    def set_snapshot(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Set the snapshot values."""
         self._energy_snapshot = EnergySnapshot(consumed_solar_energy, consumed_energy)
 
     @property
-    def energy_snapshot(self)-> float:
+    def energy_snapshot(self)-> Optional[EnergySnapshot]:
         """The last energy snapshot of the device."""
         return self._energy_snapshot
 
-    def store_energy_snapshot(self) -> float:
+    def store_energy_snapshot(self) -> None:
         """Store the current values in the snapshot."""
         self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)

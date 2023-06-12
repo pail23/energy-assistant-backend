@@ -15,7 +15,9 @@ uvicorn[standard]
 websockets
 
 ruff
+mypy
 pre-commit
 isort
 pytest-asyncio
 types-PyYAML
+types-requests

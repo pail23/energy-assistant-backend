@@ -9,13 +9,10 @@ import os
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-
-# import socketio
-from fastapi_socketio import SocketManager
-import uvicorn
+from fastapi_socketio import SocketManager  # type: ignore
 import yaml
 
-# from aiohttp import web
+from app.api.main import router as api_router
 from app.devices import Device
 from app.devices.homeassistant import (
     Home,
@@ -25,12 +22,11 @@ from app.devices.homeassistant import (
 )
 from app.storage import Database
 
-# sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins="*")
-# ws_app = web.Application()
 app = FastAPI(title="energy-assistant")
 sio = SocketManager(app=app, cors_allowed_origins="*")
-app.mount("/", StaticFiles(directory="client", html=True), name="frontend")
-# sio.attach(ws_app)
+app.include_router(api_router, prefix="/api")
+
+
 
 
 async def async_handle_state_update(home: Home, hass: Homeassistant, db: Database) -> None:
@@ -107,7 +103,7 @@ def get_device_message(device: Device) -> dict:
     return result
 
 
-def get_home_message(home: Home):
+def get_home_message(home: Home) -> str:
     """Generate the update data message for a home."""
     devices_message = []
     for device in home.devices:
@@ -151,24 +147,24 @@ def get_home_message(home: Home):
     return json.dumps(home_message)
 
 
-@app.sio.event
+@app.sio.event # type: ignore
 async def connect(sid, environ):
     """Handle the connect of a client via socket.io to the server."""
     logging.info(f"connect {sid}")
     await sio.emit('refresh', {'data': get_home_message(app.home)}, room=sid)
 
 
-@app.sio.event
+@app.sio.event # type: ignore
 def disconnect(sid):
     """Handle the disconnect of a client via socket.io to the server."""
     logging.info(f"Client disconnected {sid}")
 
 
-async def init_app():
+async def init_app() -> None:
     """Initialize the application."""
-    app.home = None
-    app.hass = None
-    app.db = None
+    app.home = None # type: ignore
+    app.hass = None # type: ignore
+    app.db = None # type: ignore
 
     # opts, args = getopt.getopt(sys.argv[1:],"c:",["config="])
     config_file = "/config/energy_assistant.yaml"
@@ -188,8 +184,7 @@ async def init_app():
         mode='a',
         maxBytes=5*1024*1024,
         backupCount=2,
-        encoding='utf-8',
-        delay=0
+        encoding='utf-8'
     )
 
     logging.basicConfig(
@@ -205,7 +200,7 @@ async def init_app():
 
     db = Database()
     # await db.create_db_engine()
-    app.db = db
+    app.db = db # type: ignore
 
     logging.info(f"Loading config file {config_file}")
     try:
@@ -225,14 +220,14 @@ async def init_app():
                     token = hass_config.get("token")
                     if url is not None and token is not None:
                         hass = Homeassistant(url, token)
-                        app.hass = hass
+                        app.hass = hass # type: ignore
                         hass.update_states()
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config.get("name"), "sensor.solaredge_i1_ac_power",
                                 "sensor.solaredge_m1_ac_power", "sensor.solaredge_i1_ac_energy_kwh", "sensor.solaredge_m1_imported_kwh", "sensor.solaredge_m1_exported_kwh")
-                    app.home = home
+                    app.home = home # type: ignore
                     home.add_device(HomeassistantDevice(
                         "Keba", "sensor.keba_charge_power", "sensor.keba_total_charged_energy", "mdi-car-electric"))
                     home.add_device(StiebelEltronDevice(
@@ -280,33 +275,31 @@ async def init_app():
                 logging.info("Initialization completed")
     except Exception as ex:
         logging.error(ex)
-    return app
 
 
 @app.on_event("startup")
-async def startup():
+async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
-    sio.start_background_task(background_task, app.home, app.hass, app.db)
+    sio.start_background_task(background_task, app.home, app.hass, app.db) # type: ignore
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     """Stop call back to stop the app."""
     print("Shutdown app")
 
 
-@app.get("/api", include_in_schema=False)
+@app.get("/check", include_in_schema=False)
 async def health() -> JSONResponse:
     """Test the web server with a ping."""
     return JSONResponse({"message": "It worked!!"})
 
+# This needs to be the last mount
+app.mount("/", StaticFiles(directory="client", html=True), name="frontend")
 
-async def main():
-    """Start the app."""
-    config = uvicorn.Config("app.main:app", port=5000, log_level="info")
-    server = uvicorn.Server(config)
-    await server.serve()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=5000)
