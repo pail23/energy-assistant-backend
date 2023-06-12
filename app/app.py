@@ -6,32 +6,34 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
-#from aiohttp import web
-from devices import Device
-from devices.homeassistant import (
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+# import socketio
+from fastapi_socketio import SocketManager
+import uvicorn
+import yaml
+
+# from aiohttp import web
+from app.devices import Device
+from app.devices.homeassistant import (
     Home,
     Homeassistant,
     HomeassistantDevice,
     StiebelEltronDevice,
 )
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from app.storage import Database
 
-#import socketio
-from fastapi_socketio import SocketManager
-from storage import Database
-import uvicorn
-import yaml
-
-#sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins="*")
-#ws_app = web.Application()
+# sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins="*")
+# ws_app = web.Application()
 app = FastAPI(title="energy-assistant")
 sio = SocketManager(app=app, cors_allowed_origins="*")
-app.mount("/", StaticFiles(directory="client", html = True), name="frontend")
-#sio.attach(ws_app)
+app.mount("/", StaticFiles(directory="client", html=True), name="frontend")
+# sio.attach(ws_app)
 
-async def async_handle_state_update(home:Home, hass: Homeassistant, db: Database) -> None:
+
+async def async_handle_state_update(home: Home, hass: Homeassistant, db: Database) -> None:
     """Read the values from home assistant and process the update."""
     try:
         hass.update_states()
@@ -41,14 +43,16 @@ async def async_handle_state_update(home:Home, hass: Homeassistant, db: Database
             if home:
                 await asyncio.gather(sio.emit('refresh', {'data': get_home_message(home)}), db.store_home_state(home))
             else:
-                logging.error("The variable home is None in async_handle_state_update")
+                logging.error(
+                    "The variable home is None in async_handle_state_update")
         else:
-           logging.error("The variable db is None in async_handle_state_update")
+            logging.error(
+                "The variable db is None in async_handle_state_update")
     except Exception as ex:
         logging.error("error during sending refresh", ex)
 
 
-async def background_task(home:Home, hass: Homeassistant, db: Database) -> None:
+async def background_task(home: Home, hass: Homeassistant, db: Database) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     while True:
@@ -63,17 +67,21 @@ async def background_task(home:Home, hass: Homeassistant, db: Database) -> None:
             await async_handle_state_update(home, hass, db)
         except Exception as ex:
             logging.error("error in the background task: ", ex)
-        #print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
+        # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
 
-def get_self_sufficiency(consumed_solar_energy:float, consumed_energy: float) -> float:
+
+def get_self_sufficiency(consumed_solar_energy: float, consumed_energy: float) -> float:
     """Calulate the self sufficiency value."""
     return min(round(consumed_solar_energy / consumed_energy * 100) if consumed_energy > 0 else 0.0, 100)
+
 
 def get_device_message(device: Device) -> dict:
     """Generate the update data message for a device."""
     if device.energy_snapshot is not None:
-        consumed_energy_today = device.consumed_energy - device.energy_snapshot.consumed_energy
-        consumed_solar_energy_today = device.consumed_solar_energy - device.energy_snapshot.consumed_solar_energy
+        consumed_energy_today = device.consumed_energy - \
+            device.energy_snapshot.consumed_energy
+        consumed_solar_energy_today = device.consumed_solar_energy - \
+            device.energy_snapshot.consumed_solar_energy
     else:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
@@ -99,7 +107,7 @@ def get_device_message(device: Device) -> dict:
     return result
 
 
-def get_home_message(home:Home):
+def get_home_message(home: Home):
     """Generate the update data message for a home."""
     devices_message = []
     for device in home.devices:
@@ -111,8 +119,10 @@ def get_home_message(home:Home):
             heat_pump_message.append(get_device_message(device))
 
     if home.energy_snapshop is not None:
-        consumed_energy_today = home.consumed_energy - home.energy_snapshop.consumed_energy
-        consumed_solar_energy_today = home.consumed_solar_energy - home.energy_snapshop.consumed_solar_energy
+        consumed_energy_today = home.consumed_energy - \
+            home.energy_snapshop.consumed_energy
+        consumed_solar_energy_today = home.consumed_solar_energy - \
+            home.energy_snapshop.consumed_solar_energy
     else:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
@@ -128,7 +138,7 @@ def get_home_message(home:Home):
         "overall": {
             "consumed_solar_energy": home.consumed_solar_energy,
             "consumed_energy": home.consumed_energy,
-            "self_sufficiency": get_self_sufficiency(home.consumed_solar_energy,home.consumed_energy)
+            "self_sufficiency": get_self_sufficiency(home.consumed_solar_energy, home.consumed_energy)
         },
         "today": {
             "consumed_solar_energy":  consumed_solar_energy_today,
@@ -139,7 +149,6 @@ def get_home_message(home:Home):
         "heat_pumps": heat_pump_message
     }
     return json.dumps(home_message)
-
 
 
 @app.sio.event
@@ -174,7 +183,6 @@ async def init_app():
         logfilename = 'energy-assistant.log'
    # logging.basicConfig(filename=logfilename, encoding='utf-8', level=logging.DEBUG)
 
-
     rfh = RotatingFileHandler(
         filename=logfilename,
         mode='a',
@@ -193,11 +201,10 @@ async def init_app():
         ]
     )
 
-
     logging.info("Hello from Energy Assistant")
 
     db = Database()
-    await db.create_db_engine()
+    # await db.create_db_engine()
     app.db = db
 
     logging.info(f"Loading config file {config_file}")
@@ -231,7 +238,7 @@ async def init_app():
                     home.add_device(StiebelEltronDevice(
                         "Warm Wasser", "binary_sensor.stiebel_eltron_isg_is_heating_boiler", "sensor.stiebel_eltron_isg_consumed_water_heating_total", "sensor.stiebel_eltron_isg_consumed_water_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_water"))
                     home.add_device(StiebelEltronDevice(
-                        "Heizung", "binary_sensor.stiebel_eltron_isg_is_heating","sensor.stiebel_eltron_isg_consumed_heating_total", "sensor.stiebel_eltron_isg_consumed_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_fek"))
+                        "Heizung", "binary_sensor.stiebel_eltron_isg_is_heating", "sensor.stiebel_eltron_isg_consumed_heating_total", "sensor.stiebel_eltron_isg_consumed_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_fek"))
                     home.add_device(HomeassistantDevice(
                         "Tumbler", "sensor.tumbler_power", "sensor.laundry_tumbler_energy", "mdi-tumble-dryer", 0.001))
                     home.add_device(HomeassistantDevice(
@@ -288,6 +295,7 @@ async def shutdown_event():
     """Stop call back to stop the app."""
     print("Shutdown app")
 
+
 @app.get("/api", include_in_schema=False)
 async def health() -> JSONResponse:
     """Test the web server with a ping."""
@@ -296,7 +304,7 @@ async def health() -> JSONResponse:
 
 async def main():
     """Start the app."""
-    config = uvicorn.Config("app:app", port=5000, log_level="info")
+    config = uvicorn.Config("app.app:app", port=5000, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
 

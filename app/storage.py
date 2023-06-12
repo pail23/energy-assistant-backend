@@ -3,11 +3,11 @@
 from datetime import date, timedelta
 import logging
 
-from db import create_all, get_session
-from devices import Device
-from devices.homeassistant import Home
-from models.device import DeviceMeasurement
-from models.home import HomeMeasurement
+from app.db import get_session
+from app.devices import Device
+from app.devices.homeassistant import Home
+from app.models.device import DeviceMeasurement
+from app.models.home import HomeMeasurement
 
 
 async def get_async_session():
@@ -20,12 +20,6 @@ class Database:
 
     def __init__(self):
         """Create a Database instance."""
-
-    async def create_db_engine(self):
-        """Create the database."""
-
-        # TODO: migrate to alembic
-        await create_all()
 
     async def restore_measurement(self, home_measurement: HomeMeasurement, device: Device):
         """Restore a previously stored measurement."""

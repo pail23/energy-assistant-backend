@@ -5,6 +5,16 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: Module",
+      "type": "python",
+      "request": "launch",
+      "module": "app.app",
+      "justMyCode": true,
+      "env": {
+        "APP_CONFIG_FILE": "local"
+      }
+    },
+    {
       "name": "Python: App",
       "type": "python",
       "request": "launch",
