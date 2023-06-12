@@ -8,7 +8,7 @@
       "name": "Python: Module",
       "type": "python",
       "request": "launch",
-      "module": "app.app",
+      "module": "app.main",
       "justMyCode": true,
       "env": {
         "APP_CONFIG_FILE": "local"

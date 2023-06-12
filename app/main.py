@@ -304,10 +304,9 @@ async def health() -> JSONResponse:
 
 async def main():
     """Start the app."""
-    config = uvicorn.Config("app.app:app", port=5000, log_level="info")
+    config = uvicorn.Config("app.main:app", port=5000, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
 
 if __name__ == '__main__':
-    # web.run_app(init_app(), port=5000)
     asyncio.run(main())

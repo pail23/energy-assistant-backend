@@ -24,5 +24,5 @@ COPY ./client ./client
 
 EXPOSE 5000
 ENV APP_CONFIG_FILE=local
-CMD alembic upgrade head && uvicorn --host 0.0.0.0 --port 5000 app.app:app
+CMD alembic upgrade head && uvicorn --host 0.0.0.0 --port 5000 app.main:app
 #CMD gunicorn --bind 0.0.0.0:5000 --worker-class aiohttp.GunicornWebWorker app:init_app --daemon && nginx -g 'daemon off;'
