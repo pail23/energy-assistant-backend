@@ -123,7 +123,7 @@ class HomeMeasurementSchema(BaseModel):
     solar_produced_energy: float
     grid_imported_energy: float
     grid_exported_energy: float
-    date: date
+    measurement_date: date
 
     device_measurements: list[DeviceMeasurementSchema]
 

@@ -3,7 +3,7 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import event, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, SessionTransaction
@@ -24,40 +24,15 @@ async def ac() -> AsyncGenerator:
         yield c
 
 
-@pytest.fixture(scope="session")
-async def setup_db() -> Generator:
-    """Set up the database for testing."""
-    engine = create_async_engine(settings.DB_URI)
-    async with engine.connect() as conn:
-        conn.execute(text("commit"))
-        try:
-            conn.execute(text("drop database test"))
-        except SQLAlchemyError:
-            pass
-        finally:
-            conn.close()
 
-    conn = engine.connect()
-    conn.execute(text("commit"))
-    conn.execute(text("create database test"))
-    conn.close()
-
-    yield
-
-    conn = engine.connect()
-    conn.execute(text("commit"))
-    with contextlib.suppress(SQLAlchemyError):
-        conn.execute(text("drop database test"))
-
-    conn.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def setup_test_db(setup_db: Generator) -> Generator:
+def setup_test_db() -> Generator:
     """Set up the test database."""
-    engine = create_async_engine(settings.DB_URI)
+    engine = create_engine(f"{settings.DB_URI.replace('+aiosqlite', '')}")
 
-    async with engine.begin():
+    with engine.begin():
         Base.metadata.drop_all(engine)
         Base.metadata.create_all(engine)
         yield
