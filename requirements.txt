@@ -1,25 +1,32 @@
-pyyaml
-paho-mqtt
+pyyaml==6.0
 requests
-httpx
+httpx==0.24.1
 
-aiohttp
-SQLAlchemy
+SQLAlchemy==2.0.16
 greenlet==2.0.2
-alembic
-aiosqlite
-pydantic
-python-dotenv
+alembic==1.11.1
+anyio==3.6.2
+aiosqlite==0.19.0
+pydantic==1.10.9
+python-dotenv==1.0.0
 
-fastapi
-fastapi-socketio
-uvicorn[standard]
-websockets
+fastapi==0.97.0
+fastapi-socketio==0.0.10
+uvicorn[standard]==0.22.0
+uvloop==0.17.0
+websockets==11.0.3
 
+# local dev packages
 ruff
 mypy
+mypy-extensions==1.0.0
 pre-commit
 isort
 pytest-asyncio
+pytest-cov
+pytest-env
+pytest-mock
+pytest-randomly
+eqassertions
 types-PyYAML
 types-requests
