@@ -1,8 +1,9 @@
+"""Conf test for Energy Assistant."""
 from typing import AsyncGenerator, Generator
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import event, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, SessionTransaction
@@ -11,6 +12,7 @@ from app.db import get_session
 from app.main import app
 from app.models.base import Base
 from app.settings import Settings
+import contextlib
 
 settings = Settings.parse_obj({})
 
@@ -42,10 +44,9 @@ async def setup_db() -> Generator:
 
     conn = engine.connect()
     conn.execute(text("commit"))
-    try:
+    with contextlib.suppress(SQLAlchemyError):
         conn.execute(text("drop database test"))
-    except SQLAlchemyError:
-        pass
+
     conn.close()
 
 
@@ -85,10 +86,9 @@ async def session() -> AsyncGenerator:
                     conn.sync_connection.begin_nested()
 
         def test_get_session() -> Generator:
-            try:
+            with contextlib.suppress(SQLAlchemyError):
                 yield AsyncSessionLocal
-            except SQLAlchemyError:
-                pass
+
 
         app.dependency_overrides[get_session] = test_get_session
 
