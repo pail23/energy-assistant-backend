@@ -1,9 +1,11 @@
 pyyaml
 paho-mqtt
 requests
+httpx
 
 aiohttp
 SQLAlchemy
+greenlet==2.0.2
 alembic
 aiosqlite
 pydantic
