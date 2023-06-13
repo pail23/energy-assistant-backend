@@ -1,12 +1,13 @@
+"""Tests for the homemeasurement api."""
 import pytest
 from datetime import date, timedelta
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tests.utils import ID_STRING
 
 
 async def setup_data(session: AsyncSession) -> None:
+    """Set up the data in the database."""
     from app.models.home import HomeMeasurement
     from app.models.device import DeviceMeasurement
 
@@ -29,7 +30,7 @@ async def setup_data(session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_home_measurements_read_all(ac: AsyncClient, session: AsyncSession) -> None:
-    """Read all home_measurements"""
+    """Read all home_measurements."""
     # setup
     await setup_data(session)
 
@@ -38,4 +39,4 @@ async def test_home_measurements_read_all(ac: AsyncClient, session: AsyncSession
         "/api/homemeasurements",
     )
     print(response.content)
-    assert 200 == response.status_code
+    assert response.status_code == 200
