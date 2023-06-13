@@ -19,12 +19,14 @@ settings = Settings.parse_obj({})
 
 @pytest.fixture
 async def ac() -> AsyncGenerator:
+    """Test fixture for a client connection to the backend."""
     async with AsyncClient(app=app, base_url="https://test") as c:
         yield c
 
 
 @pytest.fixture(scope="session")
 async def setup_db() -> Generator:
+    """Set up the database for testing."""
     engine = create_async_engine(settings.DB_URI)
     async with engine.connect() as conn:
         conn.execute(text("commit"))
@@ -52,6 +54,7 @@ async def setup_db() -> Generator:
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_db(setup_db: Generator) -> Generator:
+    """Set up the test database."""
     engine = create_async_engine(settings.DB_URI)
 
     async with engine.begin():
@@ -63,6 +66,7 @@ async def setup_test_db(setup_db: Generator) -> Generator:
 
 @pytest.fixture
 async def session() -> AsyncGenerator:
+    """Test fixure for a session."""
     # https://github.com/sqlalchemy/sqlalchemy/issues/5811#issuecomment-756269881
     async_engine = create_async_engine(settings.DB_URI)
     async with async_engine.connect() as conn:

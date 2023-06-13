@@ -6,6 +6,7 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_health(ac: AsyncClient) -> None:
+    """Test the healt check REST endpoint."""
     client = await anext(ac)
     response = await client.get("/check")
     assert response.status_code == 200
