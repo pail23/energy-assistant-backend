@@ -48,4 +48,4 @@ jobs:
             -p no:sugar \
             tests
         env:
-          APP_CONFIG_FILE = test 
+          APP_CONFIG_FILE: test 
