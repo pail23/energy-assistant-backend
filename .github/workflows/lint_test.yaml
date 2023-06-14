@@ -39,6 +39,9 @@ jobs:
           python-version: "3.10"
       - name: Install requirements
         run: python3 -m pip install -r requirements.txt
+      - name: mypy
+        run: |
+          mypy app
       - name: Create client folder
         run: mkdir -p client        
       - name: Run tests
