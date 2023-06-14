@@ -6,14 +6,21 @@ import requests
 
 from . import Device, EnergyIntegrator, HomeEnergySnapshot
 
+UNAVAILABLE = "unavailable"
 
 class State(ABC):
     """Abstract base class for states."""
 
-    def __init__(self, entity_id:str, attributes:dict) -> None:
+    def __init__(self, entity_id:str, state:str, attributes:dict) -> None:
         """Create a State instance."""
         self._attributes = attributes
         self._entity_id = entity_id
+        self._state = state
+        if state==UNAVAILABLE:
+            self._available = False
+        else:
+            self._available = True        
+
 
     @property
     def name(self) -> str:
@@ -24,21 +31,22 @@ class State(ABC):
     @property
     def entity_id(self) -> str:
         return self._entity_id
-
-class NumericState(State):
-    def __init__(self, entity_id:str, state:str, attributes:dict):
-        super().__init__(entity_id, attributes)
-        if state=="unavailable":
-            self._state = None
-        else:
-            try:
-                self._state = float(state)
-            except ValueError:
-                self._state = None
+    
+    @property
+    def available(self) -> bool:
+        """Availability of the state."""
+        return self._available    
+    
+    @property
+    def state(self) -> str:
+        return self._state
 
     @property
-    def state(self) -> Optional[float]:
-        return self._state
+    def numeric_state(self) -> Optional[float]:
+        try:
+            return float(self._state)
+        except ValueError:
+            return None
 
     @property
     def unit(self) -> str:
@@ -47,6 +55,9 @@ class NumericState(State):
         return None
 
 
+class NumericState(State):
+    def __init__(self, entity_id:str, state:str, attributes:dict):
+        super().__init__(entity_id, state, attributes)
 
 
 class StrState(State):
@@ -54,25 +65,8 @@ class StrState(State):
 
     def __init__(self, entity_id:str, state:str, attributes:dict):
         """Create a string state instance."""
-        super().__init__(entity_id, attributes)
-        if state=="unavailable":
-            self._state = None
-        else:
-            self._state = state
-        self._attributes = attributes
-        self._entity_id = entity_id
+        super().__init__(entity_id, state, attributes)
 
-    @property
-    def state(self) -> Optional[str]:
-        """State of the state."""
-        return self._state
-
-    @property
-    def unit(self) -> str:
-        """Unit of the state."""
-        if self._attributes is not None:
-            return str(self._attributes.get("unit_of_measurement"))
-        return None
 
 
 class Homeassistant:
@@ -131,16 +125,16 @@ class HomeassistantDevice(Device):
 
     def update_state(self, hass:Homeassistant, self_sufficiency: float) -> None:
         state = hass.get_state(self._power_entity_id)
-        if state is not None and state.state != "unavailable":
+        if state and state.available:
             self._power = state
         state = hass.get_state(self._consumed_energy_entity_id)
-        if state is not None and state.state != "unavailable":
+        if state and state.available:
             self._consumed_energy = state
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
 
     @property
     def consumed_energy(self) -> float:
-        energy = self._consumed_energy.state if self._consumed_energy is not None and self._consumed_energy.state is not None else 0.0
+        energy = self._consumed_energy.numeric_state if self._consumed_energy is not None and self._consumed_energy.numeric_state is not None else 0.0
         return energy * self._energy_scale
 
     @property
@@ -150,7 +144,7 @@ class HomeassistantDevice(Device):
     @property
     def power(self) -> float:
         """The current power used by the device."""
-        return self._power.state if self._power and self._power.state else 0.0
+        return self._power.numeric_state if self._power and self._power.numeric_state else 0.0
 
 
 
@@ -182,8 +176,8 @@ class StiebelEltronDevice(Device):
     @property
     def consumed_energy(self)-> float:
         """Consumed energy in kWh."""
-        energy =  self._consumed_energy.state if self._consumed_energy and self._consumed_energy.state else 0.0
-        energy_today =  self._consumed_energy_today.state if self._consumed_energy_today and self._consumed_energy_today.state else 0.0
+        energy =  self._consumed_energy.numeric_state if self._consumed_energy and self._consumed_energy.numeric_state else 0.0
+        energy_today =  self._consumed_energy_today.numeric_state if self._consumed_energy_today and self._consumed_energy_today.numeric_state else 0.0
         return energy + energy_today
 
     @property
@@ -201,7 +195,7 @@ class StiebelEltronDevice(Device):
 
     @property
     def actual_temperature(self) -> float:
-        return self._actual_temp.state if self._actual_temp and self._actual_temp.state else 0.0
+        return self._actual_temp.numeric_state if self._actual_temp and self._actual_temp.numeric_state else 0.0
 
     @property
     def icon(self) -> str:
@@ -243,17 +237,17 @@ class Home:
     @property
     def produced_solar_energy(self) -> float:
         """Solar energy in kWh."""
-        return self._produced_solar_energy.state if self._produced_solar_energy and self._produced_solar_energy.state else 0.0
+        return self._produced_solar_energy.numeric_state if self._produced_solar_energy and self._produced_solar_energy.numeric_state else 0.0
 
     @property
     def grid_imported_energy(self) -> float:
         """Imported energy from the grid in kWh."""
-        return self._grid_imported_energy.state if self._grid_imported_energy and self._grid_imported_energy.state else 0.0
+        return self._grid_imported_energy.numeric_state if self._grid_imported_energy and self._grid_imported_energy.numeric_state else 0.0
 
     @property
     def grid_exported_energy(self) -> float:
         """Exported energy from the grid in kWh."""
-        return self._grid_exported_energy.state if self._grid_exported_energy and self._grid_exported_energy.state else 0.0
+        return self._grid_exported_energy.numeric_state if self._grid_exported_energy and self._grid_exported_energy.numeric_state else 0.0
 
     @property
     def consumed_energy(self) ->float:
@@ -315,11 +309,11 @@ class Home:
 
     @property
     def solar_production_power(self)-> float:
-        return self._solar_production_power.state if self._solar_production_power and self._solar_production_power.state else 0.0
+        return self._solar_production_power.numeric_state if self._solar_production_power and self._solar_production_power.numeric_state else 0.0
 
     @property
     def grid_supply_power(self)-> float:
-        return self._grid_imported_power.state if self._grid_imported_power and self._grid_imported_power.state else 0.0
+        return self._grid_imported_power.numeric_state if self._grid_imported_power and self._grid_imported_power.numeric_state else 0.0
 
     def restore_state(self, consumed_solar_energy:float, consumed_energy:float, solar_produced_energy:float, grid_imported_energy:float, grid_exported_energy:float) -> None:
         self._consumed_solar_energy.restore_state(consumed_solar_energy)
