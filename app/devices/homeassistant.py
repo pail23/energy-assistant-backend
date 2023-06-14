@@ -11,7 +11,7 @@ UNAVAILABLE = "unavailable"
 class State(ABC):
     """Abstract base class for states."""
 
-    def __init__(self, entity_id:str, state:str, attributes:dict) -> None:
+    def __init__(self, entity_id:str, state:str, attributes:dict = {}) -> None:
         """Create a State instance."""
         self._attributes = attributes
         self._entity_id = entity_id
@@ -19,7 +19,7 @@ class State(ABC):
         if state==UNAVAILABLE:
             self._available = False
         else:
-            self._available = True        
+            self._available = True
 
 
     @property
@@ -31,12 +31,12 @@ class State(ABC):
     @property
     def entity_id(self) -> str:
         return self._entity_id
-    
+
     @property
     def available(self) -> bool:
         """Availability of the state."""
-        return self._available    
-    
+        return self._available
+
     @property
     def state(self) -> str:
         return self._state
@@ -56,17 +56,24 @@ class State(ABC):
 
 
 class NumericState(State):
-    def __init__(self, entity_id:str, state:str, attributes:dict):
+    def __init__(self, entity_id:str, state:str, attributes:dict = {}):
         super().__init__(entity_id, state, attributes)
 
 
 class StrState(State):
     """String State from Home Assistant."""
 
-    def __init__(self, entity_id:str, state:str, attributes:dict):
+    def __init__(self, entity_id:str, state:str, attributes:dict = {}):
         """Create a string state instance."""
         super().__init__(entity_id, state, attributes)
 
+
+def assign_if_available(old_state: Optional[State], new_state: Optional[State]) -> Optional[State]:
+    """Return new state in case the state is available, otherwise old state."""
+    if new_state and new_state.available:
+        return new_state
+    else:
+        return old_state
 
 
 class Homeassistant:
@@ -92,15 +99,10 @@ class Homeassistant:
             self._states = dict[str, State]()
             for state in states:
                 entity_id = state.get("entity_id")
-                self._states[entity_id] = NumericState(entity_id, state.get("state"), state.get("attributes")) if entity_id.startswith("sensor.") else StrState(entity_id, state.get("state"), state.get("attributes"))
+                self._states[entity_id] = State(entity_id, state.get("state"), state.get("attributes"))
 
-    def get_state(self, entity_id:str) -> Optional[NumericState]:
-        state = self._states.get(entity_id)
-        if state and isinstance(state, NumericState):
-            return state
-        else:
-            return None
-
+    def get_state(self, entity_id:str) -> Optional[State]:
+        return self._states.get(entity_id)
 
     def get_str_state(self, entity_id:str) -> Optional[StrState]:
         state = self._states.get(entity_id)
@@ -118,18 +120,14 @@ class HomeassistantDevice(Device):
         super().__init__(name)
         self._power_entity_id = power_entity_id
         self._consumed_energy_entity_id = consumed_energy_entity_id
-        self._power: Optional[NumericState]= None
-        self._consumed_energy: Optional[NumericState]  = None
+        self._power: Optional[State]= None
+        self._consumed_energy: Optional[State]  = None
         self._energy_scale = energy_scale
         self._icon = icon
 
     def update_state(self, hass:Homeassistant, self_sufficiency: float) -> None:
-        state = hass.get_state(self._power_entity_id)
-        if state and state.available:
-            self._power = state
-        state = hass.get_state(self._consumed_energy_entity_id)
-        if state and state.available:
-            self._consumed_energy = state
+        self._power = assign_if_available(self._power, hass.get_state(self._power_entity_id))
+        self._consumed_energy = assign_if_available(self._consumed_energy, hass.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
 
     @property
@@ -155,23 +153,23 @@ class StiebelEltronDevice(Device):
     def __init__(self, name:str, state_entity_id:str, consumed_energy_entity_id:str, consumed_energy_today_entity_id:str, actual_temp_entity_id:str):
         """Create a Stiebel Eltron heatpump."""
         super().__init__(name)
-        self._consumed_energy_today : Optional[NumericState] = None
+        self._consumed_energy_today : Optional[State] = None
         self._consumed_energy_today_entity_id = consumed_energy_today_entity_id
         self._actual_temp_entity_id = actual_temp_entity_id
-        self._actual_temp: Optional[NumericState] = None
-        self._state :Optional[StrState] = None
+        self._actual_temp: Optional[State] = None
+        self._state :Optional[State] = None
 
         self._state_entity_id = state_entity_id
         self._consumed_energy_entity_id = consumed_energy_entity_id
-        self._consumed_energy: Optional[NumericState] = None
+        self._consumed_energy: Optional[State] = None
         self._icon = "mdi-heat-pump"
 
     def update_state(self, hass:Homeassistant, self_sufficiency: float) -> None:
-        self._state = hass.get_str_state(self._state_entity_id)
-        self._consumed_energy_today = hass.get_state(self._consumed_energy_today_entity_id)
-        self._consumed_energy = hass.get_state(self._consumed_energy_entity_id)
+        self._state =  assign_if_available(self._state, hass.get_state(self._state_entity_id))
+        self._consumed_energy_today = assign_if_available(self._consumed_energy_today, hass.get_state(self._consumed_energy_today_entity_id))
+        self._consumed_energy = assign_if_available(self._consumed_energy, hass.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
-        self._actual_temp = hass.get_state(self._actual_temp_entity_id)
+        self._actual_temp = assign_if_available(self._actual_temp, hass.get_state(self._actual_temp_entity_id))
 
     @property
     def consumed_energy(self)-> float:
@@ -212,13 +210,13 @@ class Home:
         self._grid_imported_energy_entity_id = grid_import_energy_entity_id
         self._grid_exported_energy_entity_id = grid_export_energy_entity_id
 
-        self._solar_production_power: Optional[NumericState] = None
-        self._grid_imported_power : Optional[NumericState] = None
+        self._solar_production_power: Optional[State] = None
+        self._grid_imported_power : Optional[State] = None
         self._consumed_energy:float = 0.0
 
-        self._grid_exported_energy : Optional[NumericState] = None
-        self._grid_imported_energy : Optional[NumericState] = None
-        self._produced_solar_energy: Optional[NumericState] = None
+        self._grid_exported_energy : Optional[State] = None
+        self._grid_imported_energy : Optional[State] = None
+        self._produced_solar_energy: Optional[State] = None
 
 
         self._last_consumed_solar_energy = None
@@ -285,13 +283,13 @@ class Home:
 
 
     def update_state_from_hass(self, hass:Homeassistant) -> None:
-        self._solar_production_power = hass.get_state(self._solar_power_entity_id)
-        self._grid_imported_power = hass.get_state(self._grid_supply_power_entity_id)
+        self._solar_production_power = assign_if_available(self._solar_production_power, hass.get_state(self._solar_power_entity_id))
+        self._grid_imported_power = assign_if_available(self._grid_imported_power, hass.get_state(self._grid_supply_power_entity_id))
 
+        self._produced_solar_energy = assign_if_available(self._produced_solar_energy, hass.get_state(self._solar_energy_entity_id))
+        self._grid_imported_energy = assign_if_available(self._grid_imported_energy, hass.get_state(self._grid_imported_energy_entity_id))
+        self._grid_exported_energy = assign_if_available(self._grid_exported_energy, hass.get_state(self._grid_exported_energy_entity_id))
 
-        self._produced_solar_energy = hass.get_state(self._solar_energy_entity_id)
-        self._grid_imported_energy = hass.get_state(self._grid_imported_energy_entity_id)
-        self._grid_exported_energy = hass.get_state(self._grid_exported_energy_entity_id)
         self._consumed_energy = self.grid_imported_energy - self.grid_exported_energy +  self.produced_solar_energy
         self._consumed_solar_energy.add_measurement(self._consumed_energy, self.self_sufficiency)
 
@@ -317,6 +315,12 @@ class Home:
 
     def restore_state(self, consumed_solar_energy:float, consumed_energy:float, solar_produced_energy:float, grid_imported_energy:float, grid_exported_energy:float) -> None:
         self._consumed_solar_energy.restore_state(consumed_solar_energy)
+
+        self._consumed_energy = consumed_energy
+        self._produced_solar_energy = State(self._solar_energy_entity_id, str(solar_produced_energy))
+        self._grid_imported_energy = State(self._grid_imported_energy_entity_id, str(grid_imported_energy))
+        self._grid_exported_energy = State(self._grid_exported_energy_entity_id, str(grid_exported_energy))
+
         self.set_snapshot(consumed_solar_energy, consumed_energy, solar_produced_energy, grid_imported_energy, grid_exported_energy)
 
     def set_snapshot(self, consumed_solar_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float) -> None:
