@@ -74,7 +74,7 @@ class HomeMeasurement(Base):
         return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
     @classmethod
-    async def create(cls, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, date: date, device_measurements: list[DeviceMeasurement]) -> HomeMeasurement:
+    async def create(cls, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, measurement_date: date, device_measurements: list[DeviceMeasurement]) -> HomeMeasurement:
         """Create a home measurement."""
         home_measurement = HomeMeasurement(
             name=name,
@@ -83,7 +83,7 @@ class HomeMeasurement(Base):
             solar_produced_energy=solar_produced_energy,
             grid_imported_energy=grid_imported_energy,
             grid_exported_energy=grid_exported_energy,
-            date=date,
+            measurement_date=measurement_date,
             device_measurements=device_measurements
         )
         session.add(home_measurement)
@@ -94,7 +94,7 @@ class HomeMeasurement(Base):
             raise RuntimeError()
         return new
 
-    async def update(self, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, date: date) -> None:
+    async def update(self, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, measurement_date: date) -> None:
         """Update a home measurement."""
         self.name = name
         self.solar_consumed_energy = solar_consumed_energy
@@ -102,7 +102,7 @@ class HomeMeasurement(Base):
         self.solar_produced_energy = solar_produced_energy
         self.grid_imported_energy = grid_imported_energy
         self.grid_exported_energy = grid_exported_energy
-        self.measurement_date = date
+        self.measurement_date = measurement_date
         # self.device_measurements = device_measurements
         await session.flush()
 

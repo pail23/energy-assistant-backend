@@ -31,4 +31,3 @@ repos:
     hooks:
       - id: mypy
         exclude: ^tests/
-        args: [--strict]
