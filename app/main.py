@@ -7,9 +7,10 @@ from logging.handlers import RotatingFileHandler
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_socketio import SocketManager  # type: ignore
+from fastapi_socketio import SocketManager
 import yaml
 
 from app.api.main import router as api_router
@@ -24,8 +25,21 @@ from app.storage import Database
 
 app = FastAPI(title="energy-assistant")
 sio = SocketManager(app=app, cors_allowed_origins="*")
-app.include_router(api_router, prefix="/api")
 
+origins = [
+    "http://localhost",
+    "http://localhost:5000",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router, prefix="/api")
 
 
 
