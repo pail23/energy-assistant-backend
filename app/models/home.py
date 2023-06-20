@@ -74,6 +74,16 @@ class HomeMeasurement(Base):
         return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
     @classmethod
+    async def read_before_date(
+            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
+        """Read last home measurement by date."""
+        stmt = select(cls).where(
+            cls.measurement_date<measurement_date)
+        if include_device_measurements:
+            stmt = stmt.options(selectinload(cls.device_measurements))
+        return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
+
+    @classmethod
     async def create(cls, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, measurement_date: date, device_measurements: list[DeviceMeasurement]) -> HomeMeasurement:
         """Create a home measurement."""
         home_measurement = HomeMeasurement(

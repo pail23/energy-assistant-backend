@@ -1,4 +1,5 @@
 """Use cases for home measurements."""
+from datetime import date
 from typing import AsyncIterator
 
 from fastapi import HTTPException
@@ -32,6 +33,37 @@ class ReadHomeMeasurement:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement = await HomeMeasurement.read_by_id(session, home_measurement_id, include_device_measurements=True)
+            if not home_measurement:
+                raise HTTPException(status_code=404)
+            return HomeMeasurementSchema.from_orm(home_measurement)
+
+
+class ReadHomeMeasurementByDate:
+    """Read a home measurement by date use case."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Create a read home measurement use case."""
+        self.async_session = session
+
+    async def execute(self, measurement_date: date) -> HomeMeasurementSchema:
+        """Execute the read home measurement use case."""
+        async with self.async_session() as session:
+            home_measurement = await HomeMeasurement.read_by_date(session, measurement_date, include_device_measurements=True)
+            if not home_measurement:
+                raise HTTPException(status_code=404)
+            return HomeMeasurementSchema.from_orm(home_measurement)
+
+class ReadHomeMeasurementLastBeforeDate:
+    """Read the last home measurement before a date use case."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Create a read home measurement use case."""
+        self.async_session = session
+
+    async def execute(self, measurement_date: date) -> HomeMeasurementSchema:
+        """Execute the read home measurement use case."""
+        async with self.async_session() as session:
+            home_measurement = await HomeMeasurement.read_before_date(session, measurement_date, include_device_measurements=True)
             if not home_measurement:
                 raise HTTPException(status_code=404)
             return HomeMeasurementSchema.from_orm(home_measurement)

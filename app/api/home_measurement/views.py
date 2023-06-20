@@ -1,5 +1,7 @@
 """Views for home measurement API."""
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, Path, Request
 
 from app.models.home import HomeMeasurementSchema
@@ -9,6 +11,8 @@ from .use_cases import (
     DeleteHomeMeasurement,
     ReadAllHomeMeasurement,
     ReadHomeMeasurement,
+    ReadHomeMeasurementByDate,
+    ReadHomeMeasurementLastBeforeDate,
 )
 
 router = APIRouter(prefix="/homemeasurements")
@@ -33,6 +37,31 @@ async def read(
 ) -> HomeMeasurementSchema:
     """REST end pont for read a home measurement."""
     return await use_case.execute(home_measurement_id)
+
+@router.get(
+    "/by_date/{measurement_date}",
+    response_model=ReadHomeMeasurementResponse,
+)
+async def read_by_date(
+    request: Request,
+    measurement_date: date = Path(..., description=""),
+    use_case: ReadHomeMeasurementByDate = Depends(ReadHomeMeasurementByDate),
+) -> HomeMeasurementSchema:
+    """REST end pont for read a home measurement by date."""
+    return await use_case.execute(measurement_date)
+
+
+@router.get(
+    "/before_date/{measurement_date}",
+    response_model=ReadHomeMeasurementResponse,
+)
+async def read_before_date(
+    request: Request,
+    measurement_date: date = Path(..., description=""),
+    use_case: ReadHomeMeasurementLastBeforeDate = Depends(ReadHomeMeasurementLastBeforeDate),
+) -> HomeMeasurementSchema:
+    """REST end pont for read the last home measurement before a date."""
+    return await use_case.execute(measurement_date)
 
 
 @router.delete("/{HomeMeasurement_id}", status_code=204)
