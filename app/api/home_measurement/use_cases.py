@@ -68,7 +68,6 @@ class ReadHomeMeasurementLastBeforeDate:
                 raise HTTPException(status_code=404)
             return HomeMeasurementSchema.from_orm(home_measurement)
 
-
 class DeleteHomeMeasurement:
     """Delete a home measurement use case."""
 

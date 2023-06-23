@@ -1,29 +1,26 @@
 """Tests for the homemeasurement api."""
-import pytest
-from datetime import date, timedelta
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import date
 
+from httpx import AsyncClient
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def setup_data(session: AsyncSession) -> None:
     """Set up the data in the database."""
-    from app.models.home import HomeMeasurement
     from app.models.device import DeviceMeasurement
+    from app.models.home import HomeMeasurement
 
+    dates = [date(2023, 1, 9), date(2023, 1, 10), date(2023, 1, 11)]
+    for m, d in enumerate(dates):
+        home_measurement = HomeMeasurement(name="my home", measurement_date=d, consumed_energy=123 + m, solar_consumed_energy=120 + 0.5 * m, solar_produced_energy=150 + m, grid_imported_energy=1123 + m, grid_exported_energy=1540 + m, device_measurements=[])
+        session.add(home_measurement)
+        await session.flush()
+        for i in range(0,3):
+            device = DeviceMeasurement(name=f"Device {i}", home_measurement_id=home_measurement.id, consumed_energy=2 + 0.5 * i, solar_consumed_energy=1 + i )
+            session.add(device)
+        await session.flush()
 
-    yesterday = date.today() - timedelta(days=1)
-    home_measurement1 = HomeMeasurement(name="HomeMeasurement 1", measurement_date=yesterday, consumed_energy=123, solar_consumed_energy=120, solar_produced_energy=150, grid_imported_energy=1123, grid_exported_energy=1540, device_measurements=[])
-    home_measurement2 = HomeMeasurement(name="HomeMeasurement 2", measurement_date=date.today(), consumed_energy=123, solar_consumed_energy=120, solar_produced_energy=150, grid_imported_energy=1123, grid_exported_energy=1540, device_measurements=[])
-    session.add_all([home_measurement1, home_measurement2])
-    await session.flush()
-
-
-    device1 = DeviceMeasurement(name="DeviceMeasurement 1", home_measurement_id=home_measurement1.id, consumed_energy=2, solar_consumed_energy=1 )
-    device2 = DeviceMeasurement(name="DeviceMeasurement 2", home_measurement_id=home_measurement1.id, consumed_energy=2, solar_consumed_energy=1 )
-    device3 = DeviceMeasurement(name="DeviceMeasurement 3", home_measurement_id=home_measurement2.id, consumed_energy=2, solar_consumed_energy=1 )
-    session.add_all([device1, device2, device3])
-    await session.flush()
 
     await session.commit()
 
@@ -37,6 +34,20 @@ async def test_home_measurements_read_all(ac: AsyncClient, session: AsyncSession
     # execute
     response = await ac.get(
         "/api/homemeasurements",
+    )
+    print(response.content)
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_home_measurements_read_difference(ac: AsyncClient, session: AsyncSession) -> None:
+    """Read all home_measurements."""
+    # setup
+    await setup_data(session)
+
+    # execute
+    response = await ac.get(
+        "/api/history/difference/2023-01-10?to_date=2023-01-09",
     )
     print(response.content)
     assert response.status_code == 200

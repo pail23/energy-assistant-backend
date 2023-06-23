@@ -55,6 +55,15 @@ class HomeMeasurement(Base):
         return await session.scalar(stmt.order_by(cls.id))
 
     @classmethod
+    async def read_first(
+            cls, session: AsyncSession, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
+        """Read last home measurement by date."""
+        stmt = select(cls)
+        if include_device_measurements:
+            stmt = stmt.options(selectinload(cls.device_measurements))
+        return await session.scalar(stmt.order_by(cls.measurement_date).limit(1))
+
+    @classmethod
     async def read_last(
             cls, session: AsyncSession, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
         """Read last home measurement."""
@@ -82,6 +91,8 @@ class HomeMeasurement(Base):
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
         return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
+
+
 
     @classmethod
     async def create(cls, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, measurement_date: date, device_measurements: list[DeviceMeasurement]) -> HomeMeasurement:
