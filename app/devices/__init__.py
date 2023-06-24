@@ -159,6 +159,12 @@ class Device(ABC):
 
     @property
     @abstractmethod
+    def available(self) -> float:
+        """Is the device availabe?."""
+        pass
+
+    @property
+    @abstractmethod
     def icon(self) -> str:
         """Icon for the device."""
         pass

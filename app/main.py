@@ -100,6 +100,7 @@ def get_device_message(device: Device) -> dict:
         "type": device.__class__.__name__,
         "icon": device.icon,
         "power": device.power,
+        "available": device.available,
         "overall": {
             "consumed_solar_energy": device.consumed_solar_energy,
             "consumed_energy": device.consumed_energy,

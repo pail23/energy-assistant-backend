@@ -125,6 +125,11 @@ class HomeassistantDevice(Device):
         """The current power used by the device."""
         return self._power.numeric_state if self._power else 0.0
 
+    @property
+    def available(self) -> bool:
+        """Is the device available?."""
+        return self._consumed_energy  is not None and self._consumed_energy.available and self._power is not None and self._power.available
+
 
 
 STIEBEL_ELTRON_POWER = 5000
@@ -179,6 +184,11 @@ class StiebelEltronDevice(Device):
     @property
     def icon(self) -> str:
         return self._icon
+
+    @property
+    def available(self) -> bool:
+        """Is the device available?."""
+        return self._consumed_energy is not None and self._consumed_energy.available and self._consumed_energy_today is not None and self._consumed_energy_today.available and self._actual_temp is not None and self._actual_temp.available and self._state is not None and self._state.available
 
 class Home:
     """The home."""
