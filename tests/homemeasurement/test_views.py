@@ -51,3 +51,10 @@ async def test_home_measurements_read_difference(ac: AsyncClient, session: Async
     )
     print(response.content)
     assert response.status_code == 200
+
+
+    response = await ac.get(
+        "/api/history/difference/2022-01-10?to_date=2023-01-09",
+    )
+    print(response.content)
+    assert response.status_code == 200
