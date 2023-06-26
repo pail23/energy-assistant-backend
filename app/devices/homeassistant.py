@@ -1,5 +1,6 @@
 from abc import ABC
 from datetime import datetime
+import logging
 from typing import Optional
 
 import requests  # type: ignore
@@ -93,18 +94,32 @@ class Homeassistant:
     def get_state(self, entity_id:str) -> Optional[State]:
         return self._states.get(entity_id)
 
+
+class DeviceConfigException(Exception):
+    pass
+
+def get_config_param(config: dict, param: str) -> str:
+    """Get a config paramter as string or raise an exception if the parameter is not available."""
+    result = config.get(param)
+    if result is None:
+        raise DeviceConfigException(f"Parameter {param} is missing in the configuration")
+    else:
+        return str(result)
+
 class HomeassistantDevice(Device):
     """A generic Homeassistant device."""
 
-    def __init__(self, name:str, power_entity_id:str, consumed_energy_entity_id:str, icon:str,  energy_scale: float = 1) -> None:
+    def __init__(self, config: dict) -> None:
         """Create a generic Homeassistant device."""
-        super().__init__(name)
-        self._power_entity_id = power_entity_id
-        self._consumed_energy_entity_id = consumed_energy_entity_id
+        super().__init__(get_config_param(config, "name"))
+        self._power_entity_id : str = get_config_param(config, "power")
+        self._consumed_energy_entity_id : str = get_config_param(config, "energy")
         self._power: Optional[State]= None
         self._consumed_energy: Optional[State]  = None
-        self._energy_scale = energy_scale
-        self._icon = icon
+        scale = config.get("energy_scale")
+        self._energy_scale : float = float(scale) if scale is not None else 1
+        icon = config.get("icon")
+        self._icon : str = str(icon) if icon is not None else "mdi-home"
 
     def update_state(self, hass:Homeassistant, self_sufficiency: float) -> None:
         self._power = assign_if_available(self._power, hass.get_state(self._power_entity_id))
@@ -136,17 +151,17 @@ STIEBEL_ELTRON_POWER = 5000
 class StiebelEltronDevice(Device):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
-    def __init__(self, name:str, state_entity_id:str, consumed_energy_entity_id:str, consumed_energy_today_entity_id:str, actual_temp_entity_id:str):
+    def __init__(self, config: dict):
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(name)
+        super().__init__(get_config_param(config, "name"))
         self._consumed_energy_today : Optional[State] = None
-        self._consumed_energy_today_entity_id = consumed_energy_today_entity_id
-        self._actual_temp_entity_id = actual_temp_entity_id
+        self._consumed_energy_today_entity_id : str = get_config_param(config, "energy_today")
+        self._actual_temp_entity_id : str = get_config_param(config, "temperature")
         self._actual_temp: Optional[State] = None
         self._state :Optional[State] = None
 
-        self._state_entity_id = state_entity_id
-        self._consumed_energy_entity_id = consumed_energy_entity_id
+        self._state_entity_id : str = get_config_param(config, "state")
+        self._consumed_energy_entity_id : str = get_config_param(config, "energy_total")
         self._consumed_energy: Optional[State] = None
         self._icon = "mdi-heat-pump"
 
@@ -193,13 +208,13 @@ class StiebelEltronDevice(Device):
 class Home:
     """The home."""
 
-    def __init__(self, name:str, solar_power_entity_id:str, grid_supply_power_entity_id:str, solar_energy_entity_id:str, grid_import_energy_entity_id:str, grid_export_energy_entity_id:str) ->None:
-        self._name = name
-        self._solar_power_entity_id = solar_power_entity_id
-        self._grid_supply_power_entity_id = grid_supply_power_entity_id
-        self._solar_energy_entity_id = solar_energy_entity_id
-        self._grid_imported_energy_entity_id = grid_import_energy_entity_id
-        self._grid_exported_energy_entity_id = grid_export_energy_entity_id
+    def __init__(self, config: dict) ->None:
+        self._name : str = get_config_param(config, "name")
+        self._solar_power_entity_id: str = get_config_param(config, "solar_power")
+        self._grid_supply_power_entity_id : str = get_config_param(config, "grid_supply_power")
+        self._solar_energy_entity_id : str = get_config_param(config, "solar_energy")
+        self._grid_imported_energy_entity_id :str = get_config_param(config, "imported_energy")
+        self._grid_exported_energy_entity_id :str = get_config_param(config, "exported_energy")
 
         self._solar_production_power: Optional[State] = None
         self._grid_imported_power : Optional[State] = None
@@ -214,7 +229,16 @@ class Home:
         self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshop: Optional[HomeEnergySnapshot] = None
         self.devices = list[Device]()
-
+        config_devices = config.get("devices")
+        if config_devices is not None:
+            for config_device in config_devices:
+                type = config_device.get("type")
+                if type == "homeassistant":
+                    self.devices.append(HomeassistantDevice(config_device))
+                elif type == "stiebel-eltron":
+                    self.devices.append(StiebelEltronDevice(config_device))
+                else:
+                    logging.error(f"Unknown device type {type} in configuration")
 
     def add_device(self, device: Device) -> None:
         self.devices.append(device)
@@ -254,7 +278,7 @@ class Home:
         if result > 0:
             return result
         else:
-            return 0
+                return 0
 
     @property
     def solar_self_consumption_power(self) -> float:

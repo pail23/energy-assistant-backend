@@ -10,3 +10,44 @@ homeassistant:
 
 home:
   name: "Stadel 15"
+  solar_power: sensor.solaredge_i1_ac_power
+  solar_energy: sensor.solaredge_i1_ac_energy_kwh
+  grid_supply_power: sensor.solaredge_m1_ac_power
+  imported_energy: sensor.solaredge_m1_imported_kwh
+  exported_energy: sensor.solaredge_m1_exported_kwh
+  devices:
+    - name: Keba
+      type: homeassistant
+      icon: mdi-car-electric
+      power: sensor.keba_charge_power
+      energy: sensor.keba_total_charged_energy
+    - name: Tumbler
+      type: homeassistant
+      icon: mdi-tumble-dryer
+      power: sensor.tumbler_power
+      energy: sensor.laundry_tumbler_energy
+      energy_scale: 0.001
+    - name: Desk
+      type: homeassistant
+      icon: mdi-desk
+      power: sensor.officedesk_power
+      energy: sensor.desk_energy
+      energy_scale: 0.001
+    - name: Rack
+      type: homeassistant
+      icon: mdi-server-network
+      power: sensor.rack_power
+      energy: sensor.rack_energy
+      energy_scale: 0.001
+    - name: Warm Wasser
+      type: stiebel-eltron
+      state: binary_sensor.stiebel_eltron_isg_is_heating_boiler
+      energy_today: sensor.stiebel_eltron_isg_consumed_water_heating_today
+      energy_total: sensor.stiebel_eltron_isg_consumed_water_heating_total
+      temperature: sensor.stiebel_eltron_isg_actual_temperature_water
+    - name: Heizung
+      type: stiebel-eltron
+      state: binary_sensor.stiebel_eltron_isg_is_heating
+      energy_today: sensor.stiebel_eltron_isg_consumed_heating_today
+      energy_total: sensor.stiebel_eltron_isg_consumed_heating_total
+      temperature: sensor.stiebel_eltron_isg_actual_temperature_fek

@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     DB_URI: str
     ECHO_SQL: bool
+    CONFIG_FILE: str
+    LOG_FILE: str
 
     class Config:
         """Config for the Energy Assistant Settings."""

@@ -11,18 +11,7 @@
       "module": "app.main",
       "justMyCode": true,
       "env": {
-        "APP_CONFIG_FILE": "local"
-      }
-    },
-    {
-      "name": "Python: App",
-      "type": "python",
-      "request": "launch",
-      "program": "./app/app.py",
-      "console": "integratedTerminal",
-      "justMyCode": true,
-      "env": {
-        "APP_CONFIG_FILE": "local"
+        "APP_CONFIG_FILE": "develop"
       }
     },
     {
@@ -31,20 +20,6 @@
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
-      "justMyCode": true
-    },
-    {
-      "name": "Python: Flask",
-      "type": "python",
-      "request": "launch",
-      "module": "flask",
-      "env": {
-        "FLASK_CONFIGFILE": "energy_assistant.yaml",
-        "FLASK_APP": "app/app-flask.py",
-        "FLASK_DEBUG": "1"
-      },
-      "args": ["run", "--no-debugger", "--no-reload"],
-      "jinja": true,
       "justMyCode": true
     }
   ]

@@ -4,7 +4,6 @@ from datetime import date
 import json
 import logging
 from logging.handlers import RotatingFileHandler
-import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,12 +14,8 @@ import yaml
 
 from app.api.main import router as api_router
 from app.devices import Device
-from app.devices.homeassistant import (
-    Home,
-    Homeassistant,
-    HomeassistantDevice,
-    StiebelEltronDevice,
-)
+from app.devices.homeassistant import Home, Homeassistant, StiebelEltronDevice
+from app.settings import settings
 from app.storage import Database
 
 app = FastAPI(title="energy-assistant")
@@ -181,18 +176,8 @@ async def init_app() -> None:
     app.hass = None # type: ignore
     app.db = None # type: ignore
 
-    # opts, args = getopt.getopt(sys.argv[1:],"c:",["config="])
-    config_file = "/config/energy_assistant.yaml"
-   # for opt, arg in opts:
-   #   if opt in ("-c", "--config"):
-   #      config_file = arg
-
-    if config_file is not None:
-        logfilename = os.path.join(os.path.dirname(
-            config_file), 'energy-assistant.log')
-    else:
-        logfilename = 'energy-assistant.log'
-   # logging.basicConfig(filename=logfilename, encoding='utf-8', level=logging.DEBUG)
+    config_file = settings.CONFIG_FILE # "/config/energy_assistant.yaml"
+    logfilename = settings.LOG_FILE
 
     rfh = RotatingFileHandler(
         filename=logfilename,
@@ -214,7 +199,6 @@ async def init_app() -> None:
     logging.info("Hello from Energy Assistant")
 
     db = Database()
-    # await db.create_db_engine()
     app.db = db # type: ignore
 
     logging.info(f"Loading config file {config_file}")
@@ -240,25 +224,9 @@ async def init_app() -> None:
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
-                    home = Home(home_config.get("name"), "sensor.solaredge_i1_ac_power",
-                                "sensor.solaredge_m1_ac_power", "sensor.solaredge_i1_ac_energy_kwh", "sensor.solaredge_m1_imported_kwh", "sensor.solaredge_m1_exported_kwh")
+                    home = Home(home_config)
                     app.home = home # type: ignore
-                    home.add_device(HomeassistantDevice(
-                        "Keba", "sensor.keba_charge_power", "sensor.keba_total_charged_energy", "mdi-car-electric"))
-                    home.add_device(StiebelEltronDevice(
-                        "Warm Wasser", "binary_sensor.stiebel_eltron_isg_is_heating_boiler", "sensor.stiebel_eltron_isg_consumed_water_heating_total", "sensor.stiebel_eltron_isg_consumed_water_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_water"))
-                    home.add_device(StiebelEltronDevice(
-                        "Heizung", "binary_sensor.stiebel_eltron_isg_is_heating", "sensor.stiebel_eltron_isg_consumed_heating_total", "sensor.stiebel_eltron_isg_consumed_heating_today", "sensor.stiebel_eltron_isg_actual_temperature_fek"))
-                    home.add_device(HomeassistantDevice(
-                        "Tumbler", "sensor.tumbler_power", "sensor.laundry_tumbler_energy", "mdi-tumble-dryer", 0.001))
-                    home.add_device(HomeassistantDevice(
-                        "Desk", "sensor.officedesk_power", "sensor.desk_energy", "mdi-desk", 0.001))
-                    home.add_device(HomeassistantDevice(
-                        "Server Rack", "sensor.rack_power", "sensor.rack_energy", "mdi-server-network", 0.001))
-
                     await db.restore_home_state(home)
-                    # home.update_state_from_hass(hass)
-                    # await async_handle_state_update(home, hass, db)
 
                     """
                     mqtt_config = config.get("mqtt")
