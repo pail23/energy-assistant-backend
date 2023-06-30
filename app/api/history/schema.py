@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from pydantic import BaseModel
 
 
@@ -9,6 +11,8 @@ class DeviceMeasurementDifferenceSchema(BaseModel):
     """Schema class for a device measurement."""
 
     name: str
+    device_id: uuid.UUID
+
     solar_consumed_energy: float
     consumed_energy: float
 

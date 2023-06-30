@@ -1,6 +1,7 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
 from typing import Optional
+import uuid
 
 
 class Integrator:
@@ -128,9 +129,10 @@ class HomeEnergySnapshot(EnergySnapshot):
 class Device(ABC):
     """A device which tracks energy consumption."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, id: str, name: str) -> None:
         """Create a device."""
         self._name = name
+        self._id = uuid.UUID(id)
         self._consumed_solar_energy = EnergyIntegrator()
        # self._consumed_energy: Optional[float] = None
         self._energy_snapshot: Optional[EnergySnapshot] = None
@@ -139,6 +141,11 @@ class Device(ABC):
     def name(self) -> str:
         """The name of the device."""
         return self._name
+
+    @property
+    def id(self) -> uuid.UUID:
+        """The id of the device."""
+        return self._id
 
     @property
     def consumed_solar_energy(self) -> float:

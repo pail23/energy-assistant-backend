@@ -2,13 +2,14 @@
 
 from datetime import date, timedelta
 import logging
+from typing import Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.db import get_session
 from app.devices import Device
 from app.devices.homeassistant import Home
-from app.models.device import DeviceMeasurement
+from app.models.device import Device as DeviceDTO, DeviceMeasurement
 from app.models.home import HomeMeasurement
 
 
@@ -78,16 +79,59 @@ class Database:
                     home_measurement = await HomeMeasurement.create(session,
                         name=home.name, measurement_date=today, consumed_energy=home.consumed_energy, solar_consumed_energy=home.consumed_solar_energy, solar_produced_energy=home.produced_solar_energy, grid_imported_energy=home.grid_imported_energy, grid_exported_energy=home.grid_exported_energy, device_measurements=[])
                     for device in home.devices:
-                        await DeviceMeasurement.create(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy)
+                        device_dto = await DeviceDTO.read_by_id(session, device.id)
+                        if device_dto is not None:
+                            await DeviceMeasurement.create(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
 
                 else:
                    await home_measurement.update(session, name=home.name, measurement_date=today, consumed_energy=home.consumed_energy, solar_consumed_energy=home.consumed_solar_energy, solar_produced_energy=home.produced_solar_energy, grid_imported_energy=home.grid_imported_energy, grid_exported_energy=home.grid_exported_energy)
                    for device in home.devices:
                         for device_measurement in home_measurement.device_measurements:
                             if device_measurement.name == device.name:
-                                await device_measurement.update(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy)
+                                device_dto = await DeviceDTO.read_by_id(session, device.id)
+                                if device_dto is not None:
+                                    await device_measurement.update(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
                                 break
 
             except Exception as ex:
                 logging.error(
                     "Error while storing state of home", ex)
+
+
+    #TODO: Remove this function
+    def find_device(self, home: Home, name:str) -> Optional[Device]:
+        """Find a device with a certain name."""
+        for device in home.devices:
+            if device.name == name:
+                return device
+        return None
+
+    async def update_devices(self, home: Home) -> None:
+        """Update the devices table in the db based on the configuration."""
+        async_session = await get_async_session()
+        async with async_session.begin() as session:
+            for device in home.devices:
+                try:
+                    device_dto = await DeviceDTO.read_by_id(session, device.id)
+                    if device_dto is not None:
+                        await device_dto.update(session, device.name, device.icon)
+                    else:
+                        await DeviceDTO.create(session, device.id, device.name, device.icon)
+                except Exception as ex:
+                    logging.error(
+                        "Error while udpateing the devices of home", ex)
+            #TODO: Remove this code
+            try:
+                all_device_measurements = DeviceMeasurement.read_all(session)
+                async for device_measurement in all_device_measurements:
+                    device_name = device_measurement.name if device_measurement.name != "Server Rack" else "Rack"
+                    d =  self.find_device(home, device_name)
+                    if d is not None:
+                        device_dto = await DeviceDTO.read_by_id(session, d.id)
+                        print(f"Update {device_measurement.name}")
+                        if device_dto is not None:
+                            await device_measurement.update(session, device_measurement.home_measurement, device_measurement.name, device_measurement.solar_consumed_energy, device_measurement.consumed_energy, device_dto )
+            except Exception as ex:
+                logging.error(
+                    "Error while udpateing the devices of home", ex)
+            print("Finished!")

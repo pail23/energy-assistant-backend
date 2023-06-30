@@ -111,7 +111,7 @@ class HomeassistantDevice(Device):
 
     def __init__(self, config: dict) -> None:
         """Create a generic Homeassistant device."""
-        super().__init__(get_config_param(config, "name"))
+        super().__init__(get_config_param(config, "id"), get_config_param(config, "name"))
         self._power_entity_id : str = get_config_param(config, "power")
         self._consumed_energy_entity_id : str = get_config_param(config, "energy")
         self._power: Optional[State]= None
@@ -153,7 +153,7 @@ class StiebelEltronDevice(Device):
 
     def __init__(self, config: dict):
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(get_config_param(config, "name"))
+        super().__init__(get_config_param(config, "id"), get_config_param(config, "name"))
         self._consumed_energy_today : Optional[State] = None
         self._consumed_energy_today_entity_id : str = get_config_param(config, "energy_today")
         self._actual_temp_entity_id : str = get_config_param(config, "temperature")

@@ -92,6 +92,7 @@ def get_device_message(device: Device) -> dict:
         consumed_solar_energy_today = 0
     result = {
         "name": device.name,
+        "device_id": str(device.id),
         "type": device.__class__.__name__,
         "icon": device.icon,
         "power": device.power,
@@ -226,6 +227,9 @@ async def init_app() -> None:
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config)
                     app.home = home # type: ignore
+
+                    await db.update_devices(home)
+
                     await db.restore_home_state(home)
 
                     """

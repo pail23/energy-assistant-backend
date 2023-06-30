@@ -2,19 +2,78 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import TYPE_CHECKING, AsyncIterator, Optional
+import uuid
 
 from pydantic import BaseModel
 from sqlalchemy import ForeignKey, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
 
 if TYPE_CHECKING:
     from .home import HomeMeasurement
 
 from .base import Base
+
+
+class Device(Base):
+    """Data model for a device."""
+
+    __tablename__ = "devices"
+
+    id : Mapped[uuid.UUID] = mapped_column("id", nullable=False, unique=True, primary_key=True)
+    name: Mapped[str]
+    icon: Mapped[str]
+
+    device_measurements: Mapped[list[DeviceMeasurement]] = relationship(
+        "DeviceMeasurement",
+        back_populates="device",
+        order_by="DeviceMeasurement.id",
+        cascade="save-update, merge, refresh-expire, expunge, delete, delete-orphan",
+    )
+
+    @classmethod
+    async def read_all(cls, session: AsyncSession) -> AsyncIterator[Device]:
+        """Read all devices."""
+        stmt = select(cls)
+        stream = await session.stream_scalars(stmt.order_by(cls.id))
+        async for row in stream:
+            yield row
+
+    @classmethod
+    async def read_by_id(
+        cls, session: AsyncSession, id: uuid.UUID
+    ) -> Optional[Device]:
+        """Read a device by id."""
+        stmt = select(cls).where(cls.id == id)
+        return await session.scalar(stmt.order_by(cls.id))
+
+
+    @classmethod
+    async def create(cls, session: AsyncSession, id: uuid.UUID, name: str, icon: str) -> Device:
+        """Create a device."""
+        device = Device(
+            id = id,
+            name=name,
+            icon = icon
+        )
+        session.add(device)
+        await session.flush()
+        return device
+
+    async def update(self, session: AsyncSession, name: str, icon: str) -> None:
+        """Update a device."""
+        self.name = name
+        self.icon = icon
+        await session.flush()
+
+    @classmethod
+    async def delete(cls, session: AsyncSession, device: Device) -> None:
+        """Delete a device."""
+        await session.delete(device)
+        await session.flush()
+
+
 
 
 class DeviceMeasurement(Base):
@@ -35,16 +94,19 @@ class DeviceMeasurement(Base):
     home_measurement: Mapped[HomeMeasurement] = relationship(
         "HomeMeasurement", back_populates="device_measurements")
 
-    @hybrid_property
-    def date(self) -> date:
-        """Date of a device measurement."""
-        return self.home_measurement.measurement_date
+
+    device_id: Mapped[uuid.UUID] = mapped_column(
+        "device_id", ForeignKey("devices.id"), nullable=False
+    )
+
+    device: Mapped[Device] = relationship(
+        "Device", back_populates="device_measurements")
 
     @classmethod
     async def read_all(cls, session: AsyncSession) -> AsyncIterator[DeviceMeasurement]:
         """Read all device measurements."""
         stmt = select(cls).options(joinedload(
-            cls.home_measurement, innerjoin=True))
+            cls.home_measurement, innerjoin=True)) #TODO: Remove this comment .options(joinedload(cls.device, innerjoin=True))
         stream = await session.stream_scalars(stmt.order_by(cls.id))
         async for row in stream:
             yield row
@@ -72,14 +134,15 @@ class DeviceMeasurement(Base):
             yield row
 
     @classmethod
-    async def create(cls, session: AsyncSession, home_measurement: HomeMeasurement, name: str, solar_consumed_energy: float, consumed_energy: float) -> DeviceMeasurement:
+    async def create(cls, session: AsyncSession, home_measurement: HomeMeasurement, name: str, solar_consumed_energy: float, consumed_energy: float, device: Device) -> DeviceMeasurement:
         """Create a device measurement."""
 
         measurement = DeviceMeasurement(
             name=name,
             home_measurement_id=home_measurement.id,
             solar_consumed_energy=solar_consumed_energy,
-            consumed_energy=consumed_energy
+            consumed_energy=consumed_energy,
+            device_id = device.id
         )
         session.add(measurement)
         await session.flush()
@@ -89,13 +152,15 @@ class DeviceMeasurement(Base):
             raise RuntimeError()
         return new
 
-    async def update(self, session: AsyncSession, home_measurement: HomeMeasurement, name: str, solar_consumed_energy: float, consumed_energy: float) -> None:
+    async def update(self, session: AsyncSession, home_measurement: HomeMeasurement, name: str, solar_consumed_energy: float, consumed_energy: float, device: Device) -> None:
         """Update a device measurement."""
 
         self.home_measurement_id = home_measurement.id
         self.name = name
         self.solar_consumed_energy = solar_consumed_energy
         self.consumed_energy = consumed_energy
+        self.device_id = device.id
+
         await session.flush()
 
     @classmethod
@@ -103,6 +168,18 @@ class DeviceMeasurement(Base):
         """Delete a device measurement."""
         await session.delete(measurement)
         await session.flush()
+
+class DeviceSchema(BaseModel):
+    """Schema class for a device."""
+
+    id: uuid.UUID
+    name: str
+    icon: str
+
+    class Config:
+        """Config class for the Device Measurement Scheme."""
+
+        orm_mode = True
 
 
 class DeviceMeasurementSchema(BaseModel):
@@ -113,7 +190,7 @@ class DeviceMeasurementSchema(BaseModel):
     solar_consumed_energy: float
     consumed_energy: float
     home_measurement_id: int
-    date: date
+    device_id: uuid.UUID
 
     class Config:
         """Config class for the Device Measurement Scheme."""
