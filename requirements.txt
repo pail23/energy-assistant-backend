@@ -2,7 +2,7 @@ pyyaml==6.0
 requests
 httpx==0.24.1
 
-SQLAlchemy==2.0.16
+SQLAlchemy==2.0.17
 greenlet==2.0.2
 alembic==1.11.1
 anyio==3.7.0
@@ -10,7 +10,7 @@ aiosqlite==0.19.0
 pydantic==1.10.9
 python-dotenv==1.0.0
 
-fastapi==0.97.0
+fastapi==0.98.0
 fastapi-socketio==0.0.10
 uvicorn[standard]==0.22.0
 uvloop==0.17.0
