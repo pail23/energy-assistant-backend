@@ -186,7 +186,7 @@ class DeviceMeasurementSchema(BaseModel):
     """Schema class for a device measurement."""
 
     id: int
-    name: str
+    # name: str
     solar_consumed_energy: float
     consumed_energy: float
     home_measurement_id: int

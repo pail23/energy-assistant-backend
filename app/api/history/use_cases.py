@@ -4,10 +4,23 @@ from typing import Union
 
 from fastapi import HTTPException
 
+from app.api.device import OTHER_DEVICE
 from app.db import AsyncSession
 from app.models.home import HomeMeasurement
 
 from .schema import DeviceMeasurementDifferenceSchema, HomeMeasurementDifferenceSchema
+
+
+def add_others_device(home_measurement: HomeMeasurementDifferenceSchema)-> HomeMeasurementDifferenceSchema:
+    """Add the date for the others device."""
+    solar_consumed_energy = home_measurement.solar_consumed_energy
+    consumed_energy = home_measurement.consumed_energy
+    for device_measurement in home_measurement.device_measurements:
+        solar_consumed_energy = solar_consumed_energy - device_measurement.solar_consumed_energy
+        consumed_energy = consumed_energy - device_measurement.consumed_energy
+    other_device = DeviceMeasurementDifferenceSchema( solar_consumed_energy=solar_consumed_energy, consumed_energy=consumed_energy, device_id=OTHER_DEVICE)
+    home_measurement.device_measurements.append(other_device)
+    return home_measurement
 
 
 class ReadHomeMeasurementDifference:
@@ -54,4 +67,4 @@ class ReadHomeMeasurementDifference:
                 grid_imported_energy=home_measurement_to.grid_imported_energy - home_measurement_from.grid_imported_energy,
                 device_measurements=device_measurements)
 
-            return result
+            return add_others_device(result)

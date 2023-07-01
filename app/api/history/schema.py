@@ -10,7 +10,7 @@ from pydantic import BaseModel
 class DeviceMeasurementDifferenceSchema(BaseModel):
     """Schema class for a device measurement."""
 
-    name: str
+    #name: str
     device_id: uuid.UUID
 
     solar_consumed_energy: float

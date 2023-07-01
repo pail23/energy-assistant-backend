@@ -7,6 +7,8 @@ from fastapi import HTTPException
 from app.db import AsyncSession
 from app.models.device import Device, DeviceSchema
 
+from . import OTHER_DEVICE
+
 
 class ReadAllDevices:
     """Read all devices use case."""
@@ -20,6 +22,7 @@ class ReadAllDevices:
         async with self.async_session() as session:
             async for device in Device.read_all(session):
                 yield DeviceSchema.from_orm(device)
+        yield DeviceSchema(id=OTHER_DEVICE, name="Andere", icon="mdi-home")
 
 
 class ReadDevice:

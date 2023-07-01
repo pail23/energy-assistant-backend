@@ -3,6 +3,7 @@ config.yaml
 *.db
 client
 *.log
+*.db.bak
 .mypycache
 
 # Unit test / coverage reports

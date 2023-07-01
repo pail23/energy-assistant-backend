@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_socketio import SocketManager  # type: ignore
 import yaml
 
+from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
 from app.devices import Device
 from app.devices.homeassistant import Home, Homeassistant, StiebelEltronDevice
@@ -35,7 +36,6 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api")
-
 
 
 async def async_handle_state_update(home: Home, hass: Homeassistant, db: Database) -> None:
@@ -91,17 +91,12 @@ def get_device_message(device: Device) -> dict:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
     result = {
-        "name": device.name,
+        # "name": device.name,
         "device_id": str(device.id),
         "type": device.__class__.__name__,
-        "icon": device.icon,
+        # "icon": device.icon,
         "power": device.power,
         "available": device.available,
-        "overall": {
-            "consumed_solar_energy": device.consumed_solar_energy,
-            "consumed_energy": device.consumed_energy,
-            "self_sufficiency": get_self_sufficiency(device.consumed_solar_energy, device.consumed_energy)
-        },
         "today": {
             "consumed_solar_energy":  consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
@@ -116,15 +111,7 @@ def get_device_message(device: Device) -> dict:
 
 def get_home_message(home: Home) -> str:
     """Generate the update data message for a home."""
-    devices_message = []
-    for device in home.devices:
-        if not isinstance(device, StiebelEltronDevice):
-            devices_message.append(get_device_message(device))
-    heat_pump_message = []
-    for device in home.devices:
-        if isinstance(device, StiebelEltronDevice):
-            heat_pump_message.append(get_device_message(device))
-
+    devices_messages = []
     if home.energy_snapshop is not None:
         consumed_energy_today = home.consumed_energy - \
             home.energy_snapshop.consumed_energy
@@ -133,6 +120,44 @@ def get_home_message(home: Home) -> str:
     else:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
+
+    other_power = home.home_consumption_power
+    other_consumed_energy = consumed_energy_today
+    other_consumed_solar_energy = consumed_solar_energy_today
+    for device in home.devices:
+        if not isinstance(device, StiebelEltronDevice):
+            device_message = get_device_message(device)
+            devices_messages.append(device_message)
+            other_power = other_power - device.power
+            other_consumed_energy = other_consumed_energy - \
+                device_message["today"]["consumed_energy"]
+            other_consumed_solar_energy = other_consumed_solar_energy - \
+                device_message["today"]["consumed_solar_energy"]
+
+    heat_pump_message = []
+    for device in home.devices:
+        if isinstance(device, StiebelEltronDevice):
+            device_message = get_device_message(device)
+            heat_pump_message.append(device_message)
+            other_power = other_power - device.power
+            other_consumed_energy = other_consumed_energy - \
+                device_message["today"]["consumed_energy"]
+            other_consumed_solar_energy = other_consumed_solar_energy - \
+                device_message["today"]["consumed_solar_energy"]
+
+    other_device = {
+        "device_id": str(OTHER_DEVICE),
+        "type": "other_device",
+        "power": other_power,
+        "available": True,
+        "today": {
+            "consumed_solar_energy":  other_consumed_solar_energy,
+            "consumed_energy": other_consumed_energy,
+            "self_sufficiency": get_self_sufficiency(other_consumed_solar_energy, other_consumed_energy)
+        },
+    }
+    devices_messages.append(other_device)
+
     home_message = {
         "name": home.name,
         "power": {
@@ -152,20 +177,20 @@ def get_home_message(home: Home) -> str:
             "consumed_energy": consumed_energy_today,
             "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
         },
-        "devices": devices_message,
+        "devices": devices_messages,
         "heat_pumps": heat_pump_message
     }
     return json.dumps(home_message)
 
 
-@app.sio.event # type: ignore
+@app.sio.event  # type: ignore
 async def connect(sid, environ):
     """Handle the connect of a client via socket.io to the server."""
     logging.info(f"connect {sid}")
     await sio.emit('refresh', {'data': get_home_message(app.home)}, room=sid)
 
 
-@app.sio.event # type: ignore
+@app.sio.event  # type: ignore
 def disconnect(sid):
     """Handle the disconnect of a client via socket.io to the server."""
     logging.info(f"Client disconnected {sid}")
@@ -173,11 +198,11 @@ def disconnect(sid):
 
 async def init_app() -> None:
     """Initialize the application."""
-    app.home = None # type: ignore
-    app.hass = None # type: ignore
-    app.db = None # type: ignore
+    app.home = None  # type: ignore
+    app.hass = None  # type: ignore
+    app.db = None  # type: ignore
 
-    config_file = settings.CONFIG_FILE # "/config/energy_assistant.yaml"
+    config_file = settings.CONFIG_FILE  # "/config/energy_assistant.yaml"
     logfilename = settings.LOG_FILE
 
     rfh = RotatingFileHandler(
@@ -200,7 +225,7 @@ async def init_app() -> None:
     logging.info("Hello from Energy Assistant")
 
     db = Database()
-    app.db = db # type: ignore
+    app.db = db  # type: ignore
 
     logging.info(f"Loading config file {config_file}")
     try:
@@ -220,13 +245,13 @@ async def init_app() -> None:
                     token = hass_config.get("token")
                     if url is not None and token is not None:
                         hass = Homeassistant(url, token)
-                        app.hass = hass # type: ignore
+                        app.hass = hass  # type: ignore
                         hass.update_states()
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config)
-                    app.home = home # type: ignore
+                    app.home = home  # type: ignore
 
                     await db.update_devices(home)
 
@@ -268,7 +293,8 @@ async def init_app() -> None:
 async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
-    sio.start_background_task(background_task, app.home, app.hass, app.db) # type: ignore
+    sio.start_background_task(
+        background_task, app.home, app.hass, app.db)  # type: ignore
 
 
 @app.on_event("shutdown")
