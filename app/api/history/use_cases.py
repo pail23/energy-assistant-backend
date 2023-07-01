@@ -52,7 +52,7 @@ class ReadHomeMeasurementDifference:
             for from_device in home_measurement_from.device_measurements:
                 to_device = home_measurement_to.get_device_measurement(from_device.device_id) # home_measurement_to.device_measurements[index]
                 if to_device is not None:
-                    measurement = DeviceMeasurementDifferenceSchema(name = from_device.name, device_id=from_device.device_id,
+                    measurement = DeviceMeasurementDifferenceSchema(device_id=from_device.device_id,
                         solar_consumed_energy=to_device.solar_consumed_energy - from_device.solar_consumed_energy,
                         consumed_energy=to_device.solar_consumed_energy - from_device.solar_consumed_energy)
                     device_measurements.append(measurement)
