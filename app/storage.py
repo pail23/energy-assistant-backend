@@ -120,6 +120,7 @@ class Database:
                 except Exception as ex:
                     logging.error(
                         "Error while udpateing the devices of home", ex)
+            """
             #TODO: Remove this code
             try:
                 all_device_measurements = DeviceMeasurement.read_all(session)
@@ -135,3 +136,4 @@ class Database:
                 logging.error(
                     "Error while udpateing the devices of home", ex)
             print("Finished!")
+            """
