@@ -22,6 +22,8 @@ COPY ./migrations ./migrations
 COPY ./client ./client
 
 
+VOLUME [ "/data" ]
+
 EXPOSE 5000
 ENV APP_CONFIG_FILE=local
 CMD alembic upgrade head && uvicorn --host 0.0.0.0 --port 5000 app.main:app

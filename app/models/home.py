@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import AsyncIterator, Optional
+import uuid
 
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -133,6 +134,12 @@ class HomeMeasurement(Base):
         await session.delete(HomeMeasurement)
         await session.flush()
 
+    def get_device_measurement(self, device_id:uuid.UUID) -> Optional[DeviceMeasurement]:
+        """Find the device measurement of the device with the given id."""
+        for device_measurement in self.device_measurements:
+            if device_measurement.device_id == device_id:
+                return device_measurement
+        return None
 
 class HomeMeasurementSchema(BaseModel):
     """Schema class for a home measurement."""
