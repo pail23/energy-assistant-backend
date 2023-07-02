@@ -145,7 +145,9 @@ class HomeassistantDevice(Device):
         """Is the device available?."""
         return self._consumed_energy  is not None and self._consumed_energy.available and self._power is not None and self._power.available
 
-
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
+        super().restore_state(consumed_solar_energy, consumed_energy)
+        self._consumed_energy = State(self._consumed_energy_entity_id, str(consumed_energy))
 
 STIEBEL_ELTRON_POWER = 5000
 class StiebelEltronDevice(Device):

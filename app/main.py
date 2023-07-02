@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_socketio import SocketManager  # type: ignore
+from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
 
 from app.api.device import OTHER_DEVICE
@@ -17,7 +18,7 @@ from app.api.main import router as api_router
 from app.devices import Device
 from app.devices.homeassistant import Home, Homeassistant, StiebelEltronDevice
 from app.settings import settings
-from app.storage import Database
+from app.storage import Database, get_async_session
 
 app = FastAPI(title="energy-assistant")
 sio = SocketManager(app=app, cors_allowed_origins="*")
@@ -38,7 +39,7 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
-async def async_handle_state_update(home: Home, hass: Homeassistant, db: Database) -> None:
+async def async_handle_state_update(home: Home, hass: Homeassistant, db: Database, session: AsyncSession) -> None:
     """Read the values from home assistant and process the update."""
     try:
         hass.update_states()
@@ -46,7 +47,7 @@ async def async_handle_state_update(home: Home, hass: Homeassistant, db: Databas
         # print("Send refresh: " + get_home_message(home))
         if db:
             if home:
-                await asyncio.gather(sio.emit('refresh', {'data': get_home_message(home)}), db.store_home_state(home))
+                await asyncio.gather(sio.emit('refresh', {'data': get_home_message(home)}), db.store_home_state(home, session))
             else:
                 logging.error(
                     "The variable home is None in async_handle_state_update")
@@ -60,6 +61,7 @@ async def async_handle_state_update(home: Home, hass: Homeassistant, db: Databas
 async def background_task(home: Home, hass: Homeassistant, db: Database) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
+    async_session = await get_async_session()
     while True:
         await sio.sleep(10)
         # delta_t = datetime.now().timestamp()
@@ -69,7 +71,8 @@ async def background_task(home: Home, hass: Homeassistant, db: Database) -> None
             if today != last_update:
                 home.store_energy_snapshot()
             last_update = today
-            await async_handle_state_update(home, hass, db)
+            async with async_session() as session:
+                await async_handle_state_update(home, hass, db, session)
         except Exception as ex:
             logging.error("error in the background task: ", ex)
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
@@ -224,6 +227,7 @@ async def init_app() -> None:
 
     logging.info("Hello from Energy Assistant")
 
+    async_session = await get_async_session()
     db = Database()
     app.db = db  # type: ignore
 
@@ -252,10 +256,10 @@ async def init_app() -> None:
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config)
                     app.home = home  # type: ignore
+                    async with async_session() as session:
+                        await db.update_devices(home, session)
 
-                    await db.update_devices(home)
-
-                    await db.restore_home_state(home)
+                        await db.restore_home_state(home, session)
 
                     """
                     mqtt_config = config.get("mqtt")

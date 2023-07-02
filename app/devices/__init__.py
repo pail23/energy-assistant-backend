@@ -178,7 +178,7 @@ class Device(ABC):
 
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state of the device."""
-        self._consumed_solar_energy.restore_state(consumed_solar_energy * (3600 * 1000))
+        self._consumed_solar_energy.restore_state(consumed_solar_energy)
         self.set_snapshot(consumed_solar_energy, consumed_energy)
 
     def set_snapshot(self, consumed_solar_energy: float, consumed_energy: float) -> None:
