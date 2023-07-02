@@ -6,7 +6,6 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db import get_session
-from app.devices import Device
 from app.devices.homeassistant import Home
 from app.models.device import Device as DeviceDTO, DeviceMeasurement
 from app.models.home import HomeMeasurement
@@ -23,22 +22,6 @@ class Database:
     def __init__(self) -> None:
         """Create a Database instance."""
 
-    async def restore_measurement(self, home_measurement: HomeMeasurement, device: Device) -> None:
-        """Restore a previously stored measurement."""
-        device_measurement = home_measurement.get_device_measurement(device.id)
-        if device_measurement is not None:
-            device.restore_state(
-                device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
-
-
-    async def restore_snapshot(self, home_measurement: HomeMeasurement, device: Device) -> None:
-        """Restore a previously stored snapshot."""
-        device_measurement = home_measurement.get_device_measurement(device.id)
-        if device_measurement is not None:
-            device.set_snapshot(
-                device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
-
-
     async def restore_home_state(self, home: Home, session: AsyncSession) -> None:
         """Restore the state of the home from the database."""
         if home is not None:
@@ -48,8 +31,6 @@ class Database:
                     home.restore_state(
                         home_measurement.solar_consumed_energy, home_measurement.consumed_energy, home_measurement.solar_produced_energy, home_measurement.grid_imported_energy, home_measurement.grid_exported_energy)
 
-                    # yesterday = date.today() - timedelta(days=1)
-                    # .read_by_date(session, yesterday, True)
                     snapshot_measurement = await HomeMeasurement.read_before_date(session, home_measurement.measurement_date, True)
                     if snapshot_measurement is None:
                         snapshot_measurement = home_measurement
@@ -113,20 +94,3 @@ class Database:
             except Exception as ex:
                 logging.error(
                     "Error while udpateing the devices of home", ex)
-        """
-        #TODO: Remove this code
-        try:
-            all_device_measurements = DeviceMeasurement.read_all(session)
-            async for device_measurement in all_device_measurements:
-                device_name = device_measurement.name if device_measurement.name != "Server Rack" else "Rack"
-                d =  self.find_device(home, device_name)
-                if d is not None:
-                    device_dto = await DeviceDTO.read_by_id(session, d.id)
-                    print(f"Update {device_measurement.name}")
-                    if device_dto is not None:
-                        await device_measurement.update(session, device_measurement.home_measurement, device_measurement.name, device_measurement.solar_consumed_energy, device_measurement.consumed_energy, device_dto )
-        except Exception as ex:
-            logging.error(
-                "Error while udpateing the devices of home", ex)
-        print("Finished!")
-        """
