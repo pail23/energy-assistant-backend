@@ -66,12 +66,11 @@ class Database:
             else:
                 await home_measurement.update(session, name=home.name, measurement_date=today, consumed_energy=home.consumed_energy, solar_consumed_energy=home.consumed_solar_energy, solar_produced_energy=home.produced_solar_energy, grid_imported_energy=home.grid_imported_energy, grid_exported_energy=home.grid_exported_energy)
                 for device in home.devices:
-                    for device_measurement in home_measurement.device_measurements:
-                        if device_measurement.name == device.name:
-                            device_dto = await DeviceDTO.read_by_id(session, device.id)
-                            if device_dto is not None:
-                                await device_measurement.update(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
-                            break
+                    device_measurement = home_measurement.get_device_measurement(device.id)
+                    if device_measurement is not None:
+                        device_dto = await DeviceDTO.read_by_id(session, device.id)
+                        if device_dto is not None:
+                            await device_measurement.update(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
             await session.flush()
             await session.commit()
         except Exception as ex:

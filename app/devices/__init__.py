@@ -1,5 +1,6 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
+import logging
 from typing import Optional
 import uuid
 
@@ -61,14 +62,18 @@ class EnergyIntegrator:
             if self._consumed_solar_energy is None:
                 self._consumed_solar_energy = self._last_consumed_energy
             self._consumed_solar_energy = self._consumed_solar_energy + (consumed_energy - self._last_consumed_energy) * self_sufficiency
+            if self._consumed_solar_energy > consumed_energy:
+                logging.error(f"Solar consumption larger than consumption: {self._consumed_solar_energy} > {consumed_energy} ")
+                self._consumed_solar_energy = consumed_energy
         else:
             self._consumed_solar_energy = consumed_energy
         self._last_consumed_energy = consumed_energy
 
 
-    def restore_state(self, state: float) -> None:
+    def restore_state(self, state: float, last_consumed_energy: float) -> None:
         """Restores the integrator value with a previously saved state."""
         self._consumed_solar_energy = state
+        self._last_consumed_energy = last_consumed_energy
 
 class EnergySnapshot:
     """Stores an snapshot of the current energy consumption values."""
@@ -178,7 +183,7 @@ class Device(ABC):
 
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state of the device."""
-        self._consumed_solar_energy.restore_state(consumed_solar_energy)
+        self._consumed_solar_energy.restore_state(consumed_solar_energy, consumed_energy)
         self.set_snapshot(consumed_solar_energy, consumed_energy)
 
     def set_snapshot(self, consumed_solar_energy: float, consumed_energy: float) -> None:

@@ -207,6 +207,10 @@ class StiebelEltronDevice(Device):
         """Is the device available?."""
         return self._consumed_energy is not None and self._consumed_energy.available and self._consumed_energy_today is not None and self._consumed_energy_today.available and self._actual_temp is not None and self._actual_temp.available and self._state is not None and self._state.available
 
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
+        super().restore_state(consumed_solar_energy, consumed_energy)
+        self._consumed_energy = State(self._consumed_energy_entity_id, str(consumed_energy))
+
 class Home:
     """The home."""
 
@@ -331,7 +335,7 @@ class Home:
         return self._grid_imported_power.numeric_state if self._grid_imported_power else 0.0
 
     def restore_state(self, consumed_solar_energy:float, consumed_energy:float, solar_produced_energy:float, grid_imported_energy:float, grid_exported_energy:float) -> None:
-        self._consumed_solar_energy.restore_state(consumed_solar_energy)
+        self._consumed_solar_energy.restore_state(consumed_solar_energy, consumed_energy)
 
         self._consumed_energy = consumed_energy
         self._produced_solar_energy = State(self._solar_energy_entity_id, str(solar_produced_energy))
