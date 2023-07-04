@@ -1,3 +1,7 @@
+ARG TARGETPLATFORM="linux/amd64"
+ARG BUILD_VERSION=latest
+ARG PYTHON_VERSION="3.11"
+
 FROM nginx:stable-alpine
 WORKDIR /app
 RUN apk update && apk add --no-cache python3 && \
@@ -21,6 +25,17 @@ COPY ./app ./app
 COPY ./migrations ./migrations
 COPY ./client ./client
 
+# Required to persist build arg
+ARG BUILD_VERSION
+ARG TARGETPLATFORM
+
+# Set some labels for the Home Assistant add-on
+LABEL \
+    io.hass.version=${BUILD_VERSION} \
+    io.hass.name="Energy Assistant" \
+    io.hass.description="Energy Assistant" \
+    io.hass.platform="${TARGETPLATFORM}" \
+    io.hass.type="addon"
 
 VOLUME [ "/data" ]
 
