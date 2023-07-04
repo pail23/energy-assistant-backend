@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from app.models.device import DeviceSchema
+from app.models.device import DeviceMeasurementSchema, DeviceSchema
 
 
 class ReadDeviceResponse(DeviceSchema):
@@ -17,3 +17,8 @@ class ReadAllDevicesResponse(BaseModel):
     """API Response for reading all deviced."""
 
     devices: list[DeviceSchema]
+
+class ReadDeviceMeasurementsResponse(BaseModel):
+    """API Response for reading home measurements."""
+
+    device_measurements: list[DeviceMeasurementSchema]

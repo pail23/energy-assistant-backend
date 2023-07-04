@@ -7,8 +7,12 @@ from fastapi import APIRouter, Depends, Path, Request
 
 from app.models.device import DeviceSchema
 
-from .schema import ReadAllDevicesResponse, ReadDeviceResponse
-from .use_cases import DeleteDevice, ReadAllDevices, ReadDevice
+from .schema import (
+    ReadAllDevicesResponse,
+    ReadDeviceMeasurementsResponse,
+    ReadDeviceResponse,
+)
+from .use_cases import DeleteDevice, ReadAllDevices, ReadDevice, ReadDeviceMeasurements
 
 router = APIRouter(prefix="/devices")
 
@@ -33,6 +37,18 @@ async def read(
 ) -> DeviceSchema:
     """REST end pont for read a device."""
     return await use_case.execute(device_id)
+
+@router.get(
+    "/{device_id}/measurements"
+)
+async def read_measurements(
+    request: Request,
+    device_id: uuid.UUID = Path(..., description=""),
+    use_case: ReadDeviceMeasurements = Depends(ReadDeviceMeasurements),
+) -> ReadDeviceMeasurementsResponse:
+    """REST end pont for read a device."""
+    return ReadDeviceMeasurementsResponse(device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)])
+
 
 
 @router.delete("/{device_id}", status_code=204)

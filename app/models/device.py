@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING, AsyncIterator, Optional
 import uuid
 
 from pydantic import BaseModel
 from sqlalchemy import ForeignKey, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship, selectinload
 
 if TYPE_CHECKING:
     from .home import HomeMeasurement
@@ -33,19 +35,23 @@ class Device(Base):
     )
 
     @classmethod
-    async def read_all(cls, session: AsyncSession) -> AsyncIterator[Device]:
+    async def read_all(cls, session: AsyncSession, include_device_measurements: bool = False) -> AsyncIterator[Device]:
         """Read all devices."""
         stmt = select(cls)
+        if include_device_measurements:
+            stmt = stmt.options(selectinload(cls.device_measurements))
         stream = await session.stream_scalars(stmt.order_by(cls.id))
         async for row in stream:
             yield row
 
     @classmethod
     async def read_by_id(
-        cls, session: AsyncSession, id: uuid.UUID
+        cls, session: AsyncSession, id: uuid.UUID, include_device_measurements: bool = False
     ) -> Optional[Device]:
         """Read a device by id."""
         stmt = select(cls).where(cls.id == id)
+        if include_device_measurements:
+            stmt = stmt.options(selectinload(cls.device_measurements))
         return await session.scalar(stmt.order_by(cls.id))
 
 
@@ -102,6 +108,11 @@ class DeviceMeasurement(Base):
     device: Mapped[Device] = relationship(
         "Device", back_populates="device_measurements")
 
+    @hybrid_property
+    def measurement_date(self) -> datetime.date:
+        """Date of a device measurement."""
+        return self.home_measurement.measurement_date
+
     @classmethod
     async def read_all(cls, session: AsyncSession) -> AsyncIterator[DeviceMeasurement]:
         """Read all device measurements."""
@@ -119,7 +130,15 @@ class DeviceMeasurement(Base):
             joinedload(cls.home_measurement))
         return await session.scalar(stmt.order_by(cls.id))
 
-
+    @classmethod
+    async def read_by_device_id(
+            cls, session: AsyncSession,  device_id: uuid.UUID) -> AsyncIterator[DeviceMeasurement]:
+        """Read a device measurements by id."""
+        stmt = select(cls).where(cls.device_id == device_id).options(
+            joinedload(cls.home_measurement))
+        stream = await session.stream_scalars(stmt.order_by(cls.id))
+        async for row in stream:
+            yield row
 
     @classmethod
     async def read_by_ids(cls, session: AsyncSession, measurement_ids: list[int]) -> AsyncIterator[DeviceMeasurement]:
@@ -169,18 +188,6 @@ class DeviceMeasurement(Base):
         await session.delete(measurement)
         await session.flush()
 
-class DeviceSchema(BaseModel):
-    """Schema class for a device."""
-
-    id: uuid.UUID
-    name: str
-    icon: str
-
-    class Config:
-        """Config class for the Device Measurement Scheme."""
-
-        orm_mode = True
-
 
 class DeviceMeasurementSchema(BaseModel):
     """Schema class for a device measurement."""
@@ -191,6 +198,20 @@ class DeviceMeasurementSchema(BaseModel):
     consumed_energy: float
     home_measurement_id: int
     device_id: uuid.UUID
+    measurement_date: Optional[datetime.date]
+
+    class Config:
+        """Config class for the Device Measurement Scheme."""
+
+        orm_mode = True
+
+
+class DeviceSchema(BaseModel):
+    """Schema class for a device."""
+
+    id: uuid.UUID
+    name: str
+    icon: str
 
     class Config:
         """Config class for the Device Measurement Scheme."""
