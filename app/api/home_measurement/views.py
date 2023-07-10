@@ -4,7 +4,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Path, Request
 
-from app.models.home import HomeMeasurementSchema
+from app.models import HomeMeasurementSchema
 
 from .schema import ReadAllHomeMeasurementResponse, ReadHomeMeasurementResponse
 from .use_cases import (

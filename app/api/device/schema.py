@@ -1,10 +1,8 @@
 """Schemas for home measurement api."""
 
-from __future__ import annotations
-
 from pydantic import BaseModel
 
-from app.models.device import DeviceMeasurementSchema, DeviceSchema
+from app.models import DeviceMeasurementSchema, DeviceSchema
 
 
 class ReadDeviceResponse(DeviceSchema):

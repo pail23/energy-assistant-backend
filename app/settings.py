@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -13,12 +13,11 @@ class Settings(BaseSettings):
     CONFIG_FILE: str
     LOG_FILE: str
 
-    class Config:
-        """Config for the Energy Assistant Settings."""
-
-        env = os.environ["APP_CONFIG_FILE"]
-        env_file = Path(__file__).parent / f"config/{env}.env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).parent / f"config/{os.environ['APP_CONFIG_FILE']}.env",
+        case_sensitive=True,
+    )
 
 
-settings = Settings.parse_obj({})
+
+settings = Settings.model_validate({})

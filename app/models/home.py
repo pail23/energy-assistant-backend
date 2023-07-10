@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import AsyncIterator, Optional
+from typing import TYPE_CHECKING, AsyncIterator
 import uuid
 
-from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 
 from .base import Base
 
+if TYPE_CHECKING:
+    from .device import DeviceMeasurement
 
 class HomeMeasurement(Base):
     """Data model for a measurement."""
@@ -48,7 +49,7 @@ class HomeMeasurement(Base):
     @classmethod
     async def read_by_id(
         cls, session: AsyncSession, HomeMeasurement_id: int, include_device_measurements: bool = False
-    ) -> Optional[HomeMeasurement]:
+    ) -> HomeMeasurement | None:
         """Read a home measurements by id."""
         stmt = select(cls).where(cls.id == HomeMeasurement_id)
         if include_device_measurements:
@@ -57,7 +58,7 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_first(
-            cls, session: AsyncSession, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
+            cls, session: AsyncSession, include_device_measurements: bool = False) -> HomeMeasurement | None:
         """Read last home measurement by date."""
         stmt = select(cls)
         if include_device_measurements:
@@ -66,7 +67,7 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_last(
-            cls, session: AsyncSession, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
+            cls, session: AsyncSession, include_device_measurements: bool = False) -> HomeMeasurement | None:
         """Read last home measurement."""
         stmt = select(cls)
         if include_device_measurements:
@@ -75,7 +76,7 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_by_date(
-            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
+            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> HomeMeasurement | None:
         """Read last home measurement by date."""
         stmt = select(cls).where(
             cls.measurement_date==measurement_date)
@@ -85,7 +86,7 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_before_date(
-            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> Optional[HomeMeasurement]:
+            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> HomeMeasurement | None:
         """Read last home measurement by date."""
         stmt = select(cls).where(
             cls.measurement_date<measurement_date)
@@ -134,32 +135,9 @@ class HomeMeasurement(Base):
         await session.delete(HomeMeasurement)
         await session.flush()
 
-    def get_device_measurement(self, device_id:uuid.UUID) -> Optional[DeviceMeasurement]:
+    def get_device_measurement(self, device_id:uuid.UUID) -> DeviceMeasurement | None:
         """Find the device measurement of the device with the given id."""
         for device_measurement in self.device_measurements:
             if device_measurement.device_id == device_id:
                 return device_measurement
         return None
-
-class HomeMeasurementSchema(BaseModel):
-    """Schema class for a home measurement."""
-
-    id: int
-    name: str
-    solar_consumed_energy: float
-    consumed_energy: float
-    solar_produced_energy: float
-    grid_imported_energy: float
-    grid_exported_energy: float
-    measurement_date: date
-
-    device_measurements: list[DeviceMeasurementSchema]
-
-    class Config:
-        """Config class for the Home Measurement Scheme."""
-
-        orm_mode = True
-
-from .device import DeviceMeasurement, DeviceMeasurementSchema  # noqa: E402
-
-HomeMeasurementSchema.update_forward_refs()

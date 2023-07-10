@@ -5,7 +5,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Path, Request
 
-from app.models.device import DeviceSchema
+from app.models import DeviceSchema
 
 from .schema import (
     ReadAllDevicesResponse,

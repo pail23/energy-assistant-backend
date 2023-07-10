@@ -1,10 +1,8 @@
 """Schemas for home measurement api."""
 
-from __future__ import annotations
-
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DeviceMeasurementDifferenceSchema(BaseModel):
@@ -16,10 +14,7 @@ class DeviceMeasurementDifferenceSchema(BaseModel):
     solar_consumed_energy: float
     consumed_energy: float
 
-    class Config:
-        """Config class for the Device Measurement Scheme."""
-
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 
@@ -35,10 +30,7 @@ class HomeMeasurementDifferenceSchema(BaseModel):
 
     device_measurements: list[DeviceMeasurementDifferenceSchema]
 
-    class Config:
-        """Config class for the Home Measurement Scheme."""
-
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ReadHomeMeasurementDifferenceResponse(HomeMeasurementDifferenceSchema):
     """API Response for reading home measurements."""

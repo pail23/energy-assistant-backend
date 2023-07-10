@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, AsyncIterator, Optional
+from typing import TYPE_CHECKING, AsyncIterator
 import uuid
 
-from pydantic import BaseModel
 from sqlalchemy import ForeignKey, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -47,7 +46,7 @@ class Device(Base):
     @classmethod
     async def read_by_id(
         cls, session: AsyncSession, id: uuid.UUID, include_device_measurements: bool = False
-    ) -> Optional[Device]:
+    ) -> Device | None:
         """Read a device by id."""
         stmt = select(cls).where(cls.id == id)
         if include_device_measurements:
@@ -124,7 +123,7 @@ class DeviceMeasurement(Base):
 
     @classmethod
     async def read_by_id(
-            cls, session: AsyncSession, measurement_id: int) -> Optional[DeviceMeasurement]:
+            cls, session: AsyncSession, measurement_id: int) -> DeviceMeasurement | None:
         """Read a device measurements by id."""
         stmt = select(cls).where(cls.id == measurement_id).options(
             joinedload(cls.home_measurement))
@@ -187,33 +186,3 @@ class DeviceMeasurement(Base):
         """Delete a device measurement."""
         await session.delete(measurement)
         await session.flush()
-
-
-class DeviceMeasurementSchema(BaseModel):
-    """Schema class for a device measurement."""
-
-    id: int
-    # name: str
-    solar_consumed_energy: float
-    consumed_energy: float
-    home_measurement_id: int
-    device_id: uuid.UUID
-    measurement_date: Optional[datetime.date]
-
-    class Config:
-        """Config class for the Device Measurement Scheme."""
-
-        orm_mode = True
-
-
-class DeviceSchema(BaseModel):
-    """Schema class for a device."""
-
-    id: uuid.UUID
-    name: str
-    icon: str
-
-    class Config:
-        """Config class for the Device Measurement Scheme."""
-
-        orm_mode = True

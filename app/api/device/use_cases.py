@@ -5,12 +5,8 @@ import uuid
 from fastapi import HTTPException
 
 from app.db import AsyncSession
-from app.models.device import (
-    Device,
-    DeviceMeasurement,
-    DeviceMeasurementSchema,
-    DeviceSchema,
-)
+from app.models import DeviceMeasurementSchema, DeviceSchema
+from app.models.device import Device, DeviceMeasurement
 
 from . import OTHER_DEVICE
 
@@ -26,7 +22,7 @@ class ReadAllDevices:
         """Execute the read all devices use case."""
         async with self.async_session() as session:
             async for device in Device.read_all(session):
-                yield DeviceSchema.from_orm(device)
+                yield DeviceSchema.model_validate(device)
         yield DeviceSchema(id=OTHER_DEVICE, name="Andere", icon="mdi-home")
 
 
@@ -43,7 +39,8 @@ class ReadDevice:
             device = await Device.read_by_id(session, device_id)
             if not device:
                 raise HTTPException(status_code=404)
-            return DeviceSchema.from_orm(device)
+            return DeviceSchema.model_validate(device)
+
 
 class ReadDeviceMeasurements:
     """Read the device measurements use case."""
@@ -56,7 +53,7 @@ class ReadDeviceMeasurements:
         """Execute the read device use case."""
         async with self.async_session() as session:
             async for device_measurement in DeviceMeasurement.read_by_device_id(session, device_id):
-                yield DeviceMeasurementSchema.from_orm(device_measurement)
+                yield DeviceMeasurementSchema.model_validate(device_measurement)
 
 
 class DeleteDevice:

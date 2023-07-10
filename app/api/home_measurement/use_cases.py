@@ -5,7 +5,8 @@ from typing import AsyncIterator
 from fastapi import HTTPException
 
 from app.db import AsyncSession
-from app.models.home import HomeMeasurement, HomeMeasurementSchema
+from app.models import HomeMeasurementSchema
+from app.models.home import HomeMeasurement
 
 
 class ReadAllHomeMeasurement:
@@ -19,7 +20,7 @@ class ReadAllHomeMeasurement:
         """Execute the read all home measurements use case."""
         async with self.async_session() as session:
             async for home_measurement in HomeMeasurement.read_all(session, include_device_measurements=True):
-                yield HomeMeasurementSchema.from_orm(home_measurement)
+                yield HomeMeasurementSchema.model_validate(home_measurement)
 
 
 class ReadHomeMeasurement:
@@ -35,7 +36,7 @@ class ReadHomeMeasurement:
             home_measurement = await HomeMeasurement.read_by_id(session, home_measurement_id, include_device_measurements=True)
             if not home_measurement:
                 raise HTTPException(status_code=404)
-            return HomeMeasurementSchema.from_orm(home_measurement)
+            return HomeMeasurementSchema.model_validate(home_measurement)
 
 
 class ReadHomeMeasurementByDate:
@@ -51,7 +52,7 @@ class ReadHomeMeasurementByDate:
             home_measurement = await HomeMeasurement.read_by_date(session, measurement_date, include_device_measurements=True)
             if not home_measurement:
                 raise HTTPException(status_code=404)
-            return HomeMeasurementSchema.from_orm(home_measurement)
+            return HomeMeasurementSchema.model_validate(home_measurement)
 
 class ReadHomeMeasurementLastBeforeDate:
     """Read the last home measurement before a date use case."""
@@ -66,7 +67,7 @@ class ReadHomeMeasurementLastBeforeDate:
             home_measurement = await HomeMeasurement.read_before_date(session, measurement_date, include_device_measurements=True)
             if not home_measurement:
                 raise HTTPException(status_code=404)
-            return HomeMeasurementSchema.from_orm(home_measurement)
+            return HomeMeasurementSchema.model_validate(home_measurement)
 
 class DeleteHomeMeasurement:
     """Delete a home measurement use case."""

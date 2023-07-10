@@ -1,8 +1,9 @@
 """Conf test for Energy Assistant."""
+import contextlib
 from typing import AsyncGenerator, Generator
 
-import pytest
 from httpx import AsyncClient
+import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -11,10 +12,7 @@ from sqlalchemy.orm import Session, SessionTransaction
 from app.db import get_session
 from app.main import app
 from app.models.base import Base
-from app.settings import Settings
-import contextlib
-
-settings = Settings.parse_obj({})
+from app.settings import settings
 
 
 @pytest.fixture
