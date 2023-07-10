@@ -65,7 +65,10 @@ fixture-parentheses = false
 [mccabe]
 max-complexity = 25
 
-
+[tool.mypy]
+plugins = [
+  "pydantic.mypy"
+]
 
 [[tool.mypy.overrides]]
 module = [
