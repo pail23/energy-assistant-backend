@@ -2,7 +2,7 @@ pyyaml==6.0
 requests
 httpx==0.24.1
 
-SQLAlchemy==2.0.17
+SQLAlchemy==2.0.18
 greenlet==2.0.2
 alembic==1.11.1
 anyio==3.7.0
