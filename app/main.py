@@ -245,10 +245,11 @@ async def init_app() -> None:
             else:
                 hass_config = config.get("homeassistant")
                 if hass_config is not None:
+                    demo_mode = hass_config.get("demo_mode")
                     url = hass_config.get("url")
                     token = hass_config.get("token")
                     if url is not None and token is not None:
-                        hass = Homeassistant(url, token)
+                        hass = Homeassistant(url, token, demo_mode)
                         app.hass = hass  # type: ignore
                         hass.update_states()
 

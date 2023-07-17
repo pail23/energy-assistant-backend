@@ -1,5 +1,4 @@
 from abc import ABC
-from datetime import datetime
 import logging
 from typing import Optional
 
@@ -69,27 +68,39 @@ def assign_if_available(old_state: Optional[State], new_state: Optional[State]) 
 class Homeassistant:
     """Home assistant proxy."""
 
-    def __init__(self, url:str, token:str) -> None:
+    def __init__(self, url:str, token:str, demo_mode: bool) -> None:
         self._url = url
         self._states = dict[str, State]()
         self._token = token
+        self._demo_mode = demo_mode is not None and demo_mode
 
 
     def update_states(self) -> None:
-        headers = {
-            "Authorization": f"Bearer {self._token}",
-            "content-type": "application/json",
-        }
-        time_stamp = datetime.now().timestamp()
-        response = requests.get(
-            f"{self._url}/api/states", headers=headers)
-        datetime.now().timestamp() - time_stamp
-        if response.ok:
-            states = response.json()
-            self._states = dict[str, State]()
-            for state in states:
-                entity_id = state.get("entity_id")
-                self._states[entity_id] = State(entity_id, state.get("state"), state.get("attributes"))
+        if self._demo_mode:
+            self._states["sensor.solaredge_i1_ac_power"] = State("sensor.solaredge_i1_ac_power", "10000")
+            self._states["sensor.solaredge_m1_ac_power"] = State("sensor.solaredge_m1_ac_power", "6000")
+            self._states["sensor.keba_charge_power"] = State("sensor.keba_charge_power", "2500")
+            self._states["sensor.tumbler_power"] = State("sensor.tumbler_power", "600")
+            self._states["sensor.officedesk_power"] = State("sensor.officedesk_power", "40")
+            self._states["sensor.rack_power"] = State("sensor.rack_power", "80")
+        else:
+            headers = {
+                "Authorization": f"Bearer {self._token}",
+                "content-type": "application/json",
+            }
+            try:
+                response = requests.get(
+                    f"{self._url}/api/states", headers=headers)
+
+                if response.ok:
+                    states = response.json()
+                    self._states = dict[str, State]()
+                    for state in states:
+                        entity_id = state.get("entity_id")
+                        self._states[entity_id] = State(entity_id, state.get("state"), state.get("attributes"))
+
+            except Exception as ex:
+                logging.error("Exception during homeassistant update_states: ", ex)
 
     def get_state(self, entity_id:str) -> Optional[State]:
         return self._states.get(entity_id)
