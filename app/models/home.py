@@ -85,6 +85,20 @@ class HomeMeasurement(Base):
         return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
     @classmethod
+    async def read_between_dates(
+            cls, session: AsyncSession, from_date: date, to_date:date, include_device_measurements: bool = False) -> AsyncIterator[HomeMeasurement]:
+        """Read last home measurement by date."""
+        stmt = select(cls).where(
+            cls.measurement_date>=from_date).where(cls.measurement_date <=to_date)
+        if include_device_measurements:
+            stmt = stmt.options(selectinload(cls.device_measurements))
+        stream = await session.stream_scalars(stmt.order_by(cls.id))
+        async for row in stream:
+            yield row
+
+
+
+    @classmethod
     async def read_before_date(
             cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> HomeMeasurement | None:
         """Read last home measurement by date."""
