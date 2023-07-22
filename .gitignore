@@ -1,9 +1,9 @@
 __pycache__
-config.yaml
+energy_assistant.yaml
 *.db
 client
 *.log
-*.db.bak
+*.bak
 .mypycache
 
 # Unit test / coverage reports
