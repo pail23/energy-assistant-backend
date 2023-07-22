@@ -6,7 +6,7 @@ import uuid
 from pydantic import BaseModel, ConfigDict
 
 
-class DeviceMeasurementDifferenceSchema(BaseModel):
+class DeviceMeasurementPeriodSchema(BaseModel):
     """Schema class for a device measurement."""
 
     device_id: uuid.UUID
@@ -18,48 +18,30 @@ class DeviceMeasurementDifferenceSchema(BaseModel):
 
 
 
-class HomeMeasurementDifferenceSchema(BaseModel):
+class HomeMeasurementPeriodSchema(BaseModel):
     """Schema class for a home measurement."""
 
-    name: str
     solar_consumed_energy: float
     consumed_energy: float
     solar_produced_energy: float
     grid_imported_energy: float
     grid_exported_energy: float
 
-    device_measurements: list[DeviceMeasurementDifferenceSchema]
+    device_measurements: list[DeviceMeasurementPeriodSchema]
 
     model_config = ConfigDict(from_attributes=True)
 
-class ReadHomeMeasurementDifferenceResponse(HomeMeasurementDifferenceSchema):
+class ReadHomeMeasurementDifferenceResponse(HomeMeasurementPeriodSchema):
     """API Response for reading home measurements."""
 
     pass
 
 
 
-class DeviceMeasurementDateSchema(BaseModel):
-    """Schema class for a device measurement of a specific day."""
-
-    device_id: uuid.UUID
-
-    solar_consumed_energy: float
-    consumed_energy: float
-
-    model_config = ConfigDict(from_attributes=True)
-
-class HomeMeasurementDateSchema(BaseModel):
+class HomeMeasurementDateSchema(HomeMeasurementPeriodSchema):
     """Schema class for a home measurement summary of a specific day."""
 
-    solar_consumed_energy: float
-    consumed_energy: float
-    solar_produced_energy: float
-    grid_imported_energy: float
-    grid_exported_energy: float
     measurement_date: date
-
-    device_measurements: list[DeviceMeasurementDateSchema]
 
     model_config = ConfigDict(from_attributes=True)
 

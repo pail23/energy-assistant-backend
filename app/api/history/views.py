@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Path, Request
 from .schema import (
     HomeMeasurementDailyResponse,
     HomeMeasurementDailySchema,
-    HomeMeasurementDifferenceSchema,
+    HomeMeasurementPeriodSchema,
     ReadHomeMeasurementDifferenceResponse,
 )
 from .use_cases import ReadHomeMeasurementDaily, ReadHomeMeasurementDifference
@@ -25,7 +25,7 @@ async def read_difference(
     from_date: date = Path(..., description=""),
     to_date: Union[date, None] = None,
     use_case: ReadHomeMeasurementDifference = Depends(ReadHomeMeasurementDifference),
-) -> HomeMeasurementDifferenceSchema:
+) -> HomeMeasurementPeriodSchema:
     """Get the difference of the measurements between to dates."""
     return await use_case.execute(from_date, to_date)
 

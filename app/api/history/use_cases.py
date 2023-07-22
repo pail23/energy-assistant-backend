@@ -9,15 +9,14 @@ from app.db import AsyncSession
 from app.models.home import HomeMeasurement
 
 from .schema import (
-    DeviceMeasurementDateSchema,
-    DeviceMeasurementDifferenceSchema,
+    DeviceMeasurementPeriodSchema,
     HomeMeasurementDailySchema,
     HomeMeasurementDateSchema,
-    HomeMeasurementDifferenceSchema,
+    HomeMeasurementPeriodSchema,
 )
 
 
-def add_others_device(home_measurement: HomeMeasurementDifferenceSchema) -> HomeMeasurementDifferenceSchema:
+def add_others_device(home_measurement: HomeMeasurementPeriodSchema) -> HomeMeasurementPeriodSchema:
     """Add the date for the others device."""
     solar_consumed_energy = home_measurement.solar_consumed_energy
     consumed_energy = home_measurement.consumed_energy
@@ -25,7 +24,7 @@ def add_others_device(home_measurement: HomeMeasurementDifferenceSchema) -> Home
         solar_consumed_energy = solar_consumed_energy - \
             device_measurement.solar_consumed_energy
         consumed_energy = consumed_energy - device_measurement.consumed_energy
-    other_device = DeviceMeasurementDifferenceSchema(
+    other_device = DeviceMeasurementPeriodSchema(
         solar_consumed_energy=solar_consumed_energy, consumed_energy=consumed_energy, device_id=OTHER_DEVICE)
     home_measurement.device_measurements.append(other_device)
     return home_measurement
@@ -38,7 +37,7 @@ class ReadHomeMeasurementDifference:
         """Create a read home measurement use case."""
         self.async_session = session
 
-    async def execute(self, from_date: date, to_date: Union[date, None]) -> HomeMeasurementDifferenceSchema:
+    async def execute(self, from_date: date, to_date: Union[date, None]) -> HomeMeasurementPeriodSchema:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement_from = await HomeMeasurement.read_before_date(session, from_date, include_device_measurements=True)
@@ -61,13 +60,13 @@ class ReadHomeMeasurementDifference:
                 to_device = home_measurement_to.get_device_measurement(
                     from_device.device_id)  # home_measurement_to.device_measurements[index]
                 if to_device is not None:
-                    measurement = DeviceMeasurementDifferenceSchema(device_id=from_device.device_id,
+                    measurement = DeviceMeasurementPeriodSchema(device_id=from_device.device_id,
                                                                     solar_consumed_energy=to_device.solar_consumed_energy -
                                                                     from_device.solar_consumed_energy,
                                                                     consumed_energy=to_device.consumed_energy - from_device.consumed_energy)
                     device_measurements.append(measurement)
 
-            result = HomeMeasurementDifferenceSchema(
+            result = HomeMeasurementPeriodSchema(
                 name=home_measurement_from.name,
                 consumed_energy=home_measurement_to.consumed_energy -
                 home_measurement_from.consumed_energy,
@@ -106,7 +105,7 @@ class ReadHomeMeasurementDaily:
                     to_device = home_measurement.get_device_measurement(
                         from_device.device_id)
                     if to_device is not None:
-                        device_measurement = DeviceMeasurementDateSchema(device_id=from_device.device_id,
+                        device_measurement = DeviceMeasurementPeriodSchema(device_id=from_device.device_id,
                                                                   solar_consumed_energy=to_device.solar_consumed_energy -
                                                                   from_device.solar_consumed_energy,
                                                                   consumed_energy=to_device.consumed_energy - from_device.consumed_energy)
@@ -125,6 +124,7 @@ class ReadHomeMeasurementDaily:
                     measurement_date=home_measurement.measurement_date,
                     device_measurements=device_measurements
                 )
+                add_others_device(measurement)
                 result.append(measurement)
                 last_measurement = home_measurement
             return HomeMeasurementDailySchema(measurements=result)
