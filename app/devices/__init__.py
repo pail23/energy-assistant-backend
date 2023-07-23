@@ -1,6 +1,5 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
-import logging
 from typing import Optional
 import uuid
 
@@ -46,28 +45,17 @@ class EnergyIntegrator:
 
     def __init__(self) -> None:
         """Create an energy integrator."""
-        self._last_consumed_energy : Optional[float]  = None
-        self._consumed_solar_energy : Optional[float] = None
-
+        self._last_consumed_energy : float = 0.0
+        self._consumed_solar_energy : float = 0.0
 
     @property
     def consumed_solar_energy(self) -> float:
         """The amount of solar energy which has been consumed."""
-        return self._consumed_solar_energy if self._consumed_solar_energy else 0.0
+        return self._consumed_solar_energy
 
     def add_measurement(self, consumed_energy: float, self_sufficiency: float) -> None:
         """Update the value of the integrator with and new measuremenent value."""
-        if self._last_consumed_energy is not None:
-            if self._consumed_solar_energy is None:
-                logging.error("Energy integrator has wrong state.")
-                self._consumed_solar_energy = self._last_consumed_energy
-            self._consumed_solar_energy = self._consumed_solar_energy + (consumed_energy - self._last_consumed_energy) * self_sufficiency
-            if self._consumed_solar_energy > consumed_energy:
-                logging.error(f"Solar consumption larger than consumption: {self._consumed_solar_energy} > {consumed_energy} ")
-                self._consumed_solar_energy = consumed_energy
-        else:
-            logging.error("Energy integrator has wrong state.")
-            self._consumed_solar_energy = consumed_energy
+        self._consumed_solar_energy = self._consumed_solar_energy + (consumed_energy - self._last_consumed_energy) * self_sufficiency
         self._last_consumed_energy = consumed_energy
 
 
