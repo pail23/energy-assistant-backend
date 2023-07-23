@@ -4,7 +4,7 @@ from typing import Optional
 
 import requests  # type: ignore
 
-from . import Device, EnergyIntegrator, HomeEnergySnapshot
+from . import Device, HomeEnergySnapshot
 
 UNAVAILABLE = "unavailable"
 
@@ -236,14 +236,12 @@ class Home:
         self._solar_production_power: Optional[State] = None
         self._grid_imported_power : Optional[State] = None
         self._consumed_energy:float = 0.0
+        self._consumed_solar_energy: float = 0.0
 
         self._grid_exported_energy : Optional[State] = None
         self._grid_imported_energy : Optional[State] = None
         self._produced_solar_energy: Optional[State] = None
 
-
-        self._last_consumed_solar_energy = None
-        self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshop: Optional[HomeEnergySnapshot] = None
         self.devices = list[Device]()
         config_devices = config.get("devices")
@@ -287,7 +285,7 @@ class Home:
     @property
     def consumed_solar_energy(self) -> float:
         """Consumed solar energy in kWh."""
-        return self._consumed_solar_energy.consumed_solar_energy
+        return self._consumed_solar_energy
 
     @property
     def home_consumption_power(self) -> float:
@@ -323,7 +321,7 @@ class Home:
         self._grid_exported_energy = assign_if_available(self._grid_exported_energy, hass.get_state(self._grid_exported_energy_entity_id))
 
         self._consumed_energy = self.grid_imported_energy - self.grid_exported_energy +  self.produced_solar_energy
-        self._consumed_solar_energy.add_measurement(self._consumed_energy, self.self_sufficiency)
+        self._consumed_solar_energy =  self.produced_solar_energy - self.grid_exported_energy
 
         if self._energy_snapshop is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy, self.produced_solar_energy, self.grid_imported_energy, self.grid_exported_energy)
@@ -346,9 +344,9 @@ class Home:
         return self._grid_imported_power.numeric_state if self._grid_imported_power else 0.0
 
     def restore_state(self, consumed_solar_energy:float, consumed_energy:float, solar_produced_energy:float, grid_imported_energy:float, grid_exported_energy:float) -> None:
-        self._consumed_solar_energy.restore_state(consumed_solar_energy, consumed_energy)
-
+        self._consumed_solar_energy = consumed_solar_energy
         self._consumed_energy = consumed_energy
+
         self._produced_solar_energy = State(self._solar_energy_entity_id, str(solar_produced_energy))
         self._grid_imported_energy = State(self._grid_imported_energy_entity_id, str(grid_imported_energy))
         self._grid_exported_energy = State(self._grid_exported_energy_entity_id, str(grid_exported_energy))
