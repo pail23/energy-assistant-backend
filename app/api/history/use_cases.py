@@ -67,7 +67,6 @@ class ReadHomeMeasurementDifference:
                     device_measurements.append(measurement)
 
             result = HomeMeasurementPeriodSchema(
-                name=home_measurement_from.name,
                 consumed_energy=home_measurement_to.consumed_energy -
                 home_measurement_from.consumed_energy,
                 solar_consumed_energy=home_measurement_to.solar_consumed_energy -

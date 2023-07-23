@@ -48,7 +48,6 @@ class EnergyIntegrator:
         """Create an energy integrator."""
         self._last_consumed_energy : Optional[float]  = None
         self._consumed_solar_energy : Optional[float] = None
-        self._last_timestamp : Optional[float] = None
 
 
     @property
@@ -60,19 +59,21 @@ class EnergyIntegrator:
         """Update the value of the integrator with and new measuremenent value."""
         if self._last_consumed_energy is not None:
             if self._consumed_solar_energy is None:
+                logging.error("Energy integrator has wrong state.")
                 self._consumed_solar_energy = self._last_consumed_energy
             self._consumed_solar_energy = self._consumed_solar_energy + (consumed_energy - self._last_consumed_energy) * self_sufficiency
             if self._consumed_solar_energy > consumed_energy:
                 logging.error(f"Solar consumption larger than consumption: {self._consumed_solar_energy} > {consumed_energy} ")
                 self._consumed_solar_energy = consumed_energy
         else:
+            logging.error("Energy integrator has wrong state.")
             self._consumed_solar_energy = consumed_energy
         self._last_consumed_energy = consumed_energy
 
 
-    def restore_state(self, state: float, last_consumed_energy: float) -> None:
+    def restore_state(self, consumed_solar_energy: float, last_consumed_energy: float) -> None:
         """Restores the integrator value with a previously saved state."""
-        self._consumed_solar_energy = state
+        self._consumed_solar_energy = consumed_solar_energy
         self._last_consumed_energy = last_consumed_energy
 
 class EnergySnapshot:
