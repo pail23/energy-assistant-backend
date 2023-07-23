@@ -43,9 +43,9 @@ async def setup_data(session: AsyncSession) -> None:
 def test_integrator() -> None:
     """Test the energy integrator."""
     integrator = EnergyIntegrator()
-    integrator.add_measurement(10, 0)
-    integrator.add_measurement(20, 0.1)
-    assert integrator.consumed_solar_energy == 11
+    integrator.restore_state(15, 20)
+    integrator.add_measurement(30, 0.1)
+    assert integrator.consumed_solar_energy == 16
 
 
 @pytest.mark.asyncio
