@@ -4,7 +4,7 @@ from typing import Optional
 
 import requests  # type: ignore
 
-from . import Device, get_config_param
+from . import Device, SessionStorage, get_config_param
 
 UNAVAILABLE = "unavailable"
 
@@ -110,9 +110,9 @@ class Homeassistant:
 class HomeassistantDevice(Device):
     """A generic Homeassistant device."""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a generic Homeassistant device."""
-        super().__init__(get_config_param(config, "id"), get_config_param(config, "name"))
+        super().__init__(get_config_param(config, "id"), get_config_param(config, "name"), session_storage)
         self._power_entity_id : str = get_config_param(config, "power")
         self._consumed_energy_entity_id : str = get_config_param(config, "energy")
         self._power: Optional[State]= None
@@ -122,7 +122,7 @@ class HomeassistantDevice(Device):
         icon = config.get("icon")
         self._icon : str = str(icon) if icon is not None else "mdi-home"
 
-    def update_state(self, hass:Homeassistant, self_sufficiency: float) -> None:
+    async def update_state(self, hass:Homeassistant, self_sufficiency: float) -> None:
         self._power = assign_if_available(self._power, hass.get_state(self._power_entity_id))
         self._consumed_energy = assign_if_available(self._consumed_energy, hass.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)

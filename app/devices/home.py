@@ -2,7 +2,7 @@
 
 import logging
 
-from . import Device, HomeEnergySnapshot, get_config_param
+from . import Device, HomeEnergySnapshot, SessionStorage, get_config_param
 from .homeassistant import (
     Homeassistant,
     HomeassistantDevice,
@@ -15,7 +15,7 @@ from .stiebel_eltron import StiebelEltronDevice
 class Home:
     """The home."""
 
-    def __init__(self, config: dict) ->None:
+    def __init__(self, config: dict, session_storage: SessionStorage) ->None:
         """Create a home instance."""
         self._name : str = get_config_param(config, "name")
         self._solar_power_entity_id: str = get_config_param(config, "solar_power")
@@ -40,9 +40,9 @@ class Home:
             for config_device in config_devices:
                 type = config_device.get("type")
                 if type == "homeassistant":
-                    self.devices.append(HomeassistantDevice(config_device))
+                    self.devices.append(HomeassistantDevice(config_device, session_storage))
                 elif type == "stiebel-eltron":
-                    self.devices.append(StiebelEltronDevice(config_device))
+                    self.devices.append(StiebelEltronDevice(config_device, session_storage))
                 else:
                     logging.error(f"Unknown device type {type} in configuration")
 
@@ -108,7 +108,7 @@ class Home:
             return 0
 
 
-    def update_state_from_hass(self, hass:Homeassistant) -> None:
+    async def update_state_from_hass(self, hass:Homeassistant) -> None:
         """Update the state of the home."""
         self._solar_production_power = assign_if_available(self._solar_production_power, hass.get_state(self._solar_power_entity_id))
         self._grid_imported_power = assign_if_available(self._grid_imported_power, hass.get_state(self._grid_supply_power_entity_id))
@@ -125,7 +125,7 @@ class Home:
 
         for device in self.devices:
             if isinstance(device, HomeassistantDevice) or isinstance(device, StiebelEltronDevice):
-                device.update_state(hass, self.self_sufficiency)
+                await device.update_state(hass, self.self_sufficiency)
 
 
     @property

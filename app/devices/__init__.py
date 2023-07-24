@@ -4,6 +4,19 @@ from typing import Optional
 import uuid
 
 
+class SessionStorage(ABC):
+    """Session storage base class."""
+
+    @abstractmethod
+    async def start_session(self, device_id: uuid.UUID, text: str, solar_consumed_energy: float, consumed_energy: float) -> int:
+        """Start a new session."""
+        pass
+
+    @abstractmethod
+    async def update_session(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
+        """Update the session with the given id."""
+        pass
+
 class Integrator:
     """Integrate a measurement like power to get the energy."""
 
@@ -123,13 +136,14 @@ class HomeEnergySnapshot(EnergySnapshot):
 class Device(ABC):
     """A device which tracks energy consumption."""
 
-    def __init__(self, id: str, name: str) -> None:
+    def __init__(self, id: str, name: str, session_storage: SessionStorage) -> None:
         """Create a device."""
         self._name = name
         self._id = uuid.UUID(id)
         self._consumed_solar_energy = EnergyIntegrator()
-       # self._consumed_energy: Optional[float] = None
-        self._energy_snapshot: Optional[EnergySnapshot] = None
+        self._energy_snapshot: EnergySnapshot | None = None
+        self.session_storage: SessionStorage = session_storage
+        self.current_session : int | None = None
 
     @property
     def name(self) -> str:
@@ -187,6 +201,16 @@ class Device(ABC):
     def store_energy_snapshot(self) -> None:
         """Store the current values in the snapshot."""
         self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
+
+    async def start_session(self, text: str) -> None:
+        """Start a session."""
+        self.current_session = await self.session_storage.start_session(self._id, text,self.consumed_solar_energy, self.consumed_energy)
+
+    async def update_session(self) -> None:
+        """Update a running session."""
+        if self.current_session is not None:
+            await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
+
 
 
 class DeviceConfigException(Exception):

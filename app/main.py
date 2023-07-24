@@ -20,7 +20,7 @@ from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.stiebel_eltron import StiebelEltronDevice
 from app.settings import settings
-from app.storage import Database, get_async_session
+from app.storage import Database, get_async_session, session_storage
 
 app = FastAPI(title="energy-assistant")
 sio = SocketManager(app=app, cors_allowed_origins="*")
@@ -45,7 +45,7 @@ async def async_handle_state_update(home: Home, hass: Homeassistant, db: Databas
     """Read the values from home assistant and process the update."""
     try:
         hass.update_states()
-        home.update_state_from_hass(hass)
+        await home.update_state_from_hass(hass)
         # print("Send refresh: " + get_home_message(home))
         if db:
             if home:
@@ -207,7 +207,7 @@ async def init_app() -> None:
     app.hass = None  # type: ignore
     app.db = None  # type: ignore
 
-    config_file = settings.CONFIG_FILE  # "/config/energy_assistant.yaml"
+    config_file = settings.CONFIG_FILE
     logfilename = settings.LOG_FILE
 
     rfh = RotatingFileHandler(
@@ -257,7 +257,7 @@ async def init_app() -> None:
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
-                    home = Home(home_config)
+                    home = Home(home_config, session_storage)
                     app.home = home  # type: ignore
                     async with async_session() as session:
                         await db.update_devices(home, session)
