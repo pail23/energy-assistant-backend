@@ -187,3 +187,17 @@ class Device(ABC):
     def store_energy_snapshot(self) -> None:
         """Store the current values in the snapshot."""
         self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
+
+
+class DeviceConfigException(Exception):
+    """Device configuration exception."""
+
+    pass
+
+def get_config_param(config: dict, param: str) -> str:
+    """Get a config paramter as string or raise an exception if the parameter is not available."""
+    result = config.get(param)
+    if result is None:
+        raise DeviceConfigException(f"Parameter {param} is missing in the configuration")
+    else:
+        return str(result)

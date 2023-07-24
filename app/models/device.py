@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .home import HomeMeasurement
 
 from .base import Base
+from .sessionlog import SessionLogEntry
 
 
 class Device(Base):
@@ -30,6 +31,13 @@ class Device(Base):
         "DeviceMeasurement",
         back_populates="device",
         order_by="DeviceMeasurement.id",
+        cascade="save-update, merge, refresh-expire, expunge, delete, delete-orphan",
+    )
+
+    session_log_entries: Mapped[list[SessionLogEntry]] = relationship(
+        "SessionLogEntry",
+        back_populates="device",
+        order_by="SessionLogEntry.id",
         cascade="save-update, merge, refresh-expire, expunge, delete, delete-orphan",
     )
 

@@ -6,7 +6,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db import get_session
-from app.devices.homeassistant import Home
+from app.devices.home import Home
 from app.models.device import Device as DeviceDTO, DeviceMeasurement
 from app.models.home import HomeMeasurement
 

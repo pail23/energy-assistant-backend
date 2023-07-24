@@ -16,7 +16,9 @@ import yaml
 from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
 from app.devices import Device
-from app.devices.homeassistant import Home, Homeassistant, StiebelEltronDevice
+from app.devices.home import Home
+from app.devices.homeassistant import Homeassistant
+from app.devices.stiebel_eltron import StiebelEltronDevice
 from app.settings import settings
 from app.storage import Database, get_async_session
 
