@@ -1,9 +1,8 @@
 """Views for home measurement API."""
 
 from datetime import date
-from typing import Union
 
-from fastapi import APIRouter, Depends, Path, Request
+from fastapi import APIRouter, Depends, Request
 
 from .schema import (
     HomeMeasurementDailyResponse,
@@ -17,13 +16,13 @@ router = APIRouter(prefix="/history")
 
 
 @router.get(
-    "/difference/{from_date}",
+    "/difference",
     response_model=ReadHomeMeasurementDifferenceResponse,
 )
 async def read_difference(
     request: Request,
-    from_date: date = Path(..., description=""),
-    to_date: Union[date, None] = None,
+    from_date: date,
+    to_date: date,
     use_case: ReadHomeMeasurementDifference = Depends(ReadHomeMeasurementDifference),
 ) -> HomeMeasurementPeriodSchema:
     """Get the difference of the measurements between to dates."""

@@ -1,6 +1,5 @@
 """Use cases for home measurements."""
 from datetime import date
-from typing import Union
 
 from fastapi import HTTPException
 
@@ -37,7 +36,7 @@ class ReadHomeMeasurementDifference:
         """Create a read home measurement use case."""
         self.async_session = session
 
-    async def execute(self, from_date: date, to_date: Union[date, None]) -> HomeMeasurementPeriodSchema:
+    async def execute(self, from_date: date, to_date: date) -> HomeMeasurementPeriodSchema:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement_from = await HomeMeasurement.read_before_date(session, from_date, include_device_measurements=True)
@@ -45,8 +44,6 @@ class ReadHomeMeasurementDifference:
                 home_measurement_from = await HomeMeasurement.read_first(session, include_device_measurements=True)
                 if not home_measurement_from:
                     raise HTTPException(status_code=404)
-            if to_date is None:
-                to_date = date.today()
             home_measurement_to = await HomeMeasurement.read_by_date(session, to_date, include_device_measurements=True)
 
             if not home_measurement_from:
