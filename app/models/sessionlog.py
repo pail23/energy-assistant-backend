@@ -49,6 +49,14 @@ class SessionLogEntry(Base):
             yield row
 
     @classmethod
+    async def read_by_device_id(cls, session: AsyncSession, device_id: uuid.UUID) -> AsyncIterator[SessionLogEntry]:
+        """Read all session log entries."""
+        stmt = select(cls).where(cls.device_id == device_id)
+        stream = await session.stream_scalars(stmt.order_by(cls.id))
+        async for row in stream:
+            yield row
+
+    @classmethod
     async def read_by_id(
         cls, session: AsyncSession, id: int) -> SessionLogEntry | None:
         """Read a session log entry by id."""
