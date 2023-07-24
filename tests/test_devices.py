@@ -6,9 +6,10 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.devices import EnergyIntegrator
-from app.devices.homeassistant import Home, HomeassistantDevice
+from app.devices.home import Home
+from app.devices.homeassistant import HomeassistantDevice
 from app.models.home import HomeMeasurement
-from app.storage import Database
+from app.storage import Database, session_storage
 
 
 async def setup_data(session: AsyncSession) -> None:
@@ -60,13 +61,13 @@ async def test_load(session: AsyncSession) -> None:
         "solar_energy": "solar_energy_id",
         "imported_energy": "imported_energy_id",
         "exported_energy": "exported_energy_id"
-    })
+    }, session_storage)
     device = HomeassistantDevice({
         "id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec",
         "name": "Device 1",
         "power": "power_id",
         "energy": "energy_id"
-    })
+    }, session_storage)
     home.add_device(device)
     db = Database()
     home_measurement = await HomeMeasurement.read_last(session, True)
