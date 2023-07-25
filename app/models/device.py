@@ -96,6 +96,7 @@ class DeviceMeasurement(Base):
 
     id: Mapped[int] = mapped_column(
         "id", autoincrement=True, nullable=False, unique=True, primary_key=True)
+    # TODO: drop this column
     name: Mapped[str]
     consumed_energy: Mapped[float]
     solar_consumed_energy: Mapped[float]
