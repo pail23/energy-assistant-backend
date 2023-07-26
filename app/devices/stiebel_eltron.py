@@ -1,6 +1,8 @@
 """Stiebel Eltron device implementation."""
-from . import Device, SessionStorage, get_config_param
-from .homeassistant import Homeassistant, State, assign_if_available
+import logging
+
+from . import Device, SessionStorage, State, StatesRepository, get_config_param
+from .homeassistant import assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
 
@@ -30,51 +32,55 @@ class StiebelEltronDevice(Device):
         self._consumed_energy: State | None = None
         self._icon = "mdi-heat-pump"
 
-    async def update_state(self, hass: Homeassistant, self_sufficiency: float) -> None:
+    async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the Stiebel Eltron device."""
-        old_state = self._state is not None and self._state.state == 'on'
+        old_state = self.state == 'on'
         self._state = assign_if_available(
-            self._state, hass.get_state(self._state_entity_id))
-        new_state = self._state is not None and self._state.state == 'on'
+            self._state, state_repository.get_state(self._state_entity_id))
+        new_state = self.state == 'on'
 
         self._consumed_energy_today = assign_if_available(
-            self._consumed_energy_today, hass.get_state(self._consumed_energy_today_entity_id))
+            self._consumed_energy_today, state_repository.get_state(self._consumed_energy_today_entity_id))
         self._consumed_energy = assign_if_available(
-            self._consumed_energy, hass.get_state(self._consumed_energy_entity_id))
+            self._consumed_energy, state_repository.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(
             self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
-            self._actual_temp, hass.get_state(self._actual_temp_entity_id))
+            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id))
         if self._store_sessions:
-            if not old_state and new_state:
+            if (not old_state) and new_state:
+                logging.info("Start Session")
                 await self.start_session("Water heating")
             elif new_state:
+                logging.info("Update Session")
                 await self.update_session()
+            elif old_state and not new_state:
+                logging.info("End Session")
 
     @property
     def consumed_energy(self) -> float:
         """Consumed energy in kWh."""
-        energy = self._consumed_energy.numeric_state if self._consumed_energy else 0.0
-        energy_today = self._consumed_energy_today.numeric_state if self._consumed_energy_today else 0.0
+        energy = self._consumed_energy.numeric_value if self._consumed_energy else 0.0
+        energy_today = self._consumed_energy_today.numeric_value if self._consumed_energy_today else 0.0
         return energy + energy_today
 
     @property
     def state(self) -> str:
         """The state of the device. The state is `on` in case the device is heating."""
-        return self._state.state if self._state and self._state.state else "unknown"
+        return self._state.value if self._state and self._state.value else "unknown"
 
     @property
     def power(self) -> float:
         """Current power consumption of the device."""
         if self._state is not None:
-            return STIEBEL_ELTRON_POWER if self._state.state == 'on' else 0.0
+            return STIEBEL_ELTRON_POWER if self._state.value == 'on' else 0.0
         else:
             return 0.0
 
     @property
     def actual_temperature(self) -> float:
         """The actual temperature of the heating or water."""
-        return self._actual_temp.numeric_state if self._actual_temp else 0.0
+        return self._actual_temp.numeric_value if self._actual_temp else 0.0
 
     @property
     def icon(self) -> str:

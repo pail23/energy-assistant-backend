@@ -1,22 +1,29 @@
-from abc import ABC
+"""Interface to the homeassistant instance."""
 import logging
-from typing import Optional
 
 import requests  # type: ignore
 
-from . import Device, SessionStorage, get_config_param
+from . import (
+    Device,
+    SessionStorage,
+    State,
+    StatesRepository,
+    assign_if_available,
+    get_config_param,
+)
 
 UNAVAILABLE = "unavailable"
 
-class State(ABC):
+
+class HomeassistantState(State):
     """Abstract base class for states."""
 
-    def __init__(self, entity_id:str, state:str, attributes:dict = {}) -> None:
+    def __init__(self, id:str, value:str, attributes:dict = {}) -> None:
         """Create a State instance."""
+        super().__init__(id, value)
         self._attributes = attributes
-        self._entity_id = entity_id
-        self._state = state
-        if state==UNAVAILABLE:
+
+        if value==UNAVAILABLE:
             self._available = False
         else:
             self._available = True
@@ -24,31 +31,10 @@ class State(ABC):
 
     @property
     def name(self) -> str:
+        """The name of the State."""
         if self._attributes is not None:
             return str(self._attributes.get("friendly_name"))
-        return self._entity_id
-
-    @property
-    def entity_id(self) -> str:
-        return self._entity_id
-
-    @property
-    def available(self) -> bool:
-        """Availability of the state."""
-        return self._available
-
-    @property
-    def state(self) -> str:
-        """State of the state as string."""
-        return self._state
-
-    @property
-    def numeric_state(self) -> float:
-        """Numeric state of the state."""
-        try:
-            return float(self._state)
-        except ValueError:
-            return 0.0
+        return self._id
 
     @property
     def unit(self) -> str:
@@ -57,32 +43,29 @@ class State(ABC):
             return str(self._attributes.get("unit_of_measurement"))
         return None
 
-def assign_if_available(old_state: Optional[State], new_state: Optional[State]) -> Optional[State]:
-    """Return new state in case the state is available, otherwise old state."""
-    if new_state and new_state.available:
-        return new_state
-    else:
-        return old_state
 
 
-class Homeassistant:
+
+class Homeassistant(StatesRepository):
     """Home assistant proxy."""
 
     def __init__(self, url:str, token:str, demo_mode: bool) -> None:
+        """Create an instance of the Homeassistant class."""
+        super().__init__()
         self._url = url
-        self._states = dict[str, State]()
         self._token = token
         self._demo_mode = demo_mode is not None and demo_mode
 
 
-    def update_states(self) -> None:
+    def read_states(self) -> None:
+        """Read the states from the homeassistant instance."""
         if self._demo_mode:
-            self._states["sensor.solaredge_i1_ac_power"] = State("sensor.solaredge_i1_ac_power", "10000")
-            self._states["sensor.solaredge_m1_ac_power"] = State("sensor.solaredge_m1_ac_power", "6000")
-            self._states["sensor.keba_charge_power"] = State("sensor.keba_charge_power", "2500")
-            self._states["sensor.tumbler_power"] = State("sensor.tumbler_power", "600")
-            self._states["sensor.officedesk_power"] = State("sensor.officedesk_power", "40")
-            self._states["sensor.rack_power"] = State("sensor.rack_power", "80")
+            self._read_states["sensor.solaredge_i1_ac_power"] = HomeassistantState("sensor.solaredge_i1_ac_power", "10000")
+            self._read_states["sensor.solaredge_m1_ac_power"] = HomeassistantState("sensor.solaredge_m1_ac_power", "6000")
+            self._read_states["sensor.keba_charge_power"] = HomeassistantState("sensor.keba_charge_power", "2500")
+            self._read_states["sensor.tumbler_power"] = HomeassistantState("sensor.tumbler_power", "600")
+            self._read_states["sensor.officedesk_power"] = HomeassistantState("sensor.officedesk_power", "40")
+            self._read_states["sensor.rack_power"] = HomeassistantState("sensor.rack_power", "80")
         else:
             headers = {
                 "Authorization": f"Bearer {self._token}",
@@ -94,16 +77,13 @@ class Homeassistant:
 
                 if response.ok:
                     states = response.json()
-                    self._states = dict[str, State]()
+                    self._read_states = dict[str, State]()
                     for state in states:
                         entity_id = state.get("entity_id")
-                        self._states[entity_id] = State(entity_id, state.get("state"), state.get("attributes"))
+                        self._read_states[entity_id] = HomeassistantState(entity_id, state.get("state"), state.get("attributes"))
 
             except Exception as ex:
                 logging.error("Exception during homeassistant update_states: ", ex)
-
-    def get_state(self, entity_id:str) -> Optional[State]:
-        return self._states.get(entity_id)
 
 
 
@@ -115,31 +95,34 @@ class HomeassistantDevice(Device):
         super().__init__(get_config_param(config, "id"), get_config_param(config, "name"), session_storage)
         self._power_entity_id : str = get_config_param(config, "power")
         self._consumed_energy_entity_id : str = get_config_param(config, "energy")
-        self._power: Optional[State]= None
-        self._consumed_energy: Optional[State]  = None
+        self._power: State | None= None
+        self._consumed_energy: State | None  = None
         scale = config.get("energy_scale")
         self._energy_scale : float = float(scale) if scale is not None else 1
         icon = config.get("icon")
         self._icon : str = str(icon) if icon is not None else "mdi-home"
 
-    async def update_state(self, hass:Homeassistant, self_sufficiency: float) -> None:
-        self._power = assign_if_available(self._power, hass.get_state(self._power_entity_id))
-        self._consumed_energy = assign_if_available(self._consumed_energy, hass.get_state(self._consumed_energy_entity_id))
+    async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
+        """Update the own state from the states of a StatesRepository."""
+        self._power = assign_if_available(self._power, state_repository.get_state(self._power_entity_id))
+        self._consumed_energy = assign_if_available(self._consumed_energy, state_repository.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
 
     @property
     def consumed_energy(self) -> float:
-        energy = self._consumed_energy.numeric_state if self._consumed_energy else 0.0
+        """The consumed energy of the device."""
+        energy = self._consumed_energy.numeric_value if self._consumed_energy else 0.0
         return energy * self._energy_scale
 
     @property
     def icon(self) -> str:
+        """The icon of the device."""
         return self._icon
 
     @property
     def power(self) -> float:
         """The current power used by the device."""
-        return self._power.numeric_state if self._power else 0.0
+        return self._power.numeric_value if self._power else 0.0
 
     @property
     def available(self) -> bool:
@@ -147,5 +130,6 @@ class HomeassistantDevice(Device):
         return self._consumed_energy  is not None and self._consumed_energy.available and self._power is not None and self._power.available
 
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
+        """Restore a previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
-        self._consumed_energy = State(self._consumed_energy_entity_id, str(consumed_energy))
+        self._consumed_energy = HomeassistantState(self._consumed_energy_entity_id, str(consumed_energy))

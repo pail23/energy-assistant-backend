@@ -58,17 +58,17 @@ class Home:
     @property
     def produced_solar_energy(self) -> float:
         """Solar energy in kWh."""
-        return self._produced_solar_energy.numeric_state if self._produced_solar_energy else 0.0
+        return self._produced_solar_energy.numeric_value if self._produced_solar_energy else 0.0
 
     @property
     def grid_imported_energy(self) -> float:
         """Imported energy from the grid in kWh."""
-        return self._grid_imported_energy.numeric_state if self._grid_imported_energy else 0.0
+        return self._grid_imported_energy.numeric_value if self._grid_imported_energy else 0.0
 
     @property
     def grid_exported_energy(self) -> float:
         """Exported energy from the grid in kWh."""
-        return self._grid_exported_energy.numeric_state if self._grid_exported_energy else 0.0
+        return self._grid_exported_energy.numeric_value if self._grid_exported_energy else 0.0
 
     @property
     def consumed_energy(self) ->float:
@@ -136,12 +136,12 @@ class Home:
     @property
     def solar_production_power(self)-> float:
         """Solar production power of the home."""
-        return self._solar_production_power.numeric_state if self._solar_production_power else 0.0
+        return self._solar_production_power.numeric_value if self._solar_production_power else 0.0
 
     @property
     def grid_supply_power(self)-> float:
         """Grid supply power of the home."""
-        return self._grid_imported_power.numeric_state if self._grid_imported_power else 0.0
+        return self._grid_imported_power.numeric_value if self._grid_imported_power else 0.0
 
     def restore_state(self, consumed_solar_energy:float, consumed_energy:float, solar_produced_energy:float, grid_imported_energy:float, grid_exported_energy:float) -> None:
         """Restore the proviously stored state."""

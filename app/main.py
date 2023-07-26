@@ -44,7 +44,7 @@ app.include_router(api_router, prefix="/api")
 async def async_handle_state_update(home: Home, hass: Homeassistant, db: Database, session: AsyncSession) -> None:
     """Read the values from home assistant and process the update."""
     try:
-        hass.update_states()
+        hass.read_states()
         await home.update_state_from_hass(hass)
         # print("Send refresh: " + get_home_message(home))
         if db:
@@ -253,7 +253,7 @@ async def init_app() -> None:
                     if url is not None and token is not None:
                         hass = Homeassistant(url, token, demo_mode)
                         app.hass = hass  # type: ignore
-                        hass.update_states()
+                        hass.read_states()
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
