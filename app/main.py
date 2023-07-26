@@ -46,6 +46,8 @@ async def async_handle_state_update(home: Home, hass: Homeassistant, db: Databas
     try:
         hass.read_states()
         await home.update_state_from_hass(hass)
+        await home.update_power_consumption(hass)
+        hass.write_states()
         # print("Send refresh: " + get_home_message(home))
         if db:
             if home:
@@ -167,7 +169,7 @@ def get_home_message(home: Home) -> str:
         "name": home.name,
         "power": {
             "solar_production": home.solar_production_power,
-            "grid_supply": home.grid_supply_power,
+            "grid_supply": home.grid_imported_power,
             "solar_self_consumption": home.solar_self_consumption_power,
             "home_consumption": home.home_consumption_power,
             "self_sufficiency": round(home.self_sufficiency * 100)

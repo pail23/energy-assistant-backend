@@ -131,7 +131,61 @@ class HomeEnergySnapshot(EnergySnapshot):
         """The total amount of energy exported to the grid."""
         return self._grid_exported_energy
 
+class State:
+    """Base class for States."""
 
+    def __init__(self, id:str, value:str) -> None:
+        """Create a state instance."""
+        self._id = id
+        self._value = value
+        self._available = True
+
+    @property
+    def id(self) -> str:
+        """Id of the state."""
+        return self._id
+
+    @property
+    def available(self) -> bool:
+        """Availability of the state."""
+        return self._available
+
+    @property
+    def value(self) -> str:
+        """State of the state as string."""
+        return self._value
+
+    @property
+    def numeric_value(self) -> float:
+        """Numeric state of the state."""
+        try:
+            return float(self._value)
+        except ValueError:
+            return 0.0
+
+def assign_if_available(old_state: State | None, new_state: State | None) -> State | None:
+    """Return new state in case the state is available, otherwise old state."""
+    if new_state and new_state.available:
+        return new_state
+    else:
+        return old_state
+
+
+class StatesRepository:
+    """Base class for a state repositiroy."""
+
+    def __init__(self) -> None:
+        """Create a StatesRepository instance."""
+        self._read_states : dict[str, State] = dict[str, State]()
+        self._write_states : dict[str, State] = dict[str, State]()
+
+    def get_state(self, id:str) -> State | None:
+        """Get a state from the repositiory."""
+        return self._read_states.get(id)
+
+    def set_state(self, id:str, value: str) -> None:
+        """Set a state in the repository."""
+        self._write_states[id] = State(id, value)
 
 class Device(ABC):
     """A device which tracks energy consumption."""
@@ -184,6 +238,16 @@ class Device(ABC):
         """Icon for the device."""
         pass
 
+    @abstractmethod
+    async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
+        """"Update the device based on the current pv availablity."""
+        pass
+
+    @abstractmethod
+    async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
+        """Update the state of the device."""
+        pass
+
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state of the device."""
         self._consumed_solar_energy.restore_state(consumed_solar_energy, consumed_energy)
@@ -225,60 +289,3 @@ def get_config_param(config: dict, param: str) -> str:
         raise DeviceConfigException(f"Parameter {param} is missing in the configuration")
     else:
         return str(result)
-
-
-class State:
-    """Base class for States."""
-
-    def __init__(self, id:str, value:str) -> None:
-        """Create a state instance."""
-        self._id = id
-        self._value = value
-        self._available = True
-
-    @property
-    def id(self) -> str:
-        """Id of the state."""
-        return self._id
-
-    @property
-    def available(self) -> bool:
-        """Availability of the state."""
-        return self._available
-
-    @property
-    def value(self) -> str:
-        """State of the state as string."""
-        return self._value
-
-    @property
-    def numeric_value(self) -> float:
-        """Numeric state of the state."""
-        try:
-            return float(self._value)
-        except ValueError:
-            return 0.0
-
-def assign_if_available(old_state: State | None, new_state: State | None) -> State | None:
-    """Return new state in case the state is available, otherwise old state."""
-    if new_state and new_state.available:
-        return new_state
-    else:
-        return old_state
-
-
-class StatesRepository:
-    """Base class for a state repositiroy."""
-
-    def __init__(self) -> None:
-        """Create a StatesRepository instance."""
-        self._read_states = dict[str, State]()
-        self._write_states = dict[str, State]()
-
-    def get_state(self, id:str) -> State | None:
-        """Get a state from the repositiory."""
-        return self._read_states.get(id)
-
-    def set_state(self, id:str, value: str) -> None:
-        """Set a state in the repository."""
-        self._write_states[id] = State(id, value)

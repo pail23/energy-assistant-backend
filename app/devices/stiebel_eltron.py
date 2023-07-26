@@ -6,6 +6,16 @@ from .homeassistant import assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
 
+def numeric_value(value: str | None) -> float | None:
+    """Convert into a number."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
 
 class StiebelEltronDevice(Device):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
@@ -25,6 +35,10 @@ class StiebelEltronDevice(Device):
         store_sessions = config.get("store_sessions")
         if store_sessions is not None and store_sessions:
             self._store_sessions = True
+
+        self._comfort_target_temperature_entity_id = config.get("comfort_target_temperature")
+        self._target_temperature_normal: float | None = numeric_value(config.get("target_temperature_normal"))
+        self._target_temperature_pv: float | None = numeric_value(config.get("target_temperatrure_pv"))
 
         self._state_entity_id: str = get_config_param(config, "state")
         self._consumed_energy_entity_id: str = get_config_param(
@@ -56,6 +70,22 @@ class StiebelEltronDevice(Device):
                 await self.update_session()
             elif old_state and not new_state:
                 logging.info("End Session")
+
+    async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
+        """"Update the device based on the current pv availablity."""
+        if self._target_temperature_normal is not None and self._target_temperature_pv is not None and self._comfort_target_temperature_entity_id is not None:
+            if self.state == 'off':
+                target_temperature = self._target_temperature_pv if grid_exported_power > self.requested_additional_power else self._target_temperature_normal
+                current_target_temperature = state_repository.get_state(self._comfort_target_temperature_entity_id)
+                if current_target_temperature is not None and target_temperature != current_target_temperature.numeric_value:
+                    state_repository.set_state(self._comfort_target_temperature_entity_id, str(target_temperature))
+
+
+    @property
+    def requested_additional_power(self) -> float:
+        """How much power the device could consume in pv mode."""
+        # TODO: Consider the actual temperature
+        return STIEBEL_ELTRON_POWER if self.state == 'off' else 0.0
 
     @property
     def consumed_energy(self) -> float:

@@ -77,7 +77,7 @@ class Homeassistant(StatesRepository):
 
                 if response.ok:
                     states = response.json()
-                    self._read_states = dict[str, State]()
+                    self._read_states.clear()
                     for state in states:
                         entity_id = state.get("entity_id")
                         self._read_states[entity_id] = HomeassistantState(entity_id, state.get("state"), state.get("attributes"))
@@ -85,7 +85,25 @@ class Homeassistant(StatesRepository):
             except Exception as ex:
                 logging.error("Exception during homeassistant update_states: ", ex)
 
-
+    def write_states(self) -> None:
+        """Send the changed states to hass."""
+        if not self._demo_mode:
+            headers = {
+                "Authorization": f"Bearer {self._token}",
+                "content-type": "application/json",
+            }
+            try:
+                for id, state in self._write_states.items():
+                    if id.startswith("number"):
+                        data = {"entity_id": id, "value": state.value}
+                        response = requests.post(
+                            f"{self._url}/api/services/number/set_value", headers=headers, json=data)
+                        if not response.ok:
+                            logging.error("State update in hass failed")
+                    else:
+                        logging.error(f"Writing to id {id} is not yet implemented.")
+            except Exception as ex:
+                logging.error("Exception during homeassistant update_states: ", ex)
 
 class HomeassistantDevice(Device):
     """A generic Homeassistant device."""
@@ -107,6 +125,10 @@ class HomeassistantDevice(Device):
         self._power = assign_if_available(self._power, state_repository.get_state(self._power_entity_id))
         self._consumed_energy = assign_if_available(self._consumed_energy, state_repository.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
+
+    async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
+        """"Update the device based on the current pv availablity."""
+        pass
 
     @property
     def consumed_energy(self) -> float:
