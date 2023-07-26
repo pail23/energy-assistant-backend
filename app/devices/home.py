@@ -1,6 +1,7 @@
 """The home is the root of all devices."""
 
 import logging
+import uuid
 
 from . import (
     Device,
@@ -60,6 +61,13 @@ class Home:
     def add_device(self, device: Device) -> None:
         """Add a device to the home."""
         self.devices.append(device)
+
+    def get_device(self, id: uuid.UUID) -> Device | None:
+        """Get device with the given id."""
+        for device in self.devices:
+             if device.id == id:
+                 return device
+        return None
 
     @property
     def name(self) -> str:

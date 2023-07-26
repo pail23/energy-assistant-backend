@@ -25,6 +25,8 @@ class DeviceSchema(BaseModel):
     id: uuid.UUID
     name: str
     icon: str
+    supported_power_modes:  list[str] | None = None
+    power_mode: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

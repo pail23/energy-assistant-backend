@@ -1,7 +1,14 @@
 """Stiebel Eltron device implementation."""
 import logging
 
-from . import Device, SessionStorage, State, StatesRepository, get_config_param
+from . import (
+    Device,
+    PowerModes,
+    SessionStorage,
+    State,
+    StatesRepository,
+    get_config_param,
+)
 from .homeassistant import assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
@@ -39,6 +46,8 @@ class StiebelEltronDevice(Device):
         self._comfort_target_temperature_entity_id = config.get("comfort_target_temperature")
         self._target_temperature_normal: float | None = numeric_value(config.get("target_temperature_normal"))
         self._target_temperature_pv: float | None = numeric_value(config.get("target_temperatrure_pv"))
+        if self._target_temperature_normal is not None and self._target_temperature_pv is not None and self._comfort_target_temperature_entity_id is not None:
+            self._supported_power_modes.append(PowerModes.PV)
 
         self._state_entity_id: str = get_config_param(config, "state")
         self._consumed_energy_entity_id: str = get_config_param(

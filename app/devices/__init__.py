@@ -1,5 +1,6 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
+from enum import StrEnum, auto
 from typing import Optional
 import uuid
 
@@ -187,6 +188,17 @@ class StatesRepository:
         """Set a state in the repository."""
         self._write_states[id] = State(id, value)
 
+class PowerModes(StrEnum):
+    """Power modes for controlling the device."""
+
+    DEVICE_CONTROLLED = auto()
+    OFF = auto()
+    PV = auto()
+    MIN_PV = auto()
+    FAST = auto()
+
+
+
 class Device(ABC):
     """A device which tracks energy consumption."""
 
@@ -198,11 +210,24 @@ class Device(ABC):
         self._energy_snapshot: EnergySnapshot | None = None
         self.session_storage: SessionStorage = session_storage
         self.current_session : int | None = None
+        self._supported_power_modes : list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
+        self._power_mode : PowerModes = PowerModes.DEVICE_CONTROLLED
 
     @property
     def name(self) -> str:
         """The name of the device."""
         return self._name
+
+
+    @property
+    def supported_power_modes(self) -> list[PowerModes]:
+        """Returns the supported power modes for the device."""
+        return self._supported_power_modes
+
+    @property
+    def power_mode(self) -> PowerModes:
+        """The power mode of the device."""
+        return self._power_mode
 
     @property
     def id(self) -> uuid.UUID:

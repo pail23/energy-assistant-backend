@@ -23,7 +23,7 @@ async def read_all(
     use_case: ReadAllDevices = Depends(ReadAllDevices)
 ) -> ReadAllDevicesResponse:
     """Rest end point for read all devices."""
-    return ReadAllDevicesResponse(devices=[device async for device in use_case.execute()])
+    return ReadAllDevicesResponse(devices=[device async for device in use_case.execute(request.app.home)])
 
 
 @router.get(
@@ -36,7 +36,7 @@ async def read(
     use_case: ReadDevice = Depends(ReadDevice),
 ) -> DeviceSchema:
     """REST end pont for read a device."""
-    return await use_case.execute(device_id)
+    return await use_case.execute(device_id, request.app.home)
 
 @router.get(
     "/{device_id}/measurements"

@@ -104,6 +104,7 @@ class Homeassistant(StatesRepository):
                         logging.error(f"Writing to id {id} is not yet implemented.")
             except Exception as ex:
                 logging.error("Exception during homeassistant update_states: ", ex)
+            self._write_states.clear()
 
 class HomeassistantDevice(Device):
     """A generic Homeassistant device."""
