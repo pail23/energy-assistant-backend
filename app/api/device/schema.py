@@ -20,3 +20,15 @@ class ReadDeviceMeasurementsResponse(BaseModel):
     """API Response for reading home measurements."""
 
     device_measurements: list[DeviceMeasurementSchema]
+
+
+class UpdateDevicePowerModeRequest(BaseModel):
+    """API Request for setting the power mode."""
+
+    power_mode: str
+
+
+class UpdateDevicePowerModeResponse(DeviceSchema):
+    """API Response for setting the power mode."""
+
+    pass

@@ -82,7 +82,7 @@ class StiebelEltronDevice(Device):
 
     async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
-        if self._target_temperature_normal is not None and self._target_temperature_pv is not None and self._comfort_target_temperature_entity_id is not None:
+        if self.power_mode == PowerModes.PV and self._target_temperature_normal is not None and self._target_temperature_pv is not None and self._comfort_target_temperature_entity_id is not None:
             if self.state == 'off':
                 target_temperature = self._target_temperature_pv if grid_exported_power > self.requested_additional_power else self._target_temperature_normal
                 current_target_temperature = state_repository.get_state(self._comfort_target_temperature_entity_id)

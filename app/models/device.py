@@ -74,7 +74,7 @@ class Device(Base):
         await session.flush()
         return device
 
-    async def update(self, session: AsyncSession, name: str, icon: str) -> None:
+    async def update(self, session: AsyncSession, name: str, icon: str, power_mode: str) -> None:
         """Update a device."""
         self.name = name
         self.icon = icon

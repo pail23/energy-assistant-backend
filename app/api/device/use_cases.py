@@ -1,10 +1,12 @@
 """Use cases for devices."""
+import logging
 from typing import AsyncIterator
 import uuid
 
 from fastapi import HTTPException
 
 from app.db import AsyncSession
+from app.devices import PowerModes
 from app.devices.home import Home
 from app.models import DeviceMeasurementSchema, DeviceSchema
 from app.models.device import Device, DeviceMeasurement
@@ -65,6 +67,30 @@ class ReadDeviceMeasurements:
             async for device_measurement in DeviceMeasurement.read_by_device_id(session, device_id):
                 yield DeviceMeasurementSchema.model_validate(device_measurement)
 
+class UpdateDevicePowerMode:
+    """Update the power mode of  a device use case."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Create a uodate device power mode use case."""
+        self.async_session = session
+
+    async def execute(self, device_id: uuid.UUID, power_mode:str, home: Home) -> DeviceSchema:
+        """Execute the update device power nmode use case."""
+        async with self.async_session() as session:
+            d = home.get_device(device_id)
+            if d is not None:
+                try:
+                    d.set_power_mode(PowerModes[power_mode.upper()])
+                    device = await Device.read_by_id(session, device_id)
+                    if not device:
+                        raise HTTPException(status_code=404)
+
+                    await device.update(session, device.name, device.icon, power_mode)
+                    await session.refresh(device)
+                    result = DeviceSchema.model_validate(device)
+                except Exception:
+                    logging.error("Invalid power mode: " + power_mode)
+            return result
 
 class DeleteDevice:
     """Delete a device use case."""

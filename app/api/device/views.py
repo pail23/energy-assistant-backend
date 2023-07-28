@@ -11,8 +11,16 @@ from .schema import (
     ReadAllDevicesResponse,
     ReadDeviceMeasurementsResponse,
     ReadDeviceResponse,
+    UpdateDevicePowerModeRequest,
+    UpdateDevicePowerModeResponse,
 )
-from .use_cases import DeleteDevice, ReadAllDevices, ReadDevice, ReadDeviceMeasurements
+from .use_cases import (
+    DeleteDevice,
+    ReadAllDevices,
+    ReadDevice,
+    ReadDeviceMeasurements,
+    UpdateDevicePowerMode,
+)
 
 router = APIRouter(prefix="/devices")
 
@@ -38,6 +46,7 @@ async def read(
     """REST end pont for read a device."""
     return await use_case.execute(device_id, request.app.home)
 
+
 @router.get(
     "/{device_id}/measurements"
 )
@@ -48,6 +57,20 @@ async def read_measurements(
 ) -> ReadDeviceMeasurementsResponse:
     """REST end pont for read a device."""
     return ReadDeviceMeasurementsResponse(device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)])
+
+
+@router.put(
+    "/{device_id}/power_mode",
+    response_model=UpdateDevicePowerModeResponse,
+)
+async def update_power_mode(
+    request: Request,
+    data: UpdateDevicePowerModeRequest,
+    device_id: uuid.UUID = Path(..., description=""),
+    use_case: UpdateDevicePowerMode = Depends(UpdateDevicePowerMode),
+) -> DeviceSchema:
+    """Update the power mode of a device."""
+    return await use_case.execute(device_id, data.power_mode, request.app.home)
 
 
 

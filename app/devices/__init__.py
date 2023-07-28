@@ -229,6 +229,10 @@ class Device(ABC):
         """The power mode of the device."""
         return self._power_mode
 
+    def set_power_mode(self, power_mode: PowerModes) -> None:
+        """Set the power mode of the device."""
+        self._power_mode = power_mode
+
     @property
     def id(self) -> uuid.UUID:
         """The id of the device."""
