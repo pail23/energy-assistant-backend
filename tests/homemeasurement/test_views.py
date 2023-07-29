@@ -6,6 +6,8 @@ from httpx import AsyncClient
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.devices import PowerModes
+
 
 async def setup_data(session: AsyncSession) -> None:
     """Set up the data in the database."""
@@ -14,7 +16,7 @@ async def setup_data(session: AsyncSession) -> None:
     from app.models.sessionlog import SessionLogEntry
 
     device = Device(id=uuid.UUID(
-        "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"), name="Device 1", icon="mdi-home")
+        "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"), name="Device 1", icon="mdi-home", power_mode=PowerModes.DEVICE_CONTROLLED)
     session.add(device)
     await session.flush()
 
@@ -34,7 +36,7 @@ async def setup_data(session: AsyncSession) -> None:
         session.add(home_measurement)
         await session.flush()
         device_measurement = DeviceMeasurement(
-            name=device.name, home_measurement_id=home_measurement.id, solar_consumed_energy=m * 0.5 + 2, consumed_energy=m + 2, device_id=device.id)
+            home_measurement_id=home_measurement.id, solar_consumed_energy=m * 0.5 + 2, consumed_energy=m + 2, device_id=device.id)
         session.add(device_measurement)
         await session.flush()
 
@@ -121,5 +123,5 @@ async def test_session_log(ac: AsyncClient, session: AsyncSession) -> None:
     )
     assert response.status_code == 200
 
-    assert response.json() =={"entries": [{"start": "2023-01-09T10:22:00", "end": "2023-01-09T10:30:00", "text": "Test log entry", "device_id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec", "solar_consumed_energy": 20.0, "consumed_energy": 40.0},
-                     {"start": "2023-01-10T10:22:00", "end": "2023-01-10T10:30:00", "text": "Test log entry", "device_id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec", "solar_consumed_energy": 30.0, "consumed_energy": 45.0}]}
+    assert response.json() == {"entries": [{"start": "2023-01-09T10:22:00", "end": "2023-01-09T10:30:00", "text": "Test log entry", "device_id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec", "solar_consumed_energy": 20.0, "consumed_energy": 40.0},
+                                           {"start": "2023-01-10T10:22:00", "end": "2023-01-10T10:30:00", "text": "Test log entry", "device_id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec", "solar_consumed_energy": 30.0, "consumed_energy": 45.0}]}

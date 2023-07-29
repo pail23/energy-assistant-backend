@@ -5,7 +5,7 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.devices import EnergyIntegrator
+from app.devices import EnergyIntegrator, PowerModes
 from app.devices.home import Home
 from app.devices.homeassistant import HomeassistantDevice
 from app.models.home import HomeMeasurement
@@ -18,10 +18,10 @@ async def setup_data(session: AsyncSession) -> None:
     from app.models.home import HomeMeasurement
 
     device1 = Device(id=uuid.UUID(
-        "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"), name="Device 1", icon="mdi-home")
+        "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"), name="Device 1", icon="mdi-home", power_mode = PowerModes.DEVICE_CONTROLLED)
     session.add(device1)
     device2 = Device(id=uuid.UUID(
-        "2a8ac2d6-5695-427a-a3c5-ef567b34e5ec"), name="Device 2", icon="mdi-home")
+        "2a8ac2d6-5695-427a-a3c5-ef567b34e5ec"), name="Device 2", icon="mdi-home", power_mode = PowerModes.DEVICE_CONTROLLED)
     session.add(device2)
     await session.flush()
     devices = [device1, device2]
@@ -34,7 +34,7 @@ async def setup_data(session: AsyncSession) -> None:
         await session.flush()
         for i, device in enumerate(devices):
             device_measurement = DeviceMeasurement(
-                name=f"Device {i}", home_measurement_id=home_measurement.id, consumed_energy=2 + 0.5 * i + m, solar_consumed_energy=1 + i + 0.5 * m, device_id=device.id)
+                home_measurement_id=home_measurement.id, consumed_energy=2 + 0.5 * i + m, solar_consumed_energy=1 + i + 0.5 * m, device_id=device.id)
             session.add(device_measurement)
         await session.flush()
 
