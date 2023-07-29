@@ -31,7 +31,7 @@ class ReadAllDevices:
                     result.supported_power_modes = list(d.supported_power_modes)
                     result.power_mode = d.power_mode
                 yield result
-        yield DeviceSchema(id=OTHER_DEVICE, name="Andere", icon="mdi-home")
+        yield DeviceSchema(id=OTHER_DEVICE, name="Andere", icon="mdi-home", supported_power_modes=[], power_mode="")
 
 
 class ReadDevice:
@@ -76,7 +76,7 @@ class UpdateDevicePowerMode:
 
     async def execute(self, device_id: uuid.UUID, power_mode:str, home: Home) -> DeviceSchema:
         """Execute the update device power nmode use case."""
-        async with self.async_session() as session:
+        async with self.async_session.begin() as session:
             d = home.get_device(device_id)
             if d is not None:
                 try:
@@ -88,6 +88,8 @@ class UpdateDevicePowerMode:
                     await device.update(session, device.name, device.icon, power_mode)
                     await session.refresh(device)
                     result = DeviceSchema.model_validate(device)
+                    result.supported_power_modes = list(d.supported_power_modes)
+                    result.power_mode = d.power_mode
                 except Exception:
                     logging.error("Invalid power mode: " + power_mode)
             return result

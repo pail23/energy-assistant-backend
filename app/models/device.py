@@ -26,6 +26,7 @@ class Device(Base):
     id : Mapped[uuid.UUID] = mapped_column("id", nullable=False, unique=True, primary_key=True)
     name: Mapped[str]
     icon: Mapped[str]
+    power_mode: Mapped[str]
 
     device_measurements: Mapped[list[DeviceMeasurement]] = relationship(
         "DeviceMeasurement",
@@ -63,12 +64,13 @@ class Device(Base):
 
 
     @classmethod
-    async def create(cls, session: AsyncSession, id: uuid.UUID, name: str, icon: str) -> Device:
+    async def create(cls, session: AsyncSession, id: uuid.UUID, name: str, icon: str, power_mode: str) -> Device:
         """Create a device."""
         device = Device(
             id = id,
             name=name,
-            icon = icon
+            icon = icon,
+            power_mode = power_mode
         )
         session.add(device)
         await session.flush()
@@ -78,6 +80,7 @@ class Device(Base):
         """Update a device."""
         self.name = name
         self.icon = icon
+        self.power_mode = power_mode
         await session.flush()
 
     @classmethod
@@ -96,8 +99,6 @@ class DeviceMeasurement(Base):
 
     id: Mapped[int] = mapped_column(
         "id", autoincrement=True, nullable=False, unique=True, primary_key=True)
-    # TODO: drop this column
-    name: Mapped[str]
     consumed_energy: Mapped[float]
     solar_consumed_energy: Mapped[float]
 
@@ -161,11 +162,10 @@ class DeviceMeasurement(Base):
             yield row
 
     @classmethod
-    async def create(cls, session: AsyncSession, home_measurement: HomeMeasurement, name: str, solar_consumed_energy: float, consumed_energy: float, device: Device) -> DeviceMeasurement:
+    async def create(cls, session: AsyncSession, home_measurement: HomeMeasurement, solar_consumed_energy: float, consumed_energy: float, device: Device) -> DeviceMeasurement:
         """Create a device measurement."""
 
         measurement = DeviceMeasurement(
-            name=name,
             home_measurement_id=home_measurement.id,
             solar_consumed_energy=solar_consumed_energy,
             consumed_energy=consumed_energy,
@@ -179,11 +179,10 @@ class DeviceMeasurement(Base):
             raise RuntimeError()
         return new
 
-    async def update(self, session: AsyncSession, home_measurement: HomeMeasurement, name: str, solar_consumed_energy: float, consumed_energy: float, device: Device) -> None:
+    async def update(self, session: AsyncSession, home_measurement: HomeMeasurement, solar_consumed_energy: float, consumed_energy: float, device: Device) -> None:
         """Update a device measurement."""
 
         self.home_measurement_id = home_measurement.id
-        self.name = name
         self.solar_consumed_energy = solar_consumed_energy
         self.consumed_energy = consumed_energy
         self.device_id = device.id

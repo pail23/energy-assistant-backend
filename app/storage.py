@@ -7,7 +7,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db import get_session
-from app.devices import SessionStorage
+from app.devices import PowerModes, SessionStorage
 from app.devices.home import Home
 from app.models.device import Device as DeviceDTO, DeviceMeasurement
 from app.models.home import HomeMeasurement
@@ -65,7 +65,7 @@ class Database:
                 for device in home.devices:
                     device_dto = await DeviceDTO.read_by_id(session, device.id)
                     if device_dto is not None:
-                        await DeviceMeasurement.create(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
+                        await DeviceMeasurement.create(session, home_measurement=home_measurement, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
 
             else:
                 await home_measurement.update(session, name=home.name, measurement_date=today, consumed_energy=home.consumed_energy, solar_consumed_energy=home.consumed_solar_energy, solar_produced_energy=home.produced_solar_energy, grid_imported_energy=home.grid_imported_energy, grid_exported_energy=home.grid_exported_energy)
@@ -75,7 +75,7 @@ class Database:
                     if device_measurement is not None:
                         device_dto = await DeviceDTO.read_by_id(session, device.id)
                         if device_dto is not None:
-                            await device_measurement.update(session, home_measurement=home_measurement, name=device.name, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
+                            await device_measurement.update(session, home_measurement=home_measurement, consumed_energy=device.consumed_energy, solar_consumed_energy=device.consumed_solar_energy, device=device_dto)
             await session.flush()
             await session.commit()
         except Exception as ex:
@@ -88,9 +88,10 @@ class Database:
             try:
                 device_dto = await DeviceDTO.read_by_id(session, device.id)
                 if device_dto is not None:
+                    device.set_power_mode(PowerModes[device_dto.power_mode.upper()])
                     await device_dto.update(session, device.name, device.icon, device.power_mode)
                 else:
-                    await DeviceDTO.create(session, device.id, device.name, device.icon)
+                    await DeviceDTO.create(session, device.id, device.name, device.icon, device.power_mode)
                 await session.flush()
                 await session.commit()
 
