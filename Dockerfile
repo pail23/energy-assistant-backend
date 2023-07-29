@@ -2,22 +2,16 @@ ARG TARGETPLATFORM="linux/amd64"
 ARG BUILD_VERSION=latest
 ARG PYTHON_VERSION="3.11"
 
-FROM nginx:stable-alpine
+FROM python:3.11
 WORKDIR /app
-RUN apk update && apk add --no-cache python3 && \
-    python3 -m ensurepip && \
-    rm -r /usr/lib/python*/ensurepip && \
-    pip3 install --upgrade pip setuptools && \
-    if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
-    if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi && \
-    rm -r /root/.cache
-RUN apk update && apk add gcc python3-dev musl-dev
 
 COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
 COPY ./alembic.ini .
 
-RUN pip install -r requirements.txt
+RUN set -x \
+    && pip install --upgrade pip \
+    && pip install -r requirements.txt
 
 RUN mkdir /data
 
