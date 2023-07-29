@@ -88,7 +88,8 @@ class Database:
             try:
                 device_dto = await DeviceDTO.read_by_id(session, device.id)
                 if device_dto is not None:
-                    device.set_power_mode(PowerModes[device_dto.power_mode.upper()])
+                    if device_dto.power_mode is not None:
+                        device.set_power_mode(PowerModes[device_dto.power_mode.upper()])
                     await device_dto.update(session, device.name, device.icon, device.power_mode)
                 else:
                     await DeviceDTO.create(session, device.id, device.name, device.icon, device.power_mode)
