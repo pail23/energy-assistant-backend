@@ -9,9 +9,11 @@ from . import (
     StatesRepository,
     get_config_param,
 )
+from .analysis import DataBuffer
 from .homeassistant import assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
+POWER_HYSTERESIS = 0.1
 
 def numeric_value(value: str | None) -> float | None:
     """Convert into a number."""
@@ -31,6 +33,7 @@ class StiebelEltronDevice(Device):
         """Create a Stiebel Eltron heatpump."""
         super().__init__(get_config_param(config, "id"),
                          get_config_param(config, "name"), session_storage)
+        self.grid_exported_power_data = DataBuffer()
         self._consumed_energy_today: State | None = None
         self._consumed_energy_today_entity_id: str = get_config_param(
             config, "energy_today")
@@ -75,18 +78,29 @@ class StiebelEltronDevice(Device):
                 logging.info("Start Session")
                 await self.start_session("Water heating")
             elif new_state:
-                logging.info("Update Session")
                 await self.update_session()
             elif old_state and not new_state:
                 logging.info("End Session")
+                await self.update_session_energy()
+            else:
+                await self.update_session_energy()
 
     async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
-        if self.power_mode == PowerModes.PV and self._target_temperature_normal is not None and self._target_temperature_pv is not None and self._comfort_target_temperature_entity_id is not None:
-            if self.state == 'off':
-                target_temperature = self._target_temperature_pv if grid_exported_power > self.requested_additional_power else self._target_temperature_normal
-                current_target_temperature = state_repository.get_state(self._comfort_target_temperature_entity_id)
-                if current_target_temperature is not None and target_temperature != current_target_temperature.numeric_value:
+        self.grid_exported_power_data.add_data_point(grid_exported_power)
+        if self._target_temperature_normal is not None and self._target_temperature_pv is not None and self._comfort_target_temperature_entity_id is not None:
+            current_target_temperature = state_repository.get_state(self._comfort_target_temperature_entity_id)
+            if current_target_temperature is not None:
+                target_temperature : float = current_target_temperature.numeric_value
+                if self.power_mode == PowerModes.PV :
+                    if self.state == 'off':
+                        avg_300 = self.grid_exported_power_data.get_average_for(300)
+                        if avg_300 > self.requested_additional_power * (1 + POWER_HYSTERESIS):
+                            target_temperature = self._target_temperature_pv
+                        elif avg_300 < self.requested_additional_power * (1 - POWER_HYSTERESIS):
+                            target_temperature = self._target_temperature_normal
+
+                if target_temperature != current_target_temperature.numeric_value:
                     state_repository.set_state(self._comfort_target_temperature_entity_id, str(target_temperature))
 
 

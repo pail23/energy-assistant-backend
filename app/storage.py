@@ -120,6 +120,13 @@ class DbSessionStorage(SessionStorage):
                 await entry.update(session, entry.text, entry.device_id, entry.start, entry.start_solar_consumed_energy, entry.start_consumed_energy, datetime.now(),
                                    solar_consumed_energy, consumed_energy)
 
-
+    async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
+        """Update the session with the given id."""
+        async_session = await get_async_session()
+        async with async_session.begin() as session:
+            entry = await SessionLogEntry.read_by_id(session, id)
+            if entry is not None:
+                await entry.update(session, entry.text, entry.device_id, entry.start, entry.start_solar_consumed_energy, entry.start_consumed_energy, entry.end,
+                                   solar_consumed_energy, consumed_energy)
 
 session_storage = DbSessionStorage()

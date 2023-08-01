@@ -18,6 +18,11 @@ class SessionStorage(ABC):
         """Update the session with the given id."""
         pass
 
+    @abstractmethod
+    async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
+        """Update the session with the given id."""
+        pass
+
 class Integrator:
     """Integrate a measurement like power to get the energy."""
 
@@ -300,6 +305,11 @@ class Device(ABC):
         self.current_session = await self.session_storage.start_session(self._id, text,self.consumed_solar_energy, self.consumed_energy)
 
     async def update_session(self) -> None:
+        """Update a running session."""
+        if self.current_session is not None:
+            await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
+
+    async def update_session_energy(self) -> None:
         """Update a running session."""
         if self.current_session is not None:
             await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
