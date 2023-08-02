@@ -32,6 +32,10 @@ class Home:
             config, "imported_energy")
         self._grid_exported_energy_entity_id: str = get_config_param(
             config, "exported_energy")
+        self._disable_device_control: bool = False
+        disable_control = config.get("disable_device_control")
+        if disable_control is not None and disable_control:
+            self._disable_device_control = True
 
         self._solar_production_power: State | None = None
         self._grid_imported_power: State | None = None
@@ -152,8 +156,9 @@ class Home:
 
     async def update_power_consumption(self, state_repository: StatesRepository) -> None:
         """"Update the device based on the current pv availablity."""
-        for device in self.devices:
-            await device.update_power_consumption(state_repository, self.grid_imported_power)
+        if not self._disable_device_control:
+            for device in self.devices:
+                await device.update_power_consumption(state_repository, self.grid_imported_power)
 
 
     @property

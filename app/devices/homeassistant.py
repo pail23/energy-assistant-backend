@@ -3,6 +3,8 @@ import logging
 
 import requests  # type: ignore
 
+from app.devices.analysis import DataBuffer
+
 from . import (
     Device,
     SessionStorage,
@@ -156,3 +158,27 @@ class HomeassistantDevice(Device):
         """Restore a previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
         self._consumed_energy = HomeassistantState(self._consumed_energy_entity_id, str(consumed_energy))
+
+
+class PowerStateDevice(HomeassistantDevice):
+    """A device which detects it's state by power data."""
+
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+        """Create a PowerStateDevie device."""
+        super().__init__(config, session_storage)
+        self._state: str = "unknown"
+        self.power_data = DataBuffer()
+
+    @property
+    def state(self) -> str:
+        """The state of the device. The state is `on` in case the device is running."""
+        return self._state
+
+    async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
+        """Update the own state from the states of a StatesRepository."""
+        await super().update_state(state_repository, self_sufficiency)
+        old_state = self.state == 'on'
+        if not old_state and self.power > 0:
+            self._state = 'on'
+        elif old_state and self.power < 5:
+            self._state = 'off'
