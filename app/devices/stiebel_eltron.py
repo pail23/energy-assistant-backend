@@ -74,15 +74,15 @@ class StiebelEltronDevice(Device):
         self._actual_temp = assign_if_available(
             self._actual_temp, state_repository.get_state(self._actual_temp_entity_id))
         if self._store_sessions:
-            if (not old_state) and new_state:
-                logging.info("Start Session")
-                await self.start_session("Water heating")
-            elif new_state:
-                await self.update_session()
-            elif old_state and not new_state:
-                logging.info("End Session")
-                await self.update_session_energy()
+            if new_state:
+                if old_state:
+                    await self.update_session()
+                else:
+                    logging.info("Start Session")
+                    await self.start_session("Water heating")
             else:
+                if old_state:
+                    logging.info("End Session")
                 await self.update_session_energy()
 
     async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:

@@ -312,7 +312,7 @@ class Device(ABC):
     async def update_session_energy(self) -> None:
         """Update a running session."""
         if self.current_session is not None:
-            await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
+            await self.session_storage.update_session_energy(self.current_session, self.consumed_solar_energy, self.consumed_energy)
 
 
 
