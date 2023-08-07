@@ -15,7 +15,7 @@ import yaml
 
 from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
-from app.devices import Device
+from app.devices import Device, DeviceWithState
 from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.stiebel_eltron import StiebelEltronDevice
@@ -98,10 +98,8 @@ def get_device_message(device: Device) -> dict:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
     result = {
-        # "name": device.name,
         "device_id": str(device.id),
         "type": device.__class__.__name__,
-        # "icon": device.icon,
         "power": device.power,
         "available": device.available,
         "today": {
@@ -110,9 +108,12 @@ def get_device_message(device: Device) -> dict:
             "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
         },
     }
+    attributes : dict[str, str]= {}
     if isinstance(device, StiebelEltronDevice):
-        result["actual_temperature"] = device.actual_temperature
-        result["state"] = device.state
+        attributes["actual_temperature"] = f"{device.actual_temperature} °C"
+    if isinstance(device, DeviceWithState):
+        attributes["state"] = device.state
+    result["attributes"] = attributes
     return result
 
 
@@ -132,25 +133,13 @@ def get_home_message(home: Home) -> str:
     other_consumed_energy = consumed_energy_today
     other_consumed_solar_energy = consumed_solar_energy_today
     for device in home.devices:
-        if not isinstance(device, StiebelEltronDevice):
-            device_message = get_device_message(device)
-            devices_messages.append(device_message)
-            other_power = other_power - device.power
-            other_consumed_energy = other_consumed_energy - \
-                device_message["today"]["consumed_energy"]
-            other_consumed_solar_energy = other_consumed_solar_energy - \
-                device_message["today"]["consumed_solar_energy"]
-
-    heat_pump_message = []
-    for device in home.devices:
-        if isinstance(device, StiebelEltronDevice):
-            device_message = get_device_message(device)
-            heat_pump_message.append(device_message)
-            other_power = other_power - device.power
-            other_consumed_energy = other_consumed_energy - \
-                device_message["today"]["consumed_energy"]
-            other_consumed_solar_energy = other_consumed_solar_energy - \
-                device_message["today"]["consumed_solar_energy"]
+        device_message = get_device_message(device)
+        devices_messages.append(device_message)
+        other_power = other_power - device.power
+        other_consumed_energy = other_consumed_energy - \
+            device_message["today"]["consumed_energy"]
+        other_consumed_solar_energy = other_consumed_solar_energy - \
+            device_message["today"]["consumed_solar_energy"]
 
     other_device = {
         "device_id": str(OTHER_DEVICE),
@@ -174,18 +163,12 @@ def get_home_message(home: Home) -> str:
             "home_consumption": home.home_consumption_power,
             "self_sufficiency": round(home.self_sufficiency * 100)
         },
-        "overall": {
-            "consumed_solar_energy": home.consumed_solar_energy,
-            "consumed_energy": home.consumed_energy,
-            "self_sufficiency": get_self_sufficiency(home.consumed_solar_energy, home.consumed_energy)
-        },
         "today": {
             "consumed_solar_energy":  consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
             "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
         },
-        "devices": devices_messages,
-        "heat_pumps": heat_pump_message
+        "devices": devices_messages
     }
     return json.dumps(home_message)
 

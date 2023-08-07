@@ -315,6 +315,14 @@ class Device(ABC):
             await self.session_storage.update_session_energy(self.current_session, self.consumed_solar_energy, self.consumed_energy)
 
 
+class DeviceWithState(ABC):
+    """Device with a state."""
+
+    @property
+    @abstractmethod
+    def state(self) -> str:
+        """The state of the device."""
+        pass
 
 class DeviceConfigException(Exception):
     """Device configuration exception."""

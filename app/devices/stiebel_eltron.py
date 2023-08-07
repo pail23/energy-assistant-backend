@@ -3,6 +3,7 @@ import logging
 
 from . import (
     Device,
+    DeviceWithState,
     PowerModes,
     SessionStorage,
     State,
@@ -26,7 +27,7 @@ def numeric_value(value: str | None) -> float | None:
 
 
 
-class StiebelEltronDevice(Device):
+class StiebelEltronDevice(Device, DeviceWithState):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
     def __init__(self, config: dict, session_storage: SessionStorage):

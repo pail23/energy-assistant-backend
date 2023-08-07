@@ -12,7 +12,7 @@ from . import (
     assign_if_available,
     get_config_param,
 )
-from .homeassistant import HomeassistantDevice
+from .homeassistant import HomeassistantDevice, PowerStateDevice
 from .stiebel_eltron import StiebelEltronDevice
 
 
@@ -57,6 +57,9 @@ class Home:
                         config_device, session_storage))
                 elif type == "stiebel-eltron":
                     self.devices.append(StiebelEltronDevice(
+                        config_device, session_storage))
+                elif type == "power-state-device":
+                    self.devices.append(PowerStateDevice(
                         config_device, session_storage))
                 else:
                     logging.error(

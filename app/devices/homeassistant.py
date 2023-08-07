@@ -7,6 +7,7 @@ from app.devices.analysis import DataBuffer
 
 from . import (
     Device,
+    DeviceWithState,
     SessionStorage,
     State,
     StatesRepository,
@@ -160,7 +161,7 @@ class HomeassistantDevice(Device):
         self._consumed_energy = HomeassistantState(self._consumed_energy_entity_id, str(consumed_energy))
 
 
-class PowerStateDevice(HomeassistantDevice):
+class PowerStateDevice(HomeassistantDevice, DeviceWithState):
     """A device which detects it's state by power data."""
 
     def __init__(self, config: dict, session_storage: SessionStorage) -> None:
@@ -177,8 +178,7 @@ class PowerStateDevice(HomeassistantDevice):
     async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
         """Update the own state from the states of a StatesRepository."""
         await super().update_state(state_repository, self_sufficiency)
-        old_state = self.state == 'on'
-        if not old_state and self.power > 0:
+        if self.state != 'on' and self.power > 0:
             self._state = 'on'
-        elif old_state and self.power < 5:
+        elif self.state != 'off' and self.power < 5:
             self._state = 'off'
