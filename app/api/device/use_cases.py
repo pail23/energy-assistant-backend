@@ -78,21 +78,23 @@ class UpdateDevicePowerMode:
         """Execute the update device power nmode use case."""
         async with self.async_session.begin() as session:
             d = home.get_device(device_id)
-            if d is not None:
-                try:
-                    d.set_power_mode(PowerModes[power_mode.upper()])
-                    device = await Device.read_by_id(session, device_id)
-                    if not device:
-                        raise HTTPException(status_code=404)
+            if d is None:
+                raise HTTPException(status_code=404)
+            try:
+                d.set_power_mode(PowerModes[power_mode.upper()])
+                device = await Device.read_by_id(session, device_id)
+                if not device:
+                    raise HTTPException(status_code=404)
 
-                    await device.update(session, device.name, device.icon, power_mode)
-                    await session.refresh(device)
-                    result = DeviceSchema.model_validate(device)
-                    result.supported_power_modes = list(d.supported_power_modes)
-                    result.power_mode = d.power_mode
-                except Exception:
-                    logging.error("Invalid power mode: " + power_mode)
-            return result
+                await device.update(session, device.name, device.icon, power_mode)
+                await session.refresh(device)
+                result = DeviceSchema.model_validate(device)
+                result.supported_power_modes = list(d.supported_power_modes)
+                result.power_mode = d.power_mode
+                return result
+            except Exception:
+                logging.error("Invalid power mode: " + power_mode)
+                raise HTTPException(status_code=404)
 
 class DeleteDevice:
     """Delete a device use case."""
