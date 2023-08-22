@@ -61,7 +61,7 @@ class Base(AsyncAttrs, DeclarativeBase):
     """Base class for energy assistant data models."""
 
     __abstract__ = True
-    metadata = MetaData(naming_convention=convention)
+    metadata = MetaData(naming_convention=convention) # type: ignore
 
     type_annotation_map = {
         uuid.UUID: GUID,
