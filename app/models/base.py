@@ -1,5 +1,6 @@
 """Base class for Energy Assistant data models."""
 
+from typing import Mapping
 import uuid
 
 from sqlalchemy import MetaData
@@ -8,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.types import CHAR, TypeDecorator
 
-convention = {
+convention : Mapping[str, str] = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
