@@ -3,8 +3,9 @@
 import logging
 import uuid
 
+from app.devices.registry import DeviceTypeRegistry
+
 from . import (
-    Device,
     HomeEnergySnapshot,
     SessionStorage,
     State,
@@ -12,6 +13,7 @@ from . import (
     assign_if_available,
     get_config_param,
 )
+from .device import Device
 from .homeassistant import HomeassistantDevice, PowerStateDevice
 from .stiebel_eltron import StiebelEltronDevice
 
@@ -19,7 +21,7 @@ from .stiebel_eltron import StiebelEltronDevice
 class Home:
     """The home."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, config: dict, session_storage: SessionStorage, device_type_registry: DeviceTypeRegistry) -> None:
         """Create a home instance."""
         self._name: str = get_config_param(config, "name")
         self._solar_power_entity_id: str = get_config_param(
@@ -60,7 +62,7 @@ class Home:
                         config_device, session_storage))
                 elif type == "power-state-device":
                     self.devices.append(PowerStateDevice(
-                        config_device, session_storage))
+                        config_device, session_storage, device_type_registry))
                 else:
                     logging.error(
                         f"Unknown device type {type} in configuration")

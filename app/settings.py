@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     DB_URI: str
     ECHO_SQL: bool
     CONFIG_FILE: str
+    DEVICE_TYPE_REGISTRY: str
     LOG_FILE: str
 
     model_config = SettingsConfigDict(

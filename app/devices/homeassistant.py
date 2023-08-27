@@ -4,16 +4,16 @@ import logging
 import requests  # type: ignore
 
 from app.devices.analysis import DataBuffer
+from app.devices.registry import DeviceTypeRegistry
 
 from . import (
-    Device,
-    DeviceWithState,
     SessionStorage,
     State,
     StatesRepository,
     assign_if_available,
     get_config_param,
 )
+from .device import Device, DeviceWithState
 
 UNAVAILABLE = "unavailable"
 
@@ -161,31 +161,22 @@ class HomeassistantDevice(Device):
         self._consumed_energy = HomeassistantState(self._consumed_energy_entity_id, str(consumed_energy))
 
 
-def get_config_param_from_list(config: list, param:str) -> str | None:
-    """Read config param from a list."""
-    for item in config:
-        value = item.get(param)
-        if value is not None:
-            return value
-    return None
 
-def get_float_param_from_list(config: list, param:str) -> float | None:
-    """Read a float config param from a list."""
-    for item in config:
-        value = item.get(param)
-        if value is not None:
-            return float(value)
-    return None
 
 class PowerStateDevice(HomeassistantDevice, DeviceWithState):
     """A device which detects it's state by power data."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, config: dict, session_storage: SessionStorage, device_type_registry: DeviceTypeRegistry) -> None:
         """Create a PowerStateDevie device."""
         super().__init__(config, session_storage)
         self._state: str = "unknown"
         self._power_data = DataBuffer()
+        manufacturer = config.get("manufacturer")
+        model = config.get("model")
+        if model is not None and manufacturer is not None:
+            self._device_type = device_type_registry.get_device_type(manufacturer, model)
 
+        """
         self._state_on_threshold : float | None = None
         state_on_config = config.get("state_on")
         if state_on_config is not None:
@@ -199,6 +190,8 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
             self._state_off_upper = get_float_param_from_list(state_off_config, "upper")
             self._state_off_lower = get_float_param_from_list(state_off_config, "lower")
             self._state_off_for = get_float_param_from_list(state_off_config, "for")
+        """
+
 
     @property
     def state(self) -> str:
@@ -210,11 +203,11 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
         old_state = self.state == 'on'
         await super().update_state(state_repository, self_sufficiency)
         self._power_data.add_data_point(self.power)
-        if self._state_on_threshold is not None and self._state_off_upper is not None and self._state_off_lower is not None and self._state_off_for is not None:
-            if self.state != 'on' and self.power > self._state_on_threshold:
+        if self._device_type is not None:
+            if self.state != 'on' and self.power > self._device_type.state_on_threshold:
                 self._state = 'on'
             elif self.state != 'off':
-                if self.state == 'on' and self.power == 0 and self._power_data.is_between(self._state_off_lower, self._state_off_upper, self._state_off_for):
+                if self.state == 'on' and self.power == 0 and self._power_data.is_between(self._device_type.state_off_lower, self._device_type.state_off_upper, self._device_type.state_off_for):
                     self._state = 'off'
                 elif self.state == 'unknown':
                     self._state = 'off'

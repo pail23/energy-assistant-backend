@@ -15,9 +15,10 @@ import yaml
 
 from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
-from app.devices import Device, DeviceWithState
+from app.devices.device import Device, DeviceWithState
 from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
+from app.devices.registry import DeviceTypeRegistry
 from app.devices.stiebel_eltron import StiebelEltronDevice
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
@@ -218,6 +219,9 @@ async def init_app() -> None:
     db = Database()
     app.db = db  # type: ignore
 
+    device_type_registry = DeviceTypeRegistry()
+    device_type_registry.load(settings.DEVICE_TYPE_REGISTRY)
+
     logging.info(f"Loading config file {config_file}")
     try:
         with open(config_file) as stream:
@@ -242,7 +246,7 @@ async def init_app() -> None:
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
-                    home = Home(home_config, session_storage)
+                    home = Home(home_config, session_storage, device_type_registry)
                     app.home = home  # type: ignore
                     async with async_session() as session:
                         await db.update_devices(home, session)

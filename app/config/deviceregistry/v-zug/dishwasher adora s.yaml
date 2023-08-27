@@ -1,0 +1,9 @@
+device_type:
+  manufacturer: v-zug
+  model: Adora S
+  state_on:
+    - threshold: 10
+  state_off:
+    - upper: 20
+      lower: 15
+      for: 1500

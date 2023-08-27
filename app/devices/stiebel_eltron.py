@@ -1,14 +1,7 @@
 """Stiebel Eltron device implementation."""
-from . import (
-    Device,
-    DeviceWithState,
-    PowerModes,
-    SessionStorage,
-    State,
-    StatesRepository,
-    get_config_param,
-)
+from . import PowerModes, SessionStorage, State, StatesRepository, get_config_param
 from .analysis import DataBuffer
+from .device import Device, DeviceWithState
 from .homeassistant import assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000

@@ -1,0 +1,9 @@
+device_type:
+  manufacturer: v-zug
+  model: Adora TS WP
+  state_on:
+    - threshold: 10
+  state_off:
+    - upper: 10
+      lower: 5
+      for: 180
