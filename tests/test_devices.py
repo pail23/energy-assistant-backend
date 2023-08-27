@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.devices import EnergyIntegrator, PowerModes
 from app.devices.home import Home
 from app.devices.homeassistant import HomeassistantDevice
+from app.devices.registry import DeviceTypeRegistry
 from app.models.home import HomeMeasurement
 from app.storage import Database, session_storage
 
@@ -50,7 +51,7 @@ def test_integrator() -> None:
 
 
 @pytest.mark.asyncio
-async def test_load(session: AsyncSession) -> None:
+async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegistry) -> None:
     """Test the loading of the devices."""
     await setup_data(session)
 
@@ -61,7 +62,7 @@ async def test_load(session: AsyncSession) -> None:
         "solar_energy": "solar_energy_id",
         "imported_energy": "imported_energy_id",
         "exported_energy": "exported_energy_id"
-    }, session_storage)
+    }, session_storage, device_type_registry)
     device = HomeassistantDevice({
         "id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec",
         "name": "Device 1",

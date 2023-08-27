@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, SessionTransaction
 
 from app.db import get_session
+from app.devices.registry import DeviceTypeRegistry
 from app.main import app
 from app.models.base import Base
 from app.settings import settings
@@ -20,10 +21,6 @@ async def ac() -> AsyncGenerator:
     """Test fixture for a client connection to the backend."""
     async with AsyncClient(app=app, base_url="https://test") as c:
         yield c
-
-
-
-
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db() -> Generator:
@@ -72,3 +69,9 @@ async def session() -> AsyncGenerator:
         yield async_session
         await async_session.close()
         await conn.rollback()
+
+@pytest.fixture
+def device_type_registry() -> DeviceTypeRegistry:
+    """Device Type Registry test fixture."""
+    registry = DeviceTypeRegistry()
+    return registry
