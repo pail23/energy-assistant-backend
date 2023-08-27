@@ -1,6 +1,4 @@
 """Stiebel Eltron device implementation."""
-import logging
-
 from . import (
     Device,
     DeviceWithState,
@@ -32,8 +30,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
 
     def __init__(self, config: dict, session_storage: SessionStorage):
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(get_config_param(config, "id"),
-                         get_config_param(config, "name"), session_storage)
+        super().__init__(config, session_storage)
         self.grid_exported_power_data = DataBuffer()
         self._consumed_energy_today: State | None = None
         self._consumed_energy_today_entity_id: str = get_config_param(
@@ -42,10 +39,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
             config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
-        self._store_sessions = False
-        store_sessions = config.get("store_sessions")
-        if store_sessions is not None and store_sessions:
-            self._store_sessions = True
+
 
         self._comfort_target_temperature_entity_id = config.get("comfort_target_temperature")
         self._target_temperature_normal: float | None = numeric_value(config.get("target_temperature_normal"))
@@ -74,17 +68,9 @@ class StiebelEltronDevice(Device, DeviceWithState):
             self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
             self._actual_temp, state_repository.get_state(self._actual_temp_entity_id))
-        if self._store_sessions:
-            if new_state:
-                if old_state:
-                    await self.update_session()
-                else:
-                    logging.info("Start Session")
-                    await self.start_session("Water heating")
-            else:
-                if old_state:
-                    logging.info("End Session")
-                await self.update_session_energy()
+
+        await super().update_session(old_state, new_state, "Water heater")
+
 
     async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""

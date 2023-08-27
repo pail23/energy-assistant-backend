@@ -1,6 +1,7 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
+import logging
 from typing import Optional
 import uuid
 
@@ -207,16 +208,20 @@ class PowerModes(StrEnum):
 class Device(ABC):
     """A device which tracks energy consumption."""
 
-    def __init__(self, id: str, name: str, session_storage: SessionStorage) -> None:
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a device."""
-        self._name = name
-        self._id = uuid.UUID(id)
+        self._name = get_config_param(config, "name")
+        self._id = uuid.UUID(get_config_param(config, "id"))
         self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshot: EnergySnapshot | None = None
         self.session_storage: SessionStorage = session_storage
         self.current_session : int | None = None
         self._supported_power_modes : list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
         self._power_mode : PowerModes = PowerModes.DEVICE_CONTROLLED
+        self._store_sessions = False
+        store_sessions = config.get("store_sessions")
+        if store_sessions is not None and store_sessions:
+            self._store_sessions = True
 
     @property
     def name(self) -> str:
@@ -304,15 +309,22 @@ class Device(ABC):
         """Start a session."""
         self.current_session = await self.session_storage.start_session(self._id, text,self.consumed_solar_energy, self.consumed_energy)
 
-    async def update_session(self) -> None:
-        """Update a running session."""
-        if self.current_session is not None:
-            await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
+    async def update_session(self, old_state: bool, new_state: bool, text: str) -> None:
+        """Update the session log."""
+        if self._store_sessions:
+            if new_state:
+                if old_state:
+                    if self.current_session is not None:
+                        await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
+                else:
+                    logging.info("Start Session")
+                    await self.start_session(text)
+            else:
+                if old_state:
+                    logging.info("End Session")
+                if self.current_session is not None:
+                    await self.session_storage.update_session_energy(self.current_session, self.consumed_solar_energy, self.consumed_energy)
 
-    async def update_session_energy(self) -> None:
-        """Update a running session."""
-        if self.current_session is not None:
-            await self.session_storage.update_session_energy(self.current_session, self.consumed_solar_energy, self.consumed_energy)
 
 
 class DeviceWithState(ABC):
@@ -323,6 +335,7 @@ class DeviceWithState(ABC):
     def state(self) -> str:
         """The state of the device."""
         pass
+
 
 class DeviceConfigException(Exception):
     """Device configuration exception."""

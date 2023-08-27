@@ -114,7 +114,7 @@ class HomeassistantDevice(Device):
 
     def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a generic Homeassistant device."""
-        super().__init__(get_config_param(config, "id"), get_config_param(config, "name"), session_storage)
+        super().__init__(config, session_storage)
         self._power_entity_id : str = get_config_param(config, "power")
         self._consumed_energy_entity_id : str = get_config_param(config, "energy")
         self._power: State | None= None
@@ -161,6 +161,22 @@ class HomeassistantDevice(Device):
         self._consumed_energy = HomeassistantState(self._consumed_energy_entity_id, str(consumed_energy))
 
 
+def get_config_param_from_list(config: list, param:str) -> str | None:
+    """Read config param from a list."""
+    for item in config:
+        value = item.get(param)
+        if value is not None:
+            return value
+    return None
+
+def get_float_param_from_list(config: list, param:str) -> float | None:
+    """Read a float config param from a list."""
+    for item in config:
+        value = item.get(param)
+        if value is not None:
+            return float(value)
+    return None
+
 class PowerStateDevice(HomeassistantDevice, DeviceWithState):
     """A device which detects it's state by power data."""
 
@@ -168,7 +184,21 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
         """Create a PowerStateDevie device."""
         super().__init__(config, session_storage)
         self._state: str = "unknown"
-        self.power_data = DataBuffer()
+        self._power_data = DataBuffer()
+
+        self._state_on_threshold : float | None = None
+        state_on_config = config.get("state_on")
+        if state_on_config is not None:
+            self._state_on_threshold = get_float_param_from_list(state_on_config, "threshold")
+
+        self._state_off_upper : float | None = None
+        self._state_off_lower : float | None = None
+        self._state_off_for : float | None = None
+        state_off_config = config.get("state_off")
+        if state_off_config is not None:
+            self._state_off_upper = get_float_param_from_list(state_off_config, "upper")
+            self._state_off_lower = get_float_param_from_list(state_off_config, "lower")
+            self._state_off_for = get_float_param_from_list(state_off_config, "for")
 
     @property
     def state(self) -> str:
@@ -177,8 +207,16 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
 
     async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
         """Update the own state from the states of a StatesRepository."""
+        old_state = self.state == 'on'
         await super().update_state(state_repository, self_sufficiency)
-        if self.state != 'on' and self.power > 0:
-            self._state = 'on'
-        elif self.state != 'off' and self.power < 5:
-            self._state = 'off'
+        self._power_data.add_data_point(self.power)
+        if self._state_on_threshold is not None and self._state_off_upper is not None and self._state_off_lower is not None and self._state_off_for is not None:
+            if self.state != 'on' and self.power > self._state_on_threshold:
+                self._state = 'on'
+            elif self.state != 'off':
+                if self.state == 'on' and self.power == 0 and self._power_data.is_between(self._state_off_lower, self._state_off_upper, self._state_off_for):
+                    self._state = 'off'
+                elif self.state == 'unknown':
+                    self._state = 'off'
+        new_state = self.state == 'on'
+        await super().update_session(old_state, new_state, "Power State Device")

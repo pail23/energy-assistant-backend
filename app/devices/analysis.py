@@ -45,3 +45,11 @@ class DataBuffer:
     def get_max_for(self, timespan: float, now: datetime = datetime.now()) -> float:
         """Calculate the max over the last timespan seconds."""
         return max(self.get_data_for(timespan, now))
+
+    def is_between(self, lower: float, upper: float, timespan:float, now: datetime = datetime.now()) -> bool:
+        """Check if the value in the timespan is always between lower and upper."""
+        min = self.get_min_for(timespan, now)
+        if min < lower:
+            return False
+        max = self.get_max_for(timespan, now)
+        return max < upper
