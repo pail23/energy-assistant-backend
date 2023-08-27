@@ -5,8 +5,6 @@ import os
 
 import yaml
 
-from app.devices import get_float_param_from_list
-
 
 @dataclass(frozen=True, eq=True)
 class DeviceTypeId:
@@ -19,6 +17,7 @@ class DeviceTypeId:
 class DeviceType:
     """The device type of a device."""
 
+    icon: str
     state_on_threshold: float
     state_off_upper: float
     state_off_lower: float
@@ -57,24 +56,26 @@ class DeviceTypeRegistry:
                 else:
                     manufacturer = device_type_config.get("manufacturer")
                     model = device_type_config.get("model")
-                    if model is None or manufacturer is None:
-                        logging.error(f"Manufacturer or Model not set in device type config file {filename}")
+                    icon = device_type_config.get("icon")
+                    if model is None or manufacturer is None or icon is None:
+                        logging.error(f"Manufacturer or Model or Icon not set in device type config file {filename}")
                     else:
+                        device_state_config = device_type_config.get("state")
                         state_on_threshold : float | None = None
-                        state_on_config = device_type_config.get("state_on")
+                        state_on_config = device_state_config.get("state_on")
                         if state_on_config is not None:
-                            state_on_threshold = get_float_param_from_list(state_on_config, "threshold")
+                            state_on_threshold = state_on_config.get("threshold")
 
                         state_off_upper : float | None = None
                         state_off_lower : float | None = None
                         state_off_for : float | None = None
-                        state_off_config = device_type_config.get("state_off")
+                        state_off_config = device_state_config.get("state_off")
                         if state_off_config is not None:
-                            state_off_upper = get_float_param_from_list(state_off_config, "upper")
-                            state_off_lower = get_float_param_from_list(state_off_config, "lower")
-                            state_off_for = get_float_param_from_list(state_off_config, "for")
+                            state_off_upper = state_off_config.get("upper")
+                            state_off_lower = state_off_config.get("lower")
+                            state_off_for = state_off_config.get("for")
                         if state_on_threshold is not None and state_off_upper is not None and state_off_lower is not None and state_off_for is not None:
-                            device_type = DeviceType(state_on_threshold=state_on_threshold, state_off_upper=state_off_upper, state_off_lower=state_off_lower, state_off_for=state_off_for)
+                            device_type = DeviceType(icon = icon, state_on_threshold=state_on_threshold, state_off_upper=state_off_upper, state_off_lower=state_off_lower, state_off_for=state_off_for)
                             self._registry[DeviceTypeId(manufacturer=manufacturer, model=model)] = device_type
 
     def get_device_type(self, manufacturer: str, model: str) -> DeviceType | None:

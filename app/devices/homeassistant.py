@@ -122,7 +122,7 @@ class HomeassistantDevice(Device):
         scale = config.get("energy_scale")
         self._energy_scale : float = float(scale) if scale is not None else 1
         icon = config.get("icon")
-        self._icon : str = str(icon) if icon is not None else "mdi-home"
+        self._icon : str | None = str(icon)
 
     async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
         """Update the own state from the states of a StatesRepository."""
@@ -143,7 +143,7 @@ class HomeassistantDevice(Device):
     @property
     def icon(self) -> str:
         """The icon of the device."""
-        return self._icon
+        return self._icon if self._icon else "mdi-home"
 
     @property
     def power(self) -> float:
@@ -191,6 +191,13 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
             self._state_off_lower = get_float_param_from_list(state_off_config, "lower")
             self._state_off_for = get_float_param_from_list(state_off_config, "for")
         """
+    @property
+    def icon(self) -> str:
+        """The icon of the device."""
+        if self._device_type:
+            return self._device_type.icon
+        else:
+            return "mdi-home"
 
 
     @property
