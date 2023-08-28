@@ -219,7 +219,6 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
             logging.info(f"suvervisor token detected. len={len(token)}")
             url = "http://supervisor/core"
 
-            # TODO: Remove the following 7 lines
             headers = {
                 "Authorization": f"Bearer {token}",
                 "content-type": "application/json",
@@ -228,6 +227,7 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
                 f"{url}/api/states", headers=headers)
             logging.info(f"pinging homeassistant api succeeeded. Status code = {response.status_code}")
             if response.ok:
+                logging.info(f"Using {url} to connect")
                 hass = Homeassistant(url, token, False)
                 return hass
     except Exception as ex:
