@@ -4,7 +4,7 @@ import logging
 import requests  # type: ignore
 
 from app.devices.analysis import DataBuffer
-from app.devices.registry import DeviceTypeRegistry
+from app.devices.registry import DeviceType, DeviceTypeRegistry
 
 from . import (
     SessionStorage,
@@ -175,8 +175,11 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
         self._power_data = DataBuffer()
         manufacturer = config.get("manufacturer")
         model = config.get("model")
+        self._device_type : DeviceType | None = None
         if model is not None and manufacturer is not None:
             self._device_type = device_type_registry.get_device_type(manufacturer, model)
+
+
 
         """
         self._state_on_threshold : float | None = None
