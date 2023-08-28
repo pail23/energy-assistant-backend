@@ -3,6 +3,7 @@
 import logging
 import uuid
 
+from app.devices.evcc import EvccDevice
 from app.devices.registry import DeviceTypeRegistry
 
 from . import (
@@ -11,8 +12,8 @@ from . import (
     State,
     StatesRepository,
     assign_if_available,
-    get_config_param,
 )
+from .config import get_config_param
 from .device import Device
 from .homeassistant import HomeassistantDevice, PowerStateDevice
 from .stiebel_eltron import StiebelEltronDevice
@@ -63,6 +64,8 @@ class Home:
                 elif type == "power-state-device":
                     self.devices.append(PowerStateDevice(
                         config_device, session_storage, device_type_registry))
+                elif type == "evcc":
+                    self.devices.append(EvccDevice(config_device, session_storage))
                 else:
                     logging.error(
                         f"Unknown device type {type} in configuration")
@@ -134,7 +137,7 @@ class Home:
         else:
             return 0
 
-    async def update_state_from_hass(self, state_repository: StatesRepository) -> None:
+    async def update_state(self, state_repository: StatesRepository) -> None:
         """Update the state of the home."""
         self._solar_production_power = assign_if_available(
             self._solar_production_power, state_repository.get_state(self._solar_power_entity_id))

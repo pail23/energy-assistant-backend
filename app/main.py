@@ -15,11 +15,14 @@ import yaml
 
 from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
+from app.devices import StatesMultipleRepositories, StatesRepository
 from app.devices.device import Device, DeviceWithState
+from app.devices.evcc import EvccDevice
 from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.registry import DeviceTypeRegistry
 from app.devices.stiebel_eltron import StiebelEltronDevice
+from app.mqtt import MqttConnection
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
 
@@ -42,13 +45,13 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
-async def async_handle_state_update(home: Home, hass: Homeassistant, db: Database, session: AsyncSession) -> None:
+async def async_handle_state_update(home: Home, state_repository: StatesRepository, db: Database, session: AsyncSession) -> None:
     """Read the values from home assistant and process the update."""
     try:
-        hass.read_states()
-        await home.update_state_from_hass(hass)
-        await home.update_power_consumption(hass)
-        hass.write_states()
+        state_repository.read_states()
+        await home.update_state(state_repository)
+        await home.update_power_consumption(state_repository)
+        state_repository.write_states()
         # print("Send refresh: " + get_home_message(home))
         if db:
             if home:
@@ -63,10 +66,11 @@ async def async_handle_state_update(home: Home, hass: Homeassistant, db: Databas
         logging.error("error during sending refresh", ex)
 
 
-async def background_task(home: Home, hass: Homeassistant, db: Database) -> None:
+async def background_task(home: Home, hass: Homeassistant, mqtt: MqttConnection, db: Database) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     async_session = await get_async_session()
+    state_repository = StatesMultipleRepositories([hass, mqtt])
     while True:
         await sio.sleep(10)
         # delta_t = datetime.now().timestamp()
@@ -77,7 +81,7 @@ async def background_task(home: Home, hass: Homeassistant, db: Database) -> None
                 home.store_energy_snapshot()
             last_update = today
             async with async_session() as session:
-                await async_handle_state_update(home, hass, db, session)
+                await async_handle_state_update(home, state_repository, db, session)
         except Exception as ex:
             logging.error("error in the background task: ", ex)
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
@@ -187,10 +191,33 @@ def disconnect(sid):
     logging.info(f"Client disconnected {sid}")
 
 
+def create_mqtt_connection(config: dict) -> MqttConnection | None:
+    """Create an mqtt connection based on the config."""
+
+    mqtt_config = config.get("mqtt")
+    if mqtt_config is not None:
+        mqtt_host = mqtt_config.get("host")
+        mqtt_username = mqtt_config.get("username")
+        mqtt_password = mqtt_config.get("password")
+        mqtt_topic = mqtt_config.get("topic")
+        mqtt_connection = MqttConnection(mqtt_host, mqtt_username, mqtt_password, mqtt_topic)
+        mqtt_connection.connect()
+        return mqtt_connection
+    return None
+
+def subscribe_mqtt_topics(mqtt_connection: MqttConnection, home: Home) -> None:
+    """Subscribe the mqtt based devices on the mqtt connection."""
+
+    for device in home.devices:
+        if isinstance(device, EvccDevice):
+            mqtt_connection.add_subscription_topic(device.evcc_mqtt_subscription_topic)
+
+
 async def init_app() -> None:
     """Initialize the application."""
     app.home = None  # type: ignore
     app.hass = None  # type: ignore
+    app.mqtt = None # type: ignore
     app.db = None  # type: ignore
 
     config_file = settings.CONFIG_FILE
@@ -244,40 +271,20 @@ async def init_app() -> None:
                         app.hass = hass  # type: ignore
                         hass.read_states()
 
+                mqtt_connection : MqttConnection | None = create_mqtt_connection(config)
+                app.mqtt = mqtt_connection # type: ignore
+
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config, session_storage, device_type_registry)
                     app.home = home  # type: ignore
+                    if mqtt_connection is not None:
+                        subscribe_mqtt_topics(mqtt_connection, home)
+
                     async with async_session() as session:
                         await db.update_devices(home, session)
 
                         await db.restore_home_state(home, session)
-
-                    """
-                    mqtt_config = config.get("mqtt")
-                    if mqtt_config is not None:
-                        homeassistant_host = mqtt_config.get("host")
-
-                        topic = mqtt_config.get("topic")
-                        global energyassistant_topic
-                        if topic is not None:
-                            energyassistant_topic = topic
-                        try:
-                            mqttc = mqtt.Client("energy_assistant"+str(random.randrange(1024)), 1883, 45)
-                            mqttc.username_pw_set(mqtt_config.get(
-                                "username"), mqtt_config.get("password"))
-                            mqttc.will_set(f"{energyassistant_topic}/status",
-                                        payload="offline", qos=0, retain=True)
-                            mqttc.on_message = on_message
-                            mqttc.on_connect = on_connect
-                            mqttc.on_disconnect = on_disconnect
-                            mqttc.connect(homeassistant_host)
-                            mqttc.loop_start()
-                        except Exception as ex:
-                            logging.error("Error while connecting mqtt ", ex)
-                    else:
-                        logging.error(f"mqtt not found in config file: {config}")
-                        """
                 else:
                     logging.error(f"home not found in config file: {config}")
                 logging.info("Initialization completed")
@@ -290,7 +297,7 @@ async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
     sio.start_background_task(
-        background_task, app.home, app.hass, app.db)  # type: ignore
+        background_task, app.home, app.hass, app.mqtt, app.db)  # type: ignore
 
 
 @app.on_event("shutdown")

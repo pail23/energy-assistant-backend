@@ -126,7 +126,7 @@ class DeviceMeasurement(Base):
     async def read_all(cls, session: AsyncSession) -> AsyncIterator[DeviceMeasurement]:
         """Read all device measurements."""
         stmt = select(cls).options(joinedload(
-            cls.home_measurement, innerjoin=True)) #TODO: Remove this comment .options(joinedload(cls.device, innerjoin=True))
+            cls.home_measurement, innerjoin=True))
         stream = await session.stream_scalars(stmt.order_by(cls.id))
         async for row in stream:
             yield row

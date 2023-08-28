@@ -10,13 +10,15 @@ from . import (
     SessionStorage,
     State,
     StatesRepository,
+    StatesSingleRepository,
     assign_if_available,
-    get_config_param,
 )
+from .config import get_config_param
 from .device import Device, DeviceWithState
 
 UNAVAILABLE = "unavailable"
 
+HOMEASSISTANT_CHANNEL = "ha"
 
 class HomeassistantState(State):
     """Abstract base class for states."""
@@ -49,12 +51,12 @@ class HomeassistantState(State):
 
 
 
-class Homeassistant(StatesRepository):
+class Homeassistant(StatesSingleRepository):
     """Home assistant proxy."""
 
     def __init__(self, url:str, token:str, demo_mode: bool) -> None:
         """Create an instance of the Homeassistant class."""
-        super().__init__()
+        super().__init__(HOMEASSISTANT_CHANNEL)
         self._url = url
         self._token = token
         self._demo_mode = demo_mode is not None and demo_mode

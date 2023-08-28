@@ -9,8 +9,8 @@ from . import (
     PowerModes,
     SessionStorage,
     StatesRepository,
-    get_config_param,
 )
+from .config import get_config_param
 
 
 class Device(ABC):

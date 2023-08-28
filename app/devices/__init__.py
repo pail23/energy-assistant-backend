@@ -1,5 +1,6 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Optional
 import uuid
@@ -176,22 +177,118 @@ def assign_if_available(old_state: State | None, new_state: State | None) -> Sta
     else:
         return old_state
 
+@dataclass(frozen=True, eq=True)
+class StateId:
+    """The id of a state."""
 
-class StatesRepository:
+    id: str
+    channel: str
+
+
+class StatesRepository(ABC):
+    """Abstract base class for a state repositiroy."""
+
+    @abstractmethod
+    def get_state(self, id:StateId | str) -> State | None:
+        """Get a state from the repositiory."""
+        pass
+
+    @abstractmethod
+    def set_state(self, id:StateId | str, value: str) -> None:
+        """Set a state in the repository."""
+        pass
+
+    @property
+    @abstractmethod
+    def channel(self) -> str:
+        """Get the channel of the State Repository."""
+        pass
+
+    @abstractmethod
+    def read_states(self) -> None:
+        """Read the states from the channel."""
+        pass
+
+    @abstractmethod
+    def write_states(self) -> None:
+        """Write the states to the channel."""
+        pass
+
+
+class StatesSingleRepository(StatesRepository):
     """Base class for a state repositiroy."""
 
-    def __init__(self) -> None:
+    def __init__(self, channel: str) -> None:
         """Create a StatesRepository instance."""
+        self._channel = channel
         self._read_states : dict[str, State] = dict[str, State]()
         self._write_states : dict[str, State] = dict[str, State]()
 
-    def get_state(self, id:str) -> State | None:
+    def get_state(self, id:StateId | str) -> State | None:
         """Get a state from the repositiory."""
-        return self._read_states.get(id)
+        if isinstance(id, str):
+            return self._read_states.get(id)
+        else:
+            return self._read_states.get(id.id)
 
-    def set_state(self, id:str, value: str) -> None:
+    def set_state(self, id:StateId | str, value: str) -> None:
         """Set a state in the repository."""
-        self._write_states[id] = State(id, value)
+        if isinstance(id, str):
+            self._write_states[id] = State(id, value)
+        else:
+            self._write_states[id.id] = State(id.id, value)
+
+    @property
+    def channel(self) -> str:
+        """Get the channel of the State Repository."""
+        return self._channel
+
+class StatesMultipleRepositories(StatesRepository):
+    """Base class for a state repositiroy."""
+
+    def __init__(self, repositories: list[StatesRepository]) -> None:
+        """Create a StatesRepository instance."""
+        self._repositories = repositories
+
+    def get_state(self, id:StateId | str) -> State | None:
+        """Get a state from the repositiory."""
+        if isinstance(id, StateId):
+            for repository in self._repositories:
+                if repository.channel == id.channel:
+                    result = repository.get_state(id)
+                    if result is not None:
+                        return result
+        else:
+            for repository in self._repositories:
+                result = repository.get_state(id)
+                if result is not None:
+                    return result
+        return None
+
+    def set_state(self, id:StateId | str, value: str) -> None:
+        """Set a state in the repository."""
+        if isinstance(id, str):
+            raise TypeError()
+        else:
+            for repository in self._repositories:
+                if id.channel == repository.channel:
+                    repository.set_state(id, value)
+
+    @property
+    def channel(self) -> str:
+        """Get the channel of the State Repository."""
+        return "multiple"
+
+    def read_states(self) -> None:
+        """Read the states from the channel."""
+        for repository in self._repositories:
+            repository.read_states()
+
+    def write_states(self) -> None:
+        """Write the states to the channel."""
+        for repository in self._repositories:
+            repository.write_states()
+
 
 class PowerModes(StrEnum):
     """Power modes for controlling the device."""
@@ -201,35 +298,3 @@ class PowerModes(StrEnum):
     PV = auto()
     MIN_PV = auto()
     FAST = auto()
-
-
-
-
-class DeviceConfigException(Exception):
-    """Device configuration exception."""
-
-    pass
-
-def get_config_param(config: dict, param: str) -> str:
-    """Get a config paramter as string or raise an exception if the parameter is not available."""
-    result = config.get(param)
-    if result is None:
-        raise DeviceConfigException(f"Parameter {param} is missing in the configuration")
-    else:
-        return str(result)
-
-def get_config_param_from_list(config: list, param:str) -> str | None:
-    """Read config param from a list."""
-    for item in config:
-        value = item.get(param)
-        if value is not None:
-            return value
-    return None
-
-def get_float_param_from_list(config: list, param:str) -> float | None:
-    """Read a float config param from a list."""
-    for item in config:
-        value = item.get(param)
-        if value is not None:
-            return float(value)
-    return None
