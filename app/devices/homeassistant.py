@@ -225,3 +225,12 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
                     self._state = 'off'
         new_state = self.state == 'on'
         await super().update_session(old_state, new_state, "Power State Device")
+
+
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        result : dict[str, str]= {
+            "state": self.state
+        }
+        return result
