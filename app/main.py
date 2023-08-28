@@ -217,7 +217,7 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
         token = os.getenv('SUPERVISOR_TOKEN')
         if token is not None:
             logging.info(f"suvervisor token detected. len={len(token)}")
-            url = "http://supervisor/core/api"
+            url = "http://supervisor/core"
 
             # TODO: Remove the following 7 lines
             headers = {
