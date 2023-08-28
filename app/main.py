@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_socketio import SocketManager
+from fastapi_socketio import SocketManager # type: ignore
 import requests  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
