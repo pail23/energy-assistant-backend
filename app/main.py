@@ -4,12 +4,14 @@ from datetime import date
 import json
 import logging
 from logging.handlers import RotatingFileHandler
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_socketio import SocketManager  # type: ignore
+from fastapi_socketio import SocketManager
+import requests  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
 
@@ -213,6 +215,44 @@ def subscribe_mqtt_topics(mqtt_connection: MqttConnection, home: Home) -> None:
             mqtt_connection.add_subscription_topic(device.evcc_mqtt_subscription_topic)
 
 
+def create_hass_connection(config: dict) -> Homeassistant | None:
+    """Create a connection to home assistant."""
+    token : str | None = None
+    url: str | None = None
+    try:
+        token = os.getenv('SUPERVISOR_TOKEN')
+        if token is not None:
+            logging.info(f"suvervisor token detected. len={len(token)}")
+            url = "http://supervisor/core/api"
+
+            # TODO: Remove the following 7 lines
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "content-type": "application/json",
+            }
+            response = requests.get(
+                f"{url}/api/states", headers=headers)
+            logging.info(f"pinging homeassistant api succeeeded. Status code = {response.status_code}")
+
+
+            hass = Homeassistant(url, token, False)
+            return hass
+    except Exception as ex:
+        logging.error(ex)
+        url = None
+        token = None
+
+    logging.info("Try to connect to home assistant based on the config file entries...")
+    hass_config = config.get("homeassistant")
+    if hass_config is not None:
+        demo_mode = hass_config.get("demo_mode")
+        url = hass_config.get("url")
+        token = hass_config.get("token")
+        if url is not None and token is not None:
+            return Homeassistant(url, token, demo_mode)
+    return None
+
+
 async def init_app() -> None:
     """Initialize the application."""
     app.home = None  # type: ignore
@@ -261,15 +301,10 @@ async def init_app() -> None:
             except Exception as ex:
                 logging.error(ex)
             else:
-                hass_config = config.get("homeassistant")
-                if hass_config is not None:
-                    demo_mode = hass_config.get("demo_mode")
-                    url = hass_config.get("url")
-                    token = hass_config.get("token")
-                    if url is not None and token is not None:
-                        hass = Homeassistant(url, token, demo_mode)
-                        app.hass = hass  # type: ignore
-                        hass.read_states()
+                hass = create_hass_connection(config)
+                app.hass = hass  # type: ignore
+                if hass is not None:
+                    hass.read_states()
 
                 mqtt_connection : MqttConnection | None = create_mqtt_connection(config)
                 app.mqtt = mqtt_connection # type: ignore
