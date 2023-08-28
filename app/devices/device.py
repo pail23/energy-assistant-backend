@@ -135,7 +135,10 @@ class Device(ABC):
                 if self.current_session is not None:
                     await self.session_storage.update_session_energy(self.current_session, self.consumed_solar_energy, self.consumed_energy)
 
-
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        return {}
 
 class DeviceWithState(ABC):
     """Device with a state."""

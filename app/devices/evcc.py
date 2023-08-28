@@ -18,6 +18,7 @@ class EvccDevice(Device, DeviceWithState):
         self._state = "unknown"
         self._power : State | None= None
         self._consumed_energy : State | None= None
+        self._mode : State | None= None
 
 
     def get_device_topic_id(self, name: str) -> StateId:
@@ -36,6 +37,7 @@ class EvccDevice(Device, DeviceWithState):
 
         self._consumed_energy = state_repository.get_state(self.get_device_topic_id("chargeTotalImport"))
         self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
+        self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
 
         await super().update_session(old_state, new_state, "EVCC")
 
@@ -65,6 +67,11 @@ class EvccDevice(Device, DeviceWithState):
         return self._power.numeric_value if self._power else 0.0
 
     @property
+    def mode(self) -> str:
+        """Current PV mode of the device."""
+        return self._mode.value if self._mode else "unknown"
+
+    @property
     def icon(self) -> str:
         """Icon of the device."""
         return "mdi-car-electric"
@@ -79,3 +86,12 @@ class EvccDevice(Device, DeviceWithState):
         super().restore_state(consumed_solar_energy, consumed_energy)
         self._consumed_energy = State(
             self.get_device_topic_id("chargeTotalImport").id, str(consumed_energy))
+
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        result : dict[str, str]= {
+            "state": self.state,
+            "pv_mode": self.mode
+        }
+        return result

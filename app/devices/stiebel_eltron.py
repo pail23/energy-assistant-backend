@@ -131,3 +131,12 @@ class StiebelEltronDevice(Device, DeviceWithState):
         super().restore_state(consumed_solar_energy, consumed_energy)
         self._consumed_energy = State(
             self._consumed_energy_entity_id, str(consumed_energy))
+
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        result : dict[str, str]= {
+            "state": self.state,
+            "actual_temperature": f"{self.actual_temperature} °C"
+        }
+        return result

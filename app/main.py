@@ -18,12 +18,11 @@ import yaml
 from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
 from app.devices import StatesMultipleRepositories, StatesRepository
-from app.devices.device import Device, DeviceWithState
+from app.devices.device import Device
 from app.devices.evcc import EvccDevice
 from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.registry import DeviceTypeRegistry
-from app.devices.stiebel_eltron import StiebelEltronDevice
 from app.mqtt import MqttConnection
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
@@ -115,12 +114,7 @@ def get_device_message(device: Device) -> dict:
             "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
         },
     }
-    attributes : dict[str, str]= {}
-    if isinstance(device, StiebelEltronDevice):
-        attributes["actual_temperature"] = f"{device.actual_temperature} °C"
-    if isinstance(device, DeviceWithState):
-        attributes["state"] = device.state
-    result["attributes"] = attributes
+    result["attributes"] = device.attributes
     return result
 
 
