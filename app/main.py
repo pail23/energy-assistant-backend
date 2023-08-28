@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_socketio import SocketManager # type: ignore
+from fastapi_socketio import SocketManager  # type: ignore
 import requests  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
@@ -227,10 +227,9 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
             response = requests.get(
                 f"{url}/api/states", headers=headers)
             logging.info(f"pinging homeassistant api succeeeded. Status code = {response.status_code}")
-
-
-            hass = Homeassistant(url, token, False)
-            return hass
+            if response.ok:
+                hass = Homeassistant(url, token, False)
+                return hass
     except Exception as ex:
         logging.error(ex)
         url = None
