@@ -36,3 +36,5 @@ pytest-randomly
 eqassertions
 types-PyYAML
 types-requests
+types-paho-mqtt
+
