@@ -48,8 +48,10 @@ class DataBuffer:
 
     def is_between(self, lower: float, upper: float, timespan:float, now: datetime = datetime.now()) -> bool:
         """Check if the value in the timespan is always between lower and upper."""
-        min = self.get_min_for(timespan, now)
-        if min < lower:
+        data = self.get_data_for(timespan, now)
+        if len(data) > 0:
+            if min(data) < lower:
+                return False
+            return max(data) < upper
+        else:
             return False
-        max = self.get_max_for(timespan, now)
-        return max < upper
