@@ -214,12 +214,13 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
         """Update the own state from the states of a StatesRepository."""
         old_state = self.state == 'on'
         await super().update_state(state_repository, self_sufficiency)
-        self._power_data.add_data_point(self.power)
         if self._device_type is not None:
+            is_between = self._power_data.is_between(self._device_type.state_off_lower, self._device_type.state_off_upper, self._device_type.state_off_for)
+            self._power_data.add_data_point(self.power)
             if self.state != 'on' and self.power > self._device_type.state_on_threshold:
                 self._state = 'on'
             elif self.state != 'off':
-                if self.state == 'on' and self.power == 0 and self._power_data.is_between(self._device_type.state_off_lower, self._device_type.state_off_upper, self._device_type.state_off_for):
+                if self.state == 'on' and self.power == 0 and is_between:
                     self._state = 'off'
                 elif self.state == 'unknown':
                     self._state = 'off'
