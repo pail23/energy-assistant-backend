@@ -1,7 +1,7 @@
 """EVCC Devices."""
 from app.mqtt import MQTT_CHANNEL
 
-from . import SessionStorage, State, StateId, StatesRepository
+from . import PowerModes, SessionStorage, State, StateId, StatesRepository
 from .config import get_config_param
 from .device import Device, DeviceWithState
 
@@ -19,7 +19,7 @@ class EvccDevice(Device, DeviceWithState):
         self._power : State | None= None
         self._consumed_energy : State | None= None
         self._mode : State | None= None
-
+        self._supported_power_modes =[PowerModes.OFF, PowerModes.PV, PowerModes.MIN_PV, PowerModes.FAST]
 
     def get_device_topic_id(self, name: str) -> StateId:
         """Get the id of a topic of this load point."""

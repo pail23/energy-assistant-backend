@@ -298,3 +298,4 @@ class PowerModes(StrEnum):
     PV = auto()
     MIN_PV = auto()
     FAST = auto()
+    OPTIMIZED = auto()
