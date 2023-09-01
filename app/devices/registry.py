@@ -22,6 +22,7 @@ class DeviceType:
     state_off_upper: float
     state_off_lower: float
     state_off_for: float
+    trailing_zeros_for: float
 
 
 class DeviceTypeRegistry:
@@ -74,8 +75,9 @@ class DeviceTypeRegistry:
                             state_off_upper = state_off_config.get("upper")
                             state_off_lower = state_off_config.get("lower")
                             state_off_for = state_off_config.get("for")
-                        if state_on_threshold is not None and state_off_upper is not None and state_off_lower is not None and state_off_for is not None:
-                            device_type = DeviceType(icon = icon, state_on_threshold=state_on_threshold, state_off_upper=state_off_upper, state_off_lower=state_off_lower, state_off_for=state_off_for)
+                            trailing_zeros_for = state_off_config.get("trailing_zeros_for")
+                        if state_on_threshold is not None and state_off_upper is not None and state_off_lower is not None and state_off_for is not None and trailing_zeros_for is not None:
+                            device_type = DeviceType(icon = icon, state_on_threshold=state_on_threshold, state_off_upper=state_off_upper, state_off_lower=state_off_lower, state_off_for=state_off_for, trailing_zeros_for= trailing_zeros_for)
                             self._registry[DeviceTypeId(manufacturer=manufacturer, model=model)] = device_type
 
     def get_device_type(self, manufacturer: str, model: str) -> DeviceType | None:

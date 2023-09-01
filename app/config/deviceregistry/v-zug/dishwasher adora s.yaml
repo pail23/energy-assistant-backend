@@ -9,3 +9,4 @@ device_type:
       upper: 20
       lower: 15
       for: 1500
+      trailing_zeros_for: 600

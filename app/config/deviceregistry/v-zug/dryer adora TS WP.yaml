@@ -6,6 +6,7 @@ device_type:
     state_on:
       threshold: 10
     state_off:
-      upper: 10
-      lower: 5
-      for: 180
+      upper: 0
+      lower: 0
+      for: 0
+      trailing_zeros_for: 10

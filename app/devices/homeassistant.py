@@ -219,9 +219,11 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
             if self.state != 'on' and self.power > self._device_type.state_on_threshold:
                 self._state = 'on'
             elif self.state != 'off':
-                is_between = self._power_data.is_between(self._device_type.state_off_lower, self._device_type.state_off_upper, self._device_type.state_off_for, without_trailing_zeros=True)
-                if self.state == 'on' and self.power == 0 and is_between:
-                    self._state = 'off'
+                if self.state == 'on' and self.power == 0:
+                    is_between =self._device_type.state_off_for > 0 and self._power_data.is_between(self._device_type.state_off_lower, self._device_type.state_off_upper, self._device_type.state_off_for, without_trailing_zeros=True)
+                    max = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(self._device_type.trailing_zeros_for)
+                    if is_between or max < 1:
+                        self._state = 'off'
                 elif self.state == 'unknown':
                     self._state = 'off'
         new_state = self.state == 'on'
