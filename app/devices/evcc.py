@@ -19,7 +19,7 @@ class EvccDevice(Device, DeviceWithState):
         self._power : State | None= None
         self._consumed_energy : State | None= None
         self._mode : State | None= None
-        self._supported_power_modes =[PowerModes.OFF, PowerModes.PV, PowerModes.MIN_PV, PowerModes.FAST]
+        self._supported_power_modes =[PowerModes.DEVICE_CONTROLLED, PowerModes.OFF, PowerModes.PV, PowerModes.MIN_PV, PowerModes.FAST]
 
     def get_device_topic_id(self, name: str) -> StateId:
         """Get the id of a topic of this load point."""
@@ -36,6 +36,7 @@ class EvccDevice(Device, DeviceWithState):
         new_state = self.state == 'on'
 
         self._consumed_energy = state_repository.get_state(self.get_device_topic_id("chargeTotalImport"))
+        self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
         self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
 
@@ -44,7 +45,20 @@ class EvccDevice(Device, DeviceWithState):
 
     async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
-        pass
+        new_state = ""
+        if self.power_mode == PowerModes.OFF:
+            new_state = "off"
+        elif self.power_mode == PowerModes.PV:
+            new_state = "pv"
+        elif self.power_mode == PowerModes.MIN_PV:
+            new_state = "minpv"
+        elif self.power_mode == PowerModes.FAST:
+           new_state = "now"
+        elif self.power_mode == PowerModes.OPTIMIZED:
+            # TODO: Implement Optimized with emhass
+            new_state = "pv"
+        if new_state != self._mode:
+            state_repository.set_state(self.get_device_topic_id("mode/set"), new_state)
 
     @property
     def evcc_mqtt_subscription_topic(self) -> str:

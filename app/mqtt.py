@@ -77,7 +77,6 @@ class MqttConnection(StatesSingleRepository):
 
     def write_states(self) -> None:
         """Write the states to the channel."""
-
-        # TODO: Implement the write function
-        if len(self._write_states) > 0:
-            raise NotImplementedError()
+        if self._client:
+            for id, state in self._write_states.items():
+                self._client.publish(id, state.value)
