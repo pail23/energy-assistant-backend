@@ -18,7 +18,16 @@ uvicorn[standard]==0.23.2
 uvloop==0.17.0
 websockets==11.0.3
 
-paho-mqtt
+paho-mqtt==1.6.1
+
+# emhass requirements
+wheel
+numpy==1.25.2
+pandas==2.0.3
+scipy==1.11.2
+pvlib==0.10.1
+skforecast==0.9.1
+beautifulsoup4>=4.9.3
 
 # local dev packages
 ruff
@@ -29,7 +38,7 @@ annotated-types==0.5.0
 pre-commit
 isort
 pytest-asyncio
-pytest-cov
+#pytest-covs
 pytest-env
 pytest-mock
 pytest-randomly
@@ -37,4 +46,3 @@ eqassertions
 types-PyYAML
 types-requests
 types-paho-mqtt
-

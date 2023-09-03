@@ -20,7 +20,7 @@ class EvccDevice(Device, DeviceWithState):
         self._consumed_energy : State | None= None
         self._mode : State | None= None
         self._vehicle_soc : State | None= None
-        self._supported_power_modes =[PowerModes.DEVICE_CONTROLLED, PowerModes.OFF, PowerModes.PV, PowerModes.MIN_PV, PowerModes.FAST]
+        self._supported_power_modes =[PowerModes.DEVICE_CONTROLLED, PowerModes.OFF, PowerModes.PV, PowerModes.MIN_PV, PowerModes.FAST, PowerModes.OPTIMIZED]
 
     def get_device_topic_id(self, name: str) -> StateId:
         """Get the id of a topic of this load point."""
