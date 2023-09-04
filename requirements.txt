@@ -12,7 +12,7 @@ pydantic-settings==2.0.3
 pydantic_core==2.6.3
 python-dotenv==1.0.0
 
-fastapi==0.103.0
+fastapi==0.103.1
 fastapi-socketio==0.0.10
 uvicorn[standard]==0.23.2
 uvloop==0.17.0
