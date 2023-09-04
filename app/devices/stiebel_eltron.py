@@ -1,9 +1,9 @@
 """Stiebel Eltron device implementation."""
-from . import PowerModes, SessionStorage, State, StatesRepository
+from . import PowerModes, SessionStorage, State, StateId, StatesRepository
 from .analysis import DataBuffer
 from .config import get_config_param
 from .device import Device, DeviceWithState
-from .homeassistant import assign_if_available
+from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
 POWER_HYSTERESIS = 0.1
@@ -83,7 +83,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
                             target_temperature = self._target_temperature_normal
 
                 if target_temperature != current_target_temperature.numeric_value:
-                    state_repository.set_state(self._comfort_target_temperature_entity_id, str(target_temperature))
+                    state_repository.set_state(StateId(id=self._comfort_target_temperature_entity_id, channel=HOMEASSISTANT_CHANNEL), str(target_temperature))
 
 
     @property

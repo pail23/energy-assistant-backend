@@ -24,6 +24,7 @@ from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.registry import DeviceTypeRegistry
 from app.mqtt import MqttConnection
+from app.optimizer import EmhassOptimzer
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
 
@@ -252,6 +253,8 @@ async def init_app() -> None:
     app.hass = None  # type: ignore
     app.mqtt = None # type: ignore
     app.db = None  # type: ignore
+    app.optimizer = None # type: ignore
+
 
     config_file = settings.CONFIG_FILE
     logfilename = settings.LOG_FILE
@@ -308,6 +311,7 @@ async def init_app() -> None:
                     app.home = home  # type: ignore
                     if mqtt_connection is not None:
                         subscribe_mqtt_topics(mqtt_connection, home)
+                    app.optimizer = EmhassOptimzer("./data", "./app/config", config) # type: ignore
 
                     async with async_session() as session:
                         await db.update_devices(home, session)
@@ -320,12 +324,24 @@ async def init_app() -> None:
         logging.error(ex)
 
 
+async def optimize(optimizer: EmhassOptimzer) -> None:
+    """Optimize the forcast."""
+    try:
+        input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
+        optimizer.perfect_forecast_optim(input_data, True)
+        input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
+        optimizer.dayahead_forecast_optim(input_data_dayahead, True)
+    except Exception as ex:
+        logging.error(ex)
+
 @app.on_event("startup")
 async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
     sio.start_background_task(
         background_task, app.home, app.hass, app.mqtt, app.db)  # type: ignore
+    sio.start_background_task(optimize, app.optimizer) # type: ignore
+
 
 
 @app.on_event("shutdown")

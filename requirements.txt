@@ -28,6 +28,7 @@ scipy==1.11.2
 pvlib==0.10.1
 skforecast==0.9.1
 beautifulsoup4>=4.9.3
+pulp
 
 # local dev packages
 ruff

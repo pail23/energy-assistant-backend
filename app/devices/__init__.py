@@ -194,7 +194,7 @@ class StatesRepository(ABC):
         pass
 
     @abstractmethod
-    def set_state(self, id:StateId | str, value: str) -> None:
+    def set_state(self, id:StateId, value: str) -> None:
         """Set a state in the repository."""
         pass
 
@@ -231,12 +231,9 @@ class StatesSingleRepository(StatesRepository):
         else:
             return self._read_states.get(id.id)
 
-    def set_state(self, id:StateId | str, value: str) -> None:
+    def set_state(self, id:StateId, value: str) -> None:
         """Set a state in the repository."""
-        if isinstance(id, str):
-            self._write_states[id] = State(id, value)
-        else:
-            self._write_states[id.id] = State(id.id, value)
+        self._write_states[id.id] = State(id.id, value)
 
     @property
     def channel(self) -> str:
@@ -265,14 +262,11 @@ class StatesMultipleRepositories(StatesRepository):
                     return result
         return None
 
-    def set_state(self, id:StateId | str, value: str) -> None:
+    def set_state(self, id:StateId, value: str) -> None:
         """Set a state in the repository."""
-        if isinstance(id, str):
-            raise TypeError()
-        else:
-            for repository in self._repositories:
-                if id.channel == repository.channel:
-                    repository.set_state(id, value)
+        for repository in self._repositories:
+            if id.channel == repository.channel:
+                repository.set_state(id, value)
 
     @property
     def channel(self) -> str:

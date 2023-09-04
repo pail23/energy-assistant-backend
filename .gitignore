@@ -5,6 +5,7 @@ client
 *.log
 *.bak
 .mypycache
+data/
 
 # Unit test / coverage reports
 htmlcov/

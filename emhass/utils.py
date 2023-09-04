@@ -99,7 +99,7 @@ def get_forecast_dates(freq: int, delta_forecast: int,
         freq=freq).round(freq)
     return forecast_dates
 
-def treat_runtimeparams(runtimeparams: str, params: str, retrieve_hass_conf: dict, optim_conf: dict, plant_conf: dict,
+def treat_runtimeparams(runtimeparams: str | None, params: str, retrieve_hass_conf: dict, optim_conf: dict, plant_conf: dict,
                         set_type: str, logger: logging.Logger) -> Tuple[str, dict]:
     """Treat the passed optimization runtime parameters.
 
@@ -325,7 +325,7 @@ def treat_runtimeparams(runtimeparams: str, params: str, retrieve_hass_conf: dic
     params = json.dumps(params)
     return params, retrieve_hass_conf, optim_conf, plant_conf
 
-def get_yaml_parse(config_path: str, use_secrets: Optional[bool] = True,
+def get_yaml_parse(config_path: pathlib.Path, use_secrets: Optional[bool] = True,
                    params: Optional[str] = None) -> Tuple[dict, dict, dict]:
     """Perform parsing of the config.yaml file.
 
