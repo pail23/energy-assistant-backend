@@ -14,6 +14,7 @@ RUN pip install -r requirements.txt
 RUN mkdir /data
 
 COPY ./app ./app
+COPY ./emhass ./emhass
 COPY ./migrations ./migrations
 COPY ./client ./client
 
