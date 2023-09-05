@@ -312,7 +312,7 @@ async def init_app() -> None:
                     app.home = home  # type: ignore
                     if mqtt_connection is not None:
                         subscribe_mqtt_topics(mqtt_connection, home)
-                    app.optimizer = EmhassOptimzer("./data", "./app/config", config) # type: ignore
+                    app.optimizer = EmhassOptimzer("./data", config, hass.url, hass.token) # type: ignore
 
                     async with async_session() as session:
                         await db.update_devices(home, session)

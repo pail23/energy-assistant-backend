@@ -46,7 +46,7 @@ class HomeassistantState(State):
         """Unit of the state."""
         if self._attributes is not None:
             return str(self._attributes.get("unit_of_measurement"))
-        return None
+        return ""
 
 
 
@@ -61,6 +61,15 @@ class Homeassistant(StatesSingleRepository):
         self._token = token
         self._demo_mode = demo_mode is not None and demo_mode
 
+    @property
+    def url(self) -> str:
+        """URL of the home assistant instance."""
+        return self._url
+
+    @property
+    def token(self) -> str:
+        """Token of the home assistant instance."""
+        return self._token
 
     def read_states(self) -> None:
         """Read the states from the homeassistant instance."""

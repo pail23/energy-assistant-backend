@@ -23,19 +23,15 @@ SENSOR_POWER_NO_VAR_LOADS = "sensor.power_load_no_var_loads"
 class EmhassOptimzer:
     """Optimizer based on Emhass."""
 
-    def __init__(self, data_folder: str, config_folder: str, config: dict) -> None:
+    def __init__(self, data_folder: str, config: dict, hass_url: str, hass_token: str) -> None:
         """Create an emhass optimizer instance."""
         self._data_folder = data_folder
-        self._config_folder = config_folder
         self._logger = logging.Logger("EmhassOptimizer")
-        self._hass_url: str | None = None
-        self._hass_token: str | None  = None
-        hass_config = config.get("homeassistant")
-        if hass_config is not None:
-            self._hass_url = hass_config.get("url")
-            if self._hass_url is not None and self._hass_url[-1] != "/":
-                self._hass_url = self._hass_url + "/"
-            self._hass_token = hass_config.get("token")
+        self._hass_url: str = hass_url
+        if self._hass_url is not None and self._hass_url[-1] != "/":
+            self._hass_url = self._hass_url + "/"
+        self._hass_token: str = hass_token
+
         home_config = config.get("home")
         self._solar_power_id: str | None = None
         self._time_zone: str | None = None
@@ -104,7 +100,7 @@ class EmhassOptimzer:
         """
         runtimeparams = None
         if self._hass_url is not None and self._hass_token is not None:
-            config_path = pathlib.Path(self._config_folder) / "config_emhass.yaml"
+            config_path = pathlib.Path(self._data_folder) / "config_emhass.yaml"
             self._logger.info("Setting up needed data")
             # Parsing yaml
             params = json.dumps(self._emhass_config)
