@@ -299,3 +299,13 @@ class PowerModes(StrEnum):
     MIN_PV = auto()
     FAST = auto()
     OPTIMIZED = auto()
+
+
+@dataclass
+class Location:
+    """Location of the home."""
+
+    time_zone: str
+    latitude: str
+    longitude: str
+    elevation: str

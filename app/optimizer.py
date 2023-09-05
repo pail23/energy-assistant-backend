@@ -8,11 +8,10 @@ import pathlib
 
 import numpy as np
 import pandas as pd
-import requests  # type: ignore
 
-from app.devices import StateId, StatesRepository
+from app.devices import Location, StateId, StatesRepository
 from app.devices.home import Home
-from app.devices.homeassistant import HOMEASSISTANT_CHANNEL  # type: ignore
+from app.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from emhass import utils
 from emhass.forecast import forecast
 from emhass.optimization import optimization
@@ -23,50 +22,21 @@ SENSOR_POWER_NO_VAR_LOADS = "sensor.power_load_no_var_loads"
 class EmhassOptimzer:
     """Optimizer based on Emhass."""
 
-    def __init__(self, data_folder: str, config: dict, hass_url: str, hass_token: str) -> None:
+    def __init__(self, data_folder: str, config: dict, hass: Homeassistant) -> None:
         """Create an emhass optimizer instance."""
         self._data_folder = data_folder
         self._logger = logging.Logger("EmhassOptimizer")
-        self._hass_url: str = hass_url
+        self._hass_url: str = hass.url
         if self._hass_url is not None and self._hass_url[-1] != "/":
             self._hass_url = self._hass_url + "/"
-        self._hass_token: str = hass_token
+        self._hass_token: str = hass.token
+        self._location: Location = hass.get_location()
 
         home_config = config.get("home")
         self._solar_power_id: str | None = None
-        self._time_zone: str | None = None
-        self._latitude: str | None = None
-        self._lon: str | None = None
-        self._elevation: str | None = None
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
-            location_config = home_config.get("location")
-            if location_config is not None:
-                self._time_zone = location_config.get("time_zone")
-                self._latitude = location_config.get("lat")
-                self._longitude = location_config.get("lon")
-                self._elevation = location_config.get("alt")
         self._emhass_config = config.get("emhass")
-
-    def get_location_from_hass(self) -> None:
-            """Read the location from the Homeassistant configuration."""
-            headers = {
-                "Authorization": f"Bearer {self._hass_token}",
-                "content-type": "application/json",
-            }
-            try:
-                response = requests.get(
-                    f"{self._hass_url}api/config", headers=headers)
-
-                if response.ok:
-                    config = response.json()
-                    self._latitude = config.get("latitude")
-                    self._longitude = config.get("longitude")
-                    self._elevation = config.get("elevation")
-                    self._time_zone = config.get("time_zone")
-
-            except Exception as ex:
-                logging.error("Exception during homeassistant update_states: ", ex)
 
 
     def update_power_non_var_loads(self, home: Home, state_repository: StatesRepository) -> None:
@@ -114,11 +84,11 @@ class EmhassOptimzer:
             retrieve_hass_conf["var_replace_zero"] = [self._solar_power_id]
             retrieve_hass_conf["var_interp"] = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
 
-            self.get_location_from_hass()
-            retrieve_hass_conf["time_zone"] = self._time_zone
-            retrieve_hass_conf["lat"] = self._latitude
-            retrieve_hass_conf["lon"] = self._longitude
-            retrieve_hass_conf["alt"] = self._elevation
+            if self._location is not None:
+                retrieve_hass_conf["time_zone"] = self._location.time_zone
+                retrieve_hass_conf["lat"] = self._location.latitude
+                retrieve_hass_conf["lon"] = self._location.longitude
+                retrieve_hass_conf["alt"] = self._location.elevation
 
             # Treat runtimeparams
             params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(

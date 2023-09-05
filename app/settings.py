@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     CONFIG_FILE: str
     DEVICE_TYPE_REGISTRY: str
     LOG_FILE: str
+    DATA_FOLDER: str
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent / f"config/{os.environ['APP_CONFIG_FILE']}.env",
