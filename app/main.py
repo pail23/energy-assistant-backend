@@ -357,7 +357,7 @@ async def startup() -> None:
     await init_app()
     sio.start_background_task(
         background_task, app.home, app.hass, app.optimizer, app.mqtt, app.db)  # type: ignore
-    sio.start_background_task(daily_optimize, app.optimizer) # type: ignore
+    sio.start_background_task(optimize, app.optimizer) # type: ignore
 
     scheduler = AsyncIOScheduler()
     scheduler.add_job(daily_optimize, trigger='cron', hour='3', minute='0') # time is UTC
