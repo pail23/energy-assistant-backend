@@ -6,6 +6,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -335,13 +336,32 @@ async def optimize(optimizer: EmhassOptimzer) -> None:
     except Exception as ex:
         logging.error(ex)
 
+def daily_optimize() -> None:
+    """Optimze once a day."""
+    try:
+        optimizer = app.optimizer # type: ignore
+        if optimizer is not None:
+            logging.info("Start optimizer  ")
+            input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
+            optimizer.perfect_forecast_optim(input_data, True)
+            input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
+            optimizer.dayahead_forecast_optim(input_data_dayahead, True)
+    except Exception as ex:
+        logging.error(ex)
+
+
+
 @app.on_event("startup")
 async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
     sio.start_background_task(
         background_task, app.home, app.hass, app.optimizer, app.mqtt, app.db)  # type: ignore
-    sio.start_background_task(optimize, app.optimizer) # type: ignore
+    sio.start_background_task(daily_optimize, app.optimizer) # type: ignore
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(daily_optimize, trigger='cron', hour='3', minute='0') # time is UTC
+    scheduler.start()
 
 
 
@@ -349,6 +369,7 @@ async def startup() -> None:
 async def shutdown_event() -> None:
     """Stop call back to stop the app."""
     print("Shutdown app")
+
 
 
 @app.get("/check", include_in_schema=False)
