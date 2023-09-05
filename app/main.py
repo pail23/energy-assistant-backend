@@ -47,12 +47,13 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
-async def async_handle_state_update(home: Home, state_repository: StatesRepository, db: Database, session: AsyncSession) -> None:
+async def async_handle_state_update(home: Home, state_repository: StatesRepository, optimizer: EmhassOptimzer, db: Database, session: AsyncSession) -> None:
     """Read the values from home assistant and process the update."""
     try:
         state_repository.read_states()
         await home.update_state(state_repository)
         await home.update_power_consumption(state_repository)
+        optimizer.update_power_non_var_loads(home, state_repository)
         state_repository.write_states()
         # print("Send refresh: " + get_home_message(home))
         if db:
@@ -68,7 +69,7 @@ async def async_handle_state_update(home: Home, state_repository: StatesReposito
         logging.error("error during sending refresh", ex)
 
 
-async def background_task(home: Home, hass: Homeassistant, mqtt: MqttConnection, db: Database) -> None:
+async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOptimzer, mqtt: MqttConnection, db: Database) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     async_session = await get_async_session()
@@ -83,7 +84,7 @@ async def background_task(home: Home, hass: Homeassistant, mqtt: MqttConnection,
                 home.store_energy_snapshot()
             last_update = today
             async with async_session() as session:
-                await async_handle_state_update(home, state_repository, db, session)
+                await async_handle_state_update(home, state_repository, optimizer, db, session)
         except Exception as ex:
             logging.error("error in the background task: ", ex)
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
@@ -339,7 +340,7 @@ async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
     sio.start_background_task(
-        background_task, app.home, app.hass, app.mqtt, app.db)  # type: ignore
+        background_task, app.home, app.hass, app.optimizer, app.mqtt, app.db)  # type: ignore
     sio.start_background_task(optimize, app.optimizer) # type: ignore
 
 

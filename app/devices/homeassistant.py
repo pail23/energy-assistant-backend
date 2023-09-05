@@ -25,8 +25,8 @@ class HomeassistantState(State):
 
     def __init__(self, id:str, value:str, attributes:dict = {}) -> None:
         """Create a State instance."""
-        super().__init__(id, value)
-        self._attributes = attributes
+        super().__init__(id, value, attributes)
+
 
         if value==UNAVAILABLE:
             self._available = False
@@ -105,6 +105,15 @@ class Homeassistant(StatesSingleRepository):
                             f"{self._url}/api/services/number/set_value", headers=headers, json=data)
                         if not response.ok:
                             logging.error("State update in hass failed")
+                    elif id.startswith("sensor"):
+                        sensor_data : dict = {
+                            "state": state.value,
+                            "attributes": state.attributes
+                        }
+                        response = requests.post(
+                            f"{self._url}/api/states/{id}", headers=headers, json=sensor_data)
+                        if not response.ok:
+                            logging.error(f"State update for {id} in hass failed")
                     else:
                         logging.error(f"Writing to id {id} is not yet implemented.")
             except Exception as ex:

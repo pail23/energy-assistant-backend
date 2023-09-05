@@ -141,10 +141,11 @@ class HomeEnergySnapshot(EnergySnapshot):
 class State:
     """Base class for States."""
 
-    def __init__(self, id:str, value:str) -> None:
+    def __init__(self, id:str, value:str, attributes:dict = {}) -> None:
         """Create a state instance."""
         self._id = id
         self._value = value
+        self._attributes = attributes
         self._available = True
 
     @property
@@ -170,6 +171,11 @@ class State:
         except ValueError:
             return 0.0
 
+    @property
+    def attributes(self) -> dict:
+        """Attributes of the state."""
+        return self._attributes
+
 def assign_if_available(old_state: State | None, new_state: State | None) -> State | None:
     """Return new state in case the state is available, otherwise old state."""
     if new_state and new_state.available:
@@ -194,7 +200,7 @@ class StatesRepository(ABC):
         pass
 
     @abstractmethod
-    def set_state(self, id:StateId, value: str) -> None:
+    def set_state(self, id:StateId, value: str, attributes:dict = {}) -> None:
         """Set a state in the repository."""
         pass
 
@@ -231,9 +237,9 @@ class StatesSingleRepository(StatesRepository):
         else:
             return self._read_states.get(id.id)
 
-    def set_state(self, id:StateId, value: str) -> None:
+    def set_state(self, id:StateId, value: str, attributes:dict = {}) -> None:
         """Set a state in the repository."""
-        self._write_states[id.id] = State(id.id, value)
+        self._write_states[id.id] = State(id.id, value, attributes)
 
     @property
     def channel(self) -> str:
@@ -262,11 +268,11 @@ class StatesMultipleRepositories(StatesRepository):
                     return result
         return None
 
-    def set_state(self, id:StateId, value: str) -> None:
+    def set_state(self, id:StateId, value: str, attributes:dict = {}) -> None:
         """Set a state in the repository."""
         for repository in self._repositories:
             if id.channel == repository.channel:
-                repository.set_state(id, value)
+                repository.set_state(id, value, attributes)
 
     @property
     def channel(self) -> str:

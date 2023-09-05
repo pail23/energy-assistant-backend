@@ -49,6 +49,11 @@ class Device(ABC):
         """The power mode of the device."""
         return self._power_mode
 
+    @property
+    def power_controllable(self) -> bool:
+        """The power mode of the device."""
+        return not(len(self._supported_power_modes) == 1 and self._supported_power_modes[0] == PowerModes.DEVICE_CONTROLLED)
+
     def set_power_mode(self, power_mode: PowerModes) -> None:
         """Set the power mode of the device."""
         self._power_mode = power_mode

@@ -10,6 +10,9 @@ import numpy as np
 import pandas as pd
 import requests  # type: ignore
 
+from app.devices import StateId, StatesRepository
+from app.devices.home import Home
+from app.devices.homeassistant import HOMEASSISTANT_CHANNEL  # type: ignore
 from emhass import utils
 from emhass.forecast import forecast
 from emhass.optimization import optimization
@@ -69,6 +72,21 @@ class EmhassOptimzer:
             except Exception as ex:
                 logging.error("Exception during homeassistant update_states: ", ex)
 
+
+    def update_power_non_var_loads(self, home: Home, state_repository: StatesRepository) -> None:
+        """Calculate the power of the non varibale/non controllable loads."""
+        power = home.home_consumption_power
+        for device in home.devices:
+            if device.power_controllable:
+                power = power - device.power
+        if power < 0:
+            power = 0.0
+        attributes = {
+            "unit_of_measurement": "W",
+            "state_class": "measurement",
+            "device_class": "power"
+        }
+        state_repository.set_state(StateId(id=SENSOR_POWER_NO_VAR_LOADS, channel=HOMEASSISTANT_CHANNEL), str(power), attributes)
 
     def set_input_data_dict(self, costfun: str,
         set_type: str) -> dict:
