@@ -138,7 +138,7 @@ class EmhassOptimzer:
                 df_weather = fcst.get_weather_forecast(method=optim_conf['weather_forecast_method'])
                 P_PV_forecast = fcst.get_power_from_weather(df_weather)
                 P_load_forecast = fcst.get_load_forecast(method=optim_conf['load_forecast_method'])
-                df_input_data_dayahead = pd.DataFrame(np.transpose(np.vstack([P_PV_forecast.values,P_load_forecast.values])),
+                df_input_data_dayahead = pd.DataFrame(np.transpose(np.vstack([np.array(P_PV_forecast.values), np.array(P_load_forecast.values)])),
                                                     index=P_PV_forecast.index,
                                                     columns=['P_PV_forecast', 'P_load_forecast'])
                 df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
@@ -163,9 +163,9 @@ class EmhassOptimzer:
                 df_weather = fcst.get_weather_forecast(method=optim_conf['weather_forecast_method'])
                 P_PV_forecast = fcst.get_power_from_weather(df_weather, set_mix_forecast=True, df_now=df_input_data)
                 P_load_forecast = fcst.get_load_forecast(method=optim_conf['load_forecast_method'], set_mix_forecast=True, df_now=df_input_data)
-                df_input_data_dayahead = pd.concat([P_PV_forecast, P_load_forecast], axis=1)
+                df_input_data_dayahead = pd.concat([pd.Series(P_PV_forecast, name='P_PV_forecast'), pd.Series(P_load_forecast, name='P_load_forecast')], axis=1)
                 df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
-                df_input_data_dayahead.columns = ['P_PV_forecast', 'P_load_forecast']
+                #df_input_data_dayahead.columns = ['P_PV_forecast', 'P_load_forecast']
                 params_naive_mpc_optim: dict = json.loads(params)
                 if 'prediction_horizon' in params_naive_mpc_optim['passed_data'] and params_naive_mpc_optim['passed_data']['prediction_horizon'] is not None:
                     prediction_horizon = params_naive_mpc_optim['passed_data']['prediction_horizon']
