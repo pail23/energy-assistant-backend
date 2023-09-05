@@ -25,7 +25,7 @@ class EmhassOptimzer:
     def __init__(self, data_folder: str, config: dict, hass: Homeassistant) -> None:
         """Create an emhass optimizer instance."""
         self._data_folder = data_folder
-        self._logger = logging.Logger("EmhassOptimizer")
+        self._logger = logging.getLogger("EmhassOptimizer")
         self._hass_url: str = hass.url
         if self._hass_url is not None and self._hass_url[-1] != "/":
             self._hass_url = self._hass_url + "/"
