@@ -12,6 +12,7 @@ import pandas as pd
 from app.devices import Location, StateId, StatesRepository
 from app.devices.home import Home
 from app.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
+from app.models.forecast import ForecastSchema, ForecastSerieSchema
 from emhass import utils
 from emhass.forecast import forecast
 from emhass.optimization import optimization
@@ -37,6 +38,8 @@ class EmhassOptimzer:
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
         self._emhass_config = config.get("emhass")
+
+        self._day_ahead_forecast : pd.DataFrame | None = None
 
 
     def update_power_non_var_loads(self, home: Home, state_repository: StatesRepository) -> None:
@@ -263,4 +266,22 @@ class EmhassOptimzer:
             filename = 'opt_res_latest.csv'
         if not debug:
             opt_res_dayahead.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
+        self._day_ahead_forecast = opt_res_dayahead
         return opt_res_dayahead
+
+    def get_forecast(self) -> ForecastSchema:
+        """Get the previously calculated forecast."""
+        if self._day_ahead_forecast is not None:
+            time = pd.to_datetime(self._day_ahead_forecast.index).to_list()
+            pv = self._day_ahead_forecast["P_PV"].to_list()
+            load = self._day_ahead_forecast["P_Load"].to_list()
+            device0 = self._day_ahead_forecast["P_deferrable0"].to_list()
+            device1 = self._day_ahead_forecast["P_deferrable1"].to_list()
+            return ForecastSchema(time=time,series=[
+                ForecastSerieSchema(name="pv", data=pv),
+                ForecastSerieSchema(name="consumption", data=load),
+                ForecastSerieSchema(name="67ca8a1e-0181-4528-88bf-dabf646c1af2", data=device0),
+                ForecastSerieSchema(name="7c916c76-4454-450c-8d2e-ccc45ed58f94", data=device1)
+            ])
+        else:
+            raise Exception("Optimizer forecast is not initialized.")

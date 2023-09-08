@@ -4,7 +4,8 @@
 
 from fastapi import APIRouter, Depends, Request
 
-from .schema import ForecastSchema
+from app.models.forecast import ForecastSchema
+
 from .use_cases import ReadForecast
 
 router = APIRouter(prefix="/forecast")
@@ -16,4 +17,4 @@ async def read_all(
     use_case: ReadForecast = Depends(ReadForecast)
 ) -> ForecastSchema:
     """Rest end point for read all devices."""
-    return await use_case.execute()
+    return await use_case.execute(request.app.optimizer)

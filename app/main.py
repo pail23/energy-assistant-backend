@@ -66,8 +66,8 @@ async def async_handle_state_update(home: Home, state_repository: StatesReposito
         else:
             logging.error(
                 "The variable db is None in async_handle_state_update")
-    except Exception as ex:
-        logging.error("error during sending refresh", ex)
+    except Exception:
+        logging.exception("error during sending refresh")
 
 
 async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOptimzer, mqtt: MqttConnection, db: Database) -> None:
@@ -86,8 +86,8 @@ async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOpti
             last_update = today
             async with async_session() as session:
                 await async_handle_state_update(home, state_repository, optimizer, db, session)
-        except Exception as ex:
-            logging.error("error in the background task: ", ex)
+        except Exception:
+            logging.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
 
 
@@ -233,8 +233,8 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
                 logging.info(f"Using {url} to connect")
                 hass = Homeassistant(url, token, False)
                 return hass
-    except Exception as ex:
-        logging.error(ex)
+    except Exception:
+        logging.exception("Error while trying to connect to the homeassistant supervisor api")
         url = None
         token = None
 
@@ -294,10 +294,10 @@ async def init_app() -> None:
             try:
                 config = yaml.safe_load(stream)
                 logging.debug(f"config file {config_file} successfully loaded")
-            except yaml.YAMLError as ex:
-                logging.error(ex)
-            except Exception as ex:
-                logging.error(ex)
+            except yaml.YAMLError:
+                logging.exception("Failed to parse the config file")
+            except Exception:
+                logging.exception("Failed to parse the config file")
             else:
                 hass = create_hass_connection(config)
                 app.hass = hass  # type: ignore
@@ -322,8 +322,8 @@ async def init_app() -> None:
                 else:
                     logging.error(f"home not found in config file: {config}")
                 logging.info("Initialization completed")
-    except Exception as ex:
-        logging.error(ex)
+    except Exception :
+        logging.exception("Initialization of the app failed")
 
 
 async def optimize(optimizer: EmhassOptimzer) -> None:
@@ -333,8 +333,8 @@ async def optimize(optimizer: EmhassOptimzer) -> None:
         optimizer.perfect_forecast_optim(input_data, True)
         input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
         optimizer.dayahead_forecast_optim(input_data_dayahead, True)
-    except Exception as ex:
-        logging.error(ex)
+    except Exception:
+        logging.exception("Optimization failed")
 
 def daily_optimize() -> None:
     """Optimze once a day."""
@@ -346,8 +346,8 @@ def daily_optimize() -> None:
             optimizer.perfect_forecast_optim(input_data, True)
             input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
             optimizer.dayahead_forecast_optim(input_data_dayahead, True)
-    except Exception as ex:
-        logging.error(ex)
+    except Exception :
+        logging.exception("Daily optimization run failed")
 
 
 

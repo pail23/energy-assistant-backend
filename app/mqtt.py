@@ -50,8 +50,8 @@ class MqttConnection(StatesSingleRepository):
             self._client.on_disconnect = on_disconnect
             self._client.connect(self._host)
             self._client.loop_start()
-        except Exception as ex:
-            logging.error("Error while connecting mqtt ", ex)
+        except Exception:
+            logging.exception("Error while connecting mqtt ")
 
     def add_subscription_topic(self, topic: str) -> None:
         """Add a subscription topic."""

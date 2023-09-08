@@ -97,8 +97,8 @@ class Homeassistant(StatesSingleRepository):
                         entity_id = state.get("entity_id")
                         self._read_states[entity_id] = HomeassistantState(entity_id, state.get("state"), state.get("attributes"))
 
-            except Exception as ex:
-                logging.error("Exception during homeassistant update_states: ", ex)
+            except Exception:
+                logging.exception("Exception during homeassistant update_states: ")
 
     def write_states(self) -> None:
         """Send the changed states to hass."""
