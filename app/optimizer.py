@@ -272,7 +272,7 @@ class EmhassOptimzer:
     def get_forecast(self) -> ForecastSchema:
         """Get the previously calculated forecast."""
         if self._day_ahead_forecast is not None:
-            time = pd.to_datetime(self._day_ahead_forecast.index).to_list()
+            time : list[datetime] = self._day_ahead_forecast.index.to_series().dt.to_pydatetime().tolist()
             pv = self._day_ahead_forecast["P_PV"].to_list()
             load = self._day_ahead_forecast["P_Load"].to_list()
             device0 = self._day_ahead_forecast["P_deferrable0"].to_list()
