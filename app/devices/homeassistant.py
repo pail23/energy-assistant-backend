@@ -3,6 +3,7 @@ import logging
 
 import requests  # type: ignore
 
+from app import Optimizer
 from app.devices.analysis import DataBuffer
 from app.devices.registry import DeviceType, DeviceTypeRegistry
 
@@ -167,7 +168,7 @@ class HomeassistantDevice(Device):
         self._consumed_energy = assign_if_available(self._consumed_energy, state_repository.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
 
-    async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
+    async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
         pass
 

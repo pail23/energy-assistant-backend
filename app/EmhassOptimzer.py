@@ -5,10 +5,12 @@ from datetime import datetime, timezone
 import json
 import logging
 import pathlib
+import uuid
 
 import numpy as np
 import pandas as pd
 
+from app import Optimizer
 from app.devices import Location, StateId, StatesRepository
 from app.devices.home import Home
 from app.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
@@ -20,7 +22,7 @@ from emhass.retrieve_hass import retrieve_hass
 
 SENSOR_POWER_NO_VAR_LOADS = "sensor.power_load_no_var_loads"
 
-class EmhassOptimzer:
+class EmhassOptimzer(Optimizer):
     """Optimizer based on Emhass."""
 
     def __init__(self, data_folder: str, config: dict, hass: Homeassistant) -> None:
@@ -37,9 +39,10 @@ class EmhassOptimzer:
         self._solar_power_id: str | None = None
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
-        self._emhass_config = config.get("emhass")
+        self._emhass_config : dict | None = config.get("emhass")
 
         self._day_ahead_forecast : pd.DataFrame | None = None
+        self._optimzed_devices : list[uuid.UUID] = [uuid.UUID("67ca8a1e-0181-4528-88bf-dabf646c1af2"), uuid.UUID("7c916c76-4454-450c-8d2e-ccc45ed58f94")]
 
 
     def update_power_non_var_loads(self, home: Home, state_repository: StatesRepository) -> None:
@@ -285,3 +288,30 @@ class EmhassOptimzer:
             ])
         else:
             raise Exception("Optimizer forecast is not initialized.")
+
+    def get_optimized_power(self, deviceId: uuid.UUID) -> float:
+        """Get the optimized power budget for a give device."""
+        if self._emhass_config is not None:
+            retrieve_hass_conf = {key: d[key] for d in self._emhass_config['retrieve_hass_conf'] for key in d}
+            method_ts_round = retrieve_hass_conf['method_ts_round']
+        else:
+            method_ts_round = "nearest"
+        if self._day_ahead_forecast is not None:
+            try:
+                columnName = f"P_deferrable{self._optimzed_devices.index(deviceId)}"
+            except ValueError:
+                return -1
+            else:
+                now_precise = datetime.now(self._location.get_time_zone()).replace(second=0, microsecond=0)
+                if method_ts_round == 'nearest':
+                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='nearest')[0] # type: ignore
+                elif method_ts_round == 'first':
+                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='ffill')[0] # type: ignore
+                elif retrieve_hass_conf['method_ts_round'] == 'last':
+                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='bfill')[0] # type: ignore
+                if idx_closest == -1:
+                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='nearest')[0] # type: ignore
+
+                value = self._day_ahead_forecast.iloc[idx_closest][columnName]
+                return float(value)
+        return -1

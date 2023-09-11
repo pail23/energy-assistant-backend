@@ -1,7 +1,7 @@
 """Use cases for devices."""
 
+from app.EmhassOptimzer import EmhassOptimzer
 from app.models.forecast import ForecastSchema
-from app.optimizer import EmhassOptimzer
 
 
 class ReadForecast:

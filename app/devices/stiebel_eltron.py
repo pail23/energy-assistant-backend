@@ -1,4 +1,6 @@
 """Stiebel Eltron device implementation."""
+from app import Optimizer
+
 from . import PowerModes, SessionStorage, State, StateId, StatesRepository
 from .analysis import DataBuffer
 from .config import get_config_param
@@ -67,7 +69,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
         await super().update_session(old_state, new_state, "Water heater")
 
 
-    async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
+    async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
         self.grid_exported_power_data.add_data_point(grid_exported_power)
         if self._target_temperature_normal is not None and self._target_temperature_pv is not None and self._comfort_target_temperature_entity_id is not None:
@@ -81,10 +83,21 @@ class StiebelEltronDevice(Device, DeviceWithState):
                             target_temperature = self._target_temperature_pv
                         elif avg_300 < self.requested_additional_power * (1 - POWER_HYSTERESIS):
                             target_temperature = self._target_temperature_normal
-
+                elif self.power_mode == PowerModes.OPTIMIZED:
+                    target_temperature = self._get_temperature_for_optimized(optimizer, target_temperature)
                 if target_temperature != current_target_temperature.numeric_value:
                     state_repository.set_state(StateId(id=self._comfort_target_temperature_entity_id, channel=HOMEASSISTANT_CHANNEL), str(target_temperature))
 
+
+    def _get_temperature_for_optimized(self, optimizer: Optimizer,  current_target_temperature:float) -> float:
+        if self.state == 'off' and self._target_temperature_normal is not None and self._target_temperature_pv is not None:
+            power = optimizer.get_optimized_power(self._id)
+            if power > 0:
+                return self._target_temperature_pv
+            else:
+                return self._target_temperature_normal
+        else:
+            return current_target_temperature
 
     @property
     def requested_additional_power(self) -> float:

@@ -1,9 +1,12 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import _TzInfo
 from enum import StrEnum, auto
 from typing import Optional
 import uuid
+
+import pytz  # type: ignore
 
 
 class SessionStorage(ABC):
@@ -309,3 +312,7 @@ class Location:
     latitude: str
     longitude: str
     elevation: str
+
+    def get_time_zone(self) -> _TzInfo:
+        """Get the timezone."""
+        return pytz.timezone(self.time_zone)

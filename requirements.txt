@@ -48,4 +48,5 @@ eqassertions
 types-PyYAML
 types-requests
 types-paho-mqtt
+types-pytz
 pandas-stubs

@@ -16,6 +16,7 @@ import requests  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
 
+from app.EmhassOptimzer import EmhassOptimzer
 from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
 from app.devices import StatesMultipleRepositories, StatesRepository
@@ -25,7 +26,6 @@ from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.registry import DeviceTypeRegistry
 from app.mqtt import MqttConnection
-from app.optimizer import EmhassOptimzer
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
 
@@ -53,7 +53,7 @@ async def async_handle_state_update(home: Home, state_repository: StatesReposito
     try:
         state_repository.read_states()
         await home.update_state(state_repository)
-        await home.update_power_consumption(state_repository)
+        await home.update_power_consumption(state_repository, optimizer)
         optimizer.update_power_non_var_loads(home, state_repository)
         state_repository.write_states()
         # print("Send refresh: " + get_home_message(home))

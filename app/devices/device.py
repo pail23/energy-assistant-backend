@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 import logging
 import uuid
 
+from app import Optimizer
+
 from . import (
     EnergyIntegrator,
     EnergySnapshot,
@@ -93,7 +95,7 @@ class Device(ABC):
         pass
 
     @abstractmethod
-    async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
+    async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
         pass
 

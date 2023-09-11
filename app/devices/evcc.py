@@ -1,4 +1,5 @@
 """EVCC Devices."""
+from app import Optimizer
 from app.mqtt import MQTT_CHANNEL
 
 from . import PowerModes, SessionStorage, State, StateId, StatesRepository
@@ -45,7 +46,7 @@ class EvccDevice(Device, DeviceWithState):
         await super().update_session(old_state, new_state, "EVCC")
 
 
-    async def update_power_consumption(self, state_repository: StatesRepository, grid_exported_power: float) -> None:
+    async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
         new_state = ""
         if self.power_mode == PowerModes.OFF:
