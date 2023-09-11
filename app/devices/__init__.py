@@ -1,7 +1,7 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import _TzInfo
+from datetime import tzinfo
 from enum import StrEnum, auto
 from typing import Optional
 import uuid
@@ -313,6 +313,6 @@ class Location:
     longitude: str
     elevation: str
 
-    def get_time_zone(self) -> _TzInfo:
+    def get_time_zone(self) -> tzinfo:
         """Get the timezone."""
         return pytz.timezone(self.time_zone)
