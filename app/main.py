@@ -329,8 +329,8 @@ async def init_app() -> None:
 async def optimize(optimizer: EmhassOptimzer) -> None:
     """Optimize the forcast."""
     try:
-        input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
-        optimizer.perfect_forecast_optim(input_data, True)
+        #input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
+        #optimizer.perfect_forecast_optim(input_data, True)
         input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
         optimizer.dayahead_forecast_optim(input_data_dayahead, True)
     except Exception:
@@ -342,8 +342,8 @@ def daily_optimize() -> None:
         optimizer = app.optimizer # type: ignore
         if optimizer is not None:
             logging.info("Start optimizer  ")
-            input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
-            optimizer.perfect_forecast_optim(input_data, True)
+            #input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
+            #optimizer.perfect_forecast_optim(input_data, True)
             input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
             optimizer.dayahead_forecast_optim(input_data_dayahead, True)
     except Exception :
