@@ -40,7 +40,7 @@ annotated-types==0.5.0
 pre-commit
 isort
 pytest-asyncio
-#pytest-covs
+pytest-cov
 pytest-env
 pytest-mock
 pytest-randomly
