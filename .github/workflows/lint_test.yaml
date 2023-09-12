@@ -45,6 +45,7 @@ jobs:
 
       - name: Create client folder
         run: mkdir -p client        
+
       - name: Run tests
         run: |
           pytest \
@@ -57,6 +58,7 @@ jobs:
             tests
         env:
           APP_CONFIG_FILE: test 
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
