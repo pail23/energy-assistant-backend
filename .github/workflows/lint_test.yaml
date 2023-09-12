@@ -52,7 +52,8 @@ jobs:
             --durations=10 \
             -o console_output_style=count \
             -p no:sugar \
-            -- cov=./ --cov-report=xml
+            --cov=./ \
+            --cov-report=xml \
             tests
         env:
           APP_CONFIG_FILE: test 
