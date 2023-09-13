@@ -22,7 +22,7 @@ from emhass.retrieve_hass import retrieve_hass
 
 SENSOR_POWER_NO_VAR_LOADS = "sensor.power_load_no_var_loads"
 
-class EmhassOptimzer(Optimizer):
+class EmhassOptimizer(Optimizer):
     """Optimizer based on Emhass."""
 
     def __init__(self, data_folder: str, config: dict, hass: Homeassistant) -> None:
@@ -76,12 +76,12 @@ class EmhassOptimzer(Optimizer):
         """
         runtimeparams = None
         if self._hass_url is not None and self._hass_token is not None:
-            config_path = pathlib.Path(self._data_folder) / "config_emhass.yaml"
+            pathlib.Path(self._data_folder) / "config_emhass.yaml"
             self._logger.info("Setting up needed data")
             # Parsing yaml
             params = json.dumps(self._emhass_config)
             retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
-                pathlib.Path(config_path), False, params=params)
+                pathlib.Path(), False, params=params)
             #Patch variables with Energy Assistant Config
             retrieve_hass_conf['hass_url'] = self._hass_url
             retrieve_hass_conf['long_lived_token'] = self._hass_token
@@ -102,7 +102,7 @@ class EmhassOptimzer(Optimizer):
                 optim_conf, plant_conf, set_type, self._logger) # type: ignore
             # Define main objects
             rh = retrieve_hass(self._hass_url, self._hass_token,
-                            retrieve_hass_conf['freq'], retrieve_hass_conf['time_zone'],
+                            retrieve_hass_conf['freq'], self._location.get_time_zone(),
                             params, self._data_folder, self._logger, get_data_from_file=False)
             fcst = forecast(retrieve_hass_conf, optim_conf, plant_conf,
                             params, self._data_folder, self._logger, get_data_from_file=False)
@@ -278,14 +278,16 @@ class EmhassOptimzer(Optimizer):
             time : list[datetime] = self._day_ahead_forecast.index.to_series().dt.to_pydatetime().tolist()
             pv = self._day_ahead_forecast["P_PV"].to_list()
             load = self._day_ahead_forecast["P_Load"].to_list()
-            device0 = self._day_ahead_forecast["P_deferrable0"].to_list()
-            device1 = self._day_ahead_forecast["P_deferrable1"].to_list()
-            return ForecastSchema(time=time,series=[
+
+            series=[
                 ForecastSerieSchema(name="pv", data=pv),
                 ForecastSerieSchema(name="consumption", data=load),
-                ForecastSerieSchema(name="67ca8a1e-0181-4528-88bf-dabf646c1af2", data=device0),
-                ForecastSerieSchema(name="7c916c76-4454-450c-8d2e-ccc45ed58f94", data=device1)
-            ])
+
+            ]
+            for i, d in enumerate(self._optimzed_devices):
+                device = self._day_ahead_forecast[f"P_deferrable{i}"].to_list()
+                series.append(ForecastSerieSchema(name=str(d), data=device))
+            return ForecastSchema(time=time, series=series)
         else:
             raise Exception("Optimizer forecast is not initialized.")
 

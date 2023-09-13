@@ -16,7 +16,7 @@ import requests  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
 
-from app.EmhassOptimzer import EmhassOptimzer
+from app.EmhassOptimizer import EmhassOptimizer
 from app.api.device import OTHER_DEVICE
 from app.api.main import router as api_router
 from app.devices import StatesMultipleRepositories, StatesRepository
@@ -48,7 +48,7 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
-async def async_handle_state_update(home: Home, state_repository: StatesRepository, optimizer: EmhassOptimzer, db: Database, session: AsyncSession) -> None:
+async def async_handle_state_update(home: Home, state_repository: StatesRepository, optimizer: EmhassOptimizer, db: Database, session: AsyncSession) -> None:
     """Read the values from home assistant and process the update."""
     try:
         state_repository.read_states()
@@ -70,7 +70,7 @@ async def async_handle_state_update(home: Home, state_repository: StatesReposito
         logging.exception("error during sending refresh")
 
 
-async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOptimzer, mqtt: MqttConnection, db: Database) -> None:
+async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOptimizer, mqtt: MqttConnection, db: Database) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     async_session = await get_async_session()
@@ -313,7 +313,7 @@ async def init_app() -> None:
                     app.home = home  # type: ignore
                     if mqtt_connection is not None:
                         subscribe_mqtt_topics(mqtt_connection, home)
-                    app.optimizer = EmhassOptimzer(settings.DATA_FOLDER, config, hass) # type: ignore
+                    app.optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass) # type: ignore
 
                     async with async_session() as session:
                         await db.update_devices(home, session)
@@ -326,7 +326,7 @@ async def init_app() -> None:
         logging.exception("Initialization of the app failed")
 
 
-async def optimize(optimizer: EmhassOptimzer) -> None:
+async def optimize(optimizer: EmhassOptimizer) -> None:
     """Optimize the forcast."""
     try:
         #input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
