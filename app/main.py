@@ -331,8 +331,8 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
     try:
         #input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
         #optimizer.perfect_forecast_optim(input_data, True)
-        input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
-        optimizer.dayahead_forecast_optim(input_data_dayahead, True)
+        #input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
+        optimizer.dayahead_forecast_optim("profit", False)
     except Exception:
         logging.exception("Optimization failed")
 
@@ -344,8 +344,8 @@ def daily_optimize() -> None:
             logging.info("Start optimizer  ")
             #input_data = optimizer.set_input_data_dict("profit", "perfect-optim")
             #optimizer.perfect_forecast_optim(input_data, True)
-            input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
-            optimizer.dayahead_forecast_optim(input_data_dayahead, True)
+            #input_data_dayahead = optimizer.set_input_data_dict("profit", "dayahead-optim")
+            optimizer.dayahead_forecast_optim("profit", False)
     except Exception :
         logging.exception("Daily optimization run failed")
 

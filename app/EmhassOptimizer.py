@@ -40,6 +40,32 @@ class EmhassOptimizer(Optimizer):
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
         self._emhass_config : dict | None = config.get("emhass")
+        if self._emhass_config:
+            params = json.dumps(self._emhass_config)
+            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
+                pathlib.Path(), False, params=params)
+            #Patch variables with Energy Assistant Config
+            retrieve_hass_conf['hass_url'] = self._hass_url
+            retrieve_hass_conf['long_lived_token'] = self._hass_token
+            retrieve_hass_conf["var_PV"] = self._solar_power_id
+            retrieve_hass_conf["var_load"] = SENSOR_POWER_NO_VAR_LOADS
+            retrieve_hass_conf["var_replace_zero"] = [self._solar_power_id]
+            retrieve_hass_conf["var_interp"] = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
+
+            retrieve_hass_conf["time_zone"] = self._location.get_time_zone()
+            retrieve_hass_conf["lat"] = self._location.latitude
+            retrieve_hass_conf["lon"] = self._location.longitude
+            retrieve_hass_conf["alt"] = self._location.elevation
+
+            self._retrieve_hass_conf = retrieve_hass_conf
+            self._optim_conf = optim_conf
+            self._plant_conf = plant_conf
+
+            # Define main objects
+            self._retrieve_hass = retrieve_hass(self._hass_url, self._hass_token,
+                            retrieve_hass_conf['freq'], self._location.get_time_zone(),
+                            params, self._data_folder, self._logger, get_data_from_file=False)
+
 
         self._day_ahead_forecast : pd.DataFrame | None = None
         self._optimzed_devices : list[uuid.UUID] = [uuid.UUID("67ca8a1e-0181-4528-88bf-dabf646c1af2"), uuid.UUID("7c916c76-4454-450c-8d2e-ccc45ed58f94")]
@@ -76,7 +102,6 @@ class EmhassOptimizer(Optimizer):
         """
         runtimeparams = None
         if self._hass_url is not None and self._hass_token is not None:
-            pathlib.Path(self._data_folder) / "config_emhass.yaml"
             self._logger.info("Setting up needed data")
             # Parsing yaml
             params = json.dumps(self._emhass_config)
@@ -235,8 +260,8 @@ class EmhassOptimizer(Optimizer):
         return opt_res
 
 
-    def dayahead_forecast_optim(self, input_data_dict: dict,
-        save_data_to_file: bool | None = False, debug: bool | None = False) -> pd.DataFrame:
+    def dayahead_forecast_optim(self, costfun: str,
+        save_data_to_file: bool | None = False, debug: bool | None = False) -> None:
         """Perform a call to the day-ahead optimization routine.
 
         :param input_data_dict:  A dictionnary with multiple data used by the action functions
@@ -251,16 +276,42 @@ class EmhassOptimizer(Optimizer):
         :rtype: pd.DataFrame
 
         """
+        self._logger.info("Setting up needed data")
+
+        params = json.dumps(self._emhass_config)
+        # Treat runtimeparams
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+            None, params, self._retrieve_hass_conf,
+            self._optim_conf, self._plant_conf, "dayahead-optim", self._logger) # type: ignore
+        fcst = forecast(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
+                        params, self._data_folder, self._logger, get_data_from_file=False)
+        opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
+                        fcst.var_load_cost, fcst.var_prod_price,
+                            costfun, self._data_folder, self._logger)
+
+        df_weather = fcst.get_weather_forecast(method=self._optim_conf['weather_forecast_method'])
+        P_PV_forecast = fcst.get_power_from_weather(df_weather)
+        P_load_forecast = fcst.get_load_forecast(method=self._optim_conf['load_forecast_method'])
+        df_input_data_dayahead = pd.DataFrame(np.transpose(np.vstack([np.array(P_PV_forecast.values), np.array(P_load_forecast.values)])),
+                                            index=P_PV_forecast.index,
+                                            columns=['P_PV_forecast', 'P_load_forecast'])
+        df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
+
+        # params_dayahead: dict = json.loads(params)
+        # if 'prediction_horizon' in params_dayahead['passed_data'] and params_dayahead['passed_data']['prediction_horizon'] is not None:
+        #    prediction_horizon = params_dayahead['passed_data']['prediction_horizon']
+        #    df_input_data_dayahead = copy.deepcopy(df_input_data_dayahead)[df_input_data_dayahead.index[0]:df_input_data_dayahead.index[prediction_horizon-1]]
+
         self._logger.info("Performing day-ahead forecast optimization")
         # Load cost and prod price forecast
-        df_input_data_dayahead = input_data_dict['fcst'].get_load_cost_forecast(
-            input_data_dict['df_input_data_dayahead'],
-            method=input_data_dict['fcst'].optim_conf['load_cost_forecast_method'])
-        df_input_data_dayahead = input_data_dict['fcst'].get_prod_price_forecast(
+        df_input_data_dayahead = fcst.get_load_cost_forecast(
             df_input_data_dayahead,
-            method=input_data_dict['fcst'].optim_conf['prod_price_forecast_method'])
-        opt_res_dayahead = input_data_dict['opt'].perform_dayahead_forecast_optim(
-            df_input_data_dayahead, input_data_dict['P_PV_forecast'], input_data_dict['P_load_forecast'])
+            method=fcst.optim_conf['load_cost_forecast_method'])
+        df_input_data_dayahead = fcst.get_prod_price_forecast(
+            df_input_data_dayahead,
+            method=fcst.optim_conf['prod_price_forecast_method'])
+        self._day_ahead_forecast = opt.perform_dayahead_forecast_optim(
+            df_input_data_dayahead, P_PV_forecast, P_load_forecast)
         # Save CSV file for publish_data
         if save_data_to_file:
             today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -268,9 +319,7 @@ class EmhassOptimizer(Optimizer):
         else: # Just save the latest optimization results
             filename = 'opt_res_latest.csv'
         if not debug:
-            opt_res_dayahead.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
-        self._day_ahead_forecast = opt_res_dayahead
-        return opt_res_dayahead
+            self._day_ahead_forecast.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
 
     def get_forecast(self) -> ForecastSchema:
         """Get the previously calculated forecast."""
