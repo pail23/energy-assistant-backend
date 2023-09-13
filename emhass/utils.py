@@ -99,7 +99,7 @@ def get_forecast_dates(freq: int, delta_forecast: int,
         freq=freq).round(freq)
     return forecast_dates
 
-def treat_runtimeparams(runtimeparams: str | None, params: str, retrieve_hass_conf: dict, optim_conf: dict, plant_conf: dict,
+def     treat_runtimeparams(runtimeparams: str | None, params: str, retrieve_hass_conf: dict, optim_conf: dict, plant_conf: dict,
                         set_type: str, logger: logging.Logger) -> Tuple[str, dict]:
     """Treat the passed optimization runtime parameters.
 

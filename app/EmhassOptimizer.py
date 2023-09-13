@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 import json
 import logging
 import pathlib
+import pickle
+from typing import Tuple
 import uuid
 
 import numpy as np
@@ -17,6 +19,7 @@ from app.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from app.models.forecast import ForecastSchema, ForecastSerieSchema
 from emhass import utils
 from emhass.forecast import forecast
+from emhass.machine_learning_forecaster import mlforecaster
 from emhass.optimization import optimization
 from emhass.retrieve_hass import retrieve_hass
 
@@ -62,9 +65,7 @@ class EmhassOptimizer(Optimizer):
             self._plant_conf = plant_conf
 
             # Define main objects
-            self._retrieve_hass = retrieve_hass(self._hass_url, self._hass_token,
-                            retrieve_hass_conf['freq'], self._location.get_time_zone(),
-                            params, self._data_folder, self._logger, get_data_from_file=False)
+            self._retrieve_hass = retrieve_hass(self._hass_url, self._hass_token, retrieve_hass_conf['freq'], self._location.get_time_zone(), params, self._data_folder, self._logger, get_data_from_file=False) # type: ignore
 
 
         self._day_ahead_forecast : pd.DataFrame | None = None
@@ -86,183 +87,10 @@ class EmhassOptimizer(Optimizer):
         }
         state_repository.set_state(StateId(id=SENSOR_POWER_NO_VAR_LOADS, channel=HOMEASSISTANT_CHANNEL), str(power), attributes)
 
-    def set_input_data_dict(self, costfun: str,
-        set_type: str) -> dict:
-        """Set up some of the data needed for the different actions.
 
-        :param costfun: The type of cost function to use for optimization problem
-        :type costfun: str
-        :param set_type: Set the type of setup based on following type of optimization
-        :type set_type: str
-        :param get_data_from_file: Use data from saved CSV file (useful for debug)
-        :type get_data_from_file: bool, optional
-        :return: A dictionnary with multiple data used by the action functions
-        :rtype: dict
-
-        """
-        runtimeparams = None
-        if self._hass_url is not None and self._hass_token is not None:
-            self._logger.info("Setting up needed data")
-            # Parsing yaml
-            params = json.dumps(self._emhass_config)
-            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
-                pathlib.Path(), False, params=params)
-            #Patch variables with Energy Assistant Config
-            retrieve_hass_conf['hass_url'] = self._hass_url
-            retrieve_hass_conf['long_lived_token'] = self._hass_token
-            retrieve_hass_conf["var_PV"] = self._solar_power_id
-            retrieve_hass_conf["var_load"] = SENSOR_POWER_NO_VAR_LOADS
-            retrieve_hass_conf["var_replace_zero"] = [self._solar_power_id]
-            retrieve_hass_conf["var_interp"] = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
-
-            if self._location is not None:
-                retrieve_hass_conf["time_zone"] = self._location.time_zone
-                retrieve_hass_conf["lat"] = self._location.latitude
-                retrieve_hass_conf["lon"] = self._location.longitude
-                retrieve_hass_conf["alt"] = self._location.elevation
-
-            # Treat runtimeparams
-            params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
-                runtimeparams, params, retrieve_hass_conf,
-                optim_conf, plant_conf, set_type, self._logger) # type: ignore
-            # Define main objects
-            rh = retrieve_hass(self._hass_url, self._hass_token,
-                            retrieve_hass_conf['freq'], self._location.get_time_zone(),
-                            params, self._data_folder, self._logger, get_data_from_file=False)
-            fcst = forecast(retrieve_hass_conf, optim_conf, plant_conf,
-                            params, self._data_folder, self._logger, get_data_from_file=False)
-            opt = optimization(retrieve_hass_conf, optim_conf, plant_conf,
-                            fcst.var_load_cost, fcst.var_prod_price,
-                            costfun, self._data_folder, self._logger)
-            # Perform setup based on type of action
-            if set_type == "perfect-optim":
-                # Retrieve data from hass
-                days_list = utils.get_days_list(retrieve_hass_conf['days_to_retrieve'])
-                var_list = [retrieve_hass_conf['var_load'], self._solar_power_id]
-                rh.get_data(days_list, var_list,
-                            minimal_response=False, significant_changes_only=False)
-                rh.prepare_data(retrieve_hass_conf['var_load'], load_negative = retrieve_hass_conf['load_negative'],
-                                set_zero_min = retrieve_hass_conf['set_zero_min'],
-                                var_replace_zero = retrieve_hass_conf['var_replace_zero'],
-                                var_interp = retrieve_hass_conf['var_interp'])
-                df_input_data = rh.df_final.copy()
-                # What we don't need for this type of action
-                P_PV_forecast, P_load_forecast, df_input_data_dayahead = None, None, None
-            elif set_type == "dayahead-optim":
-                # Get PV and load forecasts
-                df_weather = fcst.get_weather_forecast(method=optim_conf['weather_forecast_method'])
-                P_PV_forecast = fcst.get_power_from_weather(df_weather)
-                P_load_forecast = fcst.get_load_forecast(method=optim_conf['load_forecast_method'])
-                df_input_data_dayahead = pd.DataFrame(np.transpose(np.vstack([np.array(P_PV_forecast.values), np.array(P_load_forecast.values)])),
-                                                    index=P_PV_forecast.index,
-                                                    columns=['P_PV_forecast', 'P_load_forecast'])
-                df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
-                params_dayahead: dict = json.loads(params)
-                if 'prediction_horizon' in params_dayahead['passed_data'] and params_dayahead['passed_data']['prediction_horizon'] is not None:
-                    prediction_horizon = params_dayahead['passed_data']['prediction_horizon']
-                    df_input_data_dayahead = copy.deepcopy(df_input_data_dayahead)[df_input_data_dayahead.index[0]:df_input_data_dayahead.index[prediction_horizon-1]]
-                # What we don't need for this type of action
-                df_input_data, days_list = None, None
-            elif set_type == "naive-mpc-optim":
-                # Retrieve data from hass
-                days_list = utils.get_days_list(1)
-                var_list = [retrieve_hass_conf['var_load'], retrieve_hass_conf['var_PV']]
-                rh.get_data(days_list, var_list,
-                            minimal_response=False, significant_changes_only=False)
-                rh.prepare_data(retrieve_hass_conf['var_load'], load_negative = retrieve_hass_conf['load_negative'],
-                                set_zero_min = retrieve_hass_conf['set_zero_min'],
-                                var_replace_zero = retrieve_hass_conf['var_replace_zero'],
-                                var_interp = retrieve_hass_conf['var_interp'])
-                df_input_data = rh.df_final.copy()
-                # Get PV and load forecasts
-                df_weather = fcst.get_weather_forecast(method=optim_conf['weather_forecast_method'])
-                P_PV_forecast = fcst.get_power_from_weather(df_weather, set_mix_forecast=True, df_now=df_input_data)
-                P_load_forecast = fcst.get_load_forecast(method=optim_conf['load_forecast_method'], set_mix_forecast=True, df_now=df_input_data)
-                df_input_data_dayahead = pd.concat([pd.Series(P_PV_forecast, name='P_PV_forecast'), pd.Series(P_load_forecast, name='P_load_forecast')], axis=1)
-                df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
-                #df_input_data_dayahead.columns = ['P_PV_forecast', 'P_load_forecast']
-                params_naive_mpc_optim: dict = json.loads(params)
-                if 'prediction_horizon' in params_naive_mpc_optim['passed_data'] and params_naive_mpc_optim['passed_data']['prediction_horizon'] is not None:
-                    prediction_horizon = params_naive_mpc_optim['passed_data']['prediction_horizon']
-                    df_input_data_dayahead = copy.deepcopy(df_input_data_dayahead)[df_input_data_dayahead.index[0]:df_input_data_dayahead.index[prediction_horizon-1]]
-            elif set_type == "forecast-model-fit" or set_type == "forecast-model-predict" or set_type == "forecast-model-tune":
-                df_input_data_dayahead = None
-                P_PV_forecast, P_load_forecast = None, None
-                params_forcast: dict = json.loads(params)
-                # Retrieve data from hass
-                days_to_retrieve = params_forcast['passed_data']['days_to_retrieve']
-                var_model = params_forcast['passed_data']['var_model']
-                days_list = utils.get_days_list(days_to_retrieve)
-                var_list = [var_model]
-                rh.get_data(days_list, var_list)
-                df_input_data = rh.df_final.copy()
-            elif set_type == "publish-data":
-                df_input_data, df_input_data_dayahead = None, None
-                P_PV_forecast, P_load_forecast = None, None
-                days_list = None
-            else:
-                self._logger.error("The passed action argument and hence the set_type parameter for setup is not valid")
-                df_input_data, df_input_data_dayahead = None, None
-                P_PV_forecast, P_load_forecast = None, None
-                days_list = None
-
-            # The input data dictionnary to return
-            input_data_dict = {
-                'root': self._data_folder,
-                'retrieve_hass_conf': retrieve_hass_conf,
-                'rh': rh,
-                'opt': opt,
-                'fcst': fcst,
-                'df_input_data': df_input_data,
-                'df_input_data_dayahead': df_input_data_dayahead,
-                'P_PV_forecast': P_PV_forecast,
-                'P_load_forecast': P_load_forecast,
-                'costfun': costfun,
-                'params': params,
-                'days_list': days_list
-            }
-            return input_data_dict
-        else:
-            return {}
-
-
-    def perfect_forecast_optim(self, input_data_dict: dict,
-        save_data_to_file: bool | None = True, debug: bool | None = False) -> pd.DataFrame:
+    def perfect_forecast_optim(self, costfun: str,
+        save_data_to_file: bool = True, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the perfect forecast optimization routine.
-
-        :param input_data_dict:  A dictionnary with multiple data used by the action functions
-        :type input_data_dict: dict
-        :param logger: The passed logger object
-        :type logger: logging object
-        :param save_data_to_file: Save optimization results to CSV file
-        :type save_data_to_file: bool, optional
-        :param debug: A debug option useful for unittests
-        :type debug: bool, optional
-        :return: The output data of the optimization
-        :rtype: pd.DataFrame
-
-        """
-        self._logger.info("Performing perfect forecast optimization")
-        # Load cost and prod price forecast
-        df_input_data = input_data_dict['fcst'].get_load_cost_forecast(
-            input_data_dict['df_input_data'],
-            method=input_data_dict['fcst'].optim_conf['load_cost_forecast_method'])
-        df_input_data = input_data_dict['fcst'].get_prod_price_forecast(
-            df_input_data, method=input_data_dict['fcst'].optim_conf['prod_price_forecast_method'])
-        opt_res = input_data_dict['opt'].perform_perfect_forecast_optim(df_input_data, input_data_dict['days_list'])
-        # Save CSV file for analysis
-        if save_data_to_file:
-            filename = 'opt_res_perfect_optim_'+input_data_dict['costfun']+'.csv'
-        else: # Just save the latest optimization results
-            filename = 'opt_res_latest.csv'
-        if not debug:
-            opt_res.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
-        return opt_res
-
-
-    def dayahead_forecast_optim(self, costfun: str,
-        save_data_to_file: bool | None = False, debug: bool | None = False) -> None:
-        """Perform a call to the day-ahead optimization routine.
 
         :param input_data_dict:  A dictionnary with multiple data used by the action functions
         :type input_data_dict: dict
@@ -278,10 +106,79 @@ class EmhassOptimizer(Optimizer):
         """
         self._logger.info("Setting up needed data")
 
-        params = json.dumps(self._emhass_config)
         # Treat runtimeparams
+        params : str = ""
         params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
-            None, params, self._retrieve_hass_conf,
+            None, json.dumps(self._emhass_config), self._retrieve_hass_conf,
+            self._optim_conf, self._plant_conf, "perfect-optim", self._logger) # type: ignore
+        fcst = forecast(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
+                        params, self._data_folder, self._logger, get_data_from_file=False)
+        opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
+                        fcst.var_load_cost, fcst.var_prod_price,
+                            costfun, self._data_folder, self._logger)
+
+        days_list = utils.get_days_list(self._retrieve_hass_conf['days_to_retrieve'])
+        var_list = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
+        self._retrieve_hass.get_data(days_list, var_list,
+                    minimal_response=False, significant_changes_only=False)
+        self._retrieve_hass.prepare_data(self._retrieve_hass_conf['var_load'], load_negative = self._retrieve_hass_conf['load_negative'],
+                        set_zero_min = self._retrieve_hass_conf['set_zero_min'],
+                        var_replace_zero = self._retrieve_hass_conf['var_replace_zero'],
+                        var_interp = self._retrieve_hass_conf['var_interp'])
+        df_input_data = self._retrieve_hass.df_final.copy()
+
+
+        self._logger.info("Performing perfect forecast optimization")
+        # Load cost and prod price forecast
+        df_input_data = fcst.get_load_cost_forecast(
+            df_input_data,
+            method=fcst.optim_conf['load_cost_forecast_method'])
+        df_input_data = fcst.get_prod_price_forecast(
+            df_input_data, method=fcst.optim_conf['prod_price_forecast_method'])
+        opt_res = opt.perform_perfect_forecast_optim(df_input_data, days_list)
+        # Save CSV file for analysis
+        if save_data_to_file:
+            filename = f"opt_res_perfect_optim_{costfun}.csv"
+        else: # Just save the latest optimization results
+            filename = 'opt_res_perfect_optim_latest.csv'
+        if not debug:
+            opt_res.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
+        return opt_res
+
+
+    def get_ml_runtime_params(self) -> dict:
+        """Get the emhass runtime params for the machine learning load prediction."""
+        freq = self._retrieve_hass_conf["freq"].total_seconds() / 3600
+
+        runtimeparams: dict = {
+            "days_to_retrieve": 10, # TODO: Should be 30 or so
+            "model_type": "load_forecast",
+            "var_model": SENSOR_POWER_NO_VAR_LOADS,
+            "sklearn_model": "KNeighborsRegressor",
+            "num_lags": int(24 / freq), # should be one day * 30 min
+            "split_date_delta": '48h',
+            "perform_backtest": False
+        }
+        return runtimeparams
+
+    def dayahead_forecast_optim(self, costfun: str,
+        save_data_to_file: bool = False, debug: bool = False) -> None:
+        """Perform a call to the day-ahead optimization routine.
+
+        :param costfun: The type of cost function to use for optimization problem
+        :type costfun: str
+        :param save_data_to_file: Save optimization results to CSV file
+        :type save_data_to_file: bool, optional
+        :param debug: A debug option useful for unittests
+        :type debug: bool, optional
+
+        """
+        self._logger.info("Setting up needed data")
+
+        # Treat runtimeparams
+        params : str = ""
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+            json.dumps(self.get_ml_runtime_params()), json.dumps(self._emhass_config), self._retrieve_hass_conf,
             self._optim_conf, self._plant_conf, "dayahead-optim", self._logger) # type: ignore
         fcst = forecast(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
                         params, self._data_folder, self._logger, get_data_from_file=False)
@@ -320,6 +217,200 @@ class EmhassOptimizer(Optimizer):
             filename = 'opt_res_latest.csv'
         if not debug:
             self._day_ahead_forecast.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
+
+    def naive_mpc_optim(self, costfun: str,
+        save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
+        """Perform a call to the naive Model Predictive Controller optimization routine.
+
+        :param input_data_dict:  A dictionnary with multiple data used by the action functions
+        :type input_data_dict: dict
+        :param logger: The passed logger object
+        :type logger: logging object
+        :param save_data_to_file: Save optimization results to CSV file
+        :type save_data_to_file: bool, optional
+        :param debug: A debug option useful for unittests
+        :type debug: bool, optional
+        :return: The output data of the optimization
+        :rtype: pd.DataFrame
+
+        """
+
+        self._logger.info("Setting up needed data")
+
+        runtimeparams: dict = {
+            "prediction_horizon": 48 # How many 30 min slots do we predict -> 24h
+        }
+
+        # Treat runtimeparams
+        params : str = ""
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+            json.dumps(runtimeparams), json.dumps(self._emhass_config), self._retrieve_hass_conf,
+            self._optim_conf, self._plant_conf, "naive-mpc-optim", self._logger) # type: ignore
+        fcst = forecast(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
+                        params, self._data_folder, self._logger, get_data_from_file=False)
+        opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
+                        fcst.var_load_cost, fcst.var_prod_price,
+                            costfun, self._data_folder, self._logger)
+
+        # Retrieve data from hass
+        days_list = utils.get_days_list(1)
+        var_list = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
+        self._retrieve_hass.get_data(days_list, var_list,
+                    minimal_response=False, significant_changes_only=False)
+        self._retrieve_hass.prepare_data(self._retrieve_hass_conf['var_load'], load_negative = self._retrieve_hass_conf['load_negative'],
+                        set_zero_min = self._retrieve_hass_conf['set_zero_min'],
+                        var_replace_zero = self._retrieve_hass_conf['var_replace_zero'],
+                        var_interp = self._retrieve_hass_conf['var_interp'])
+        df_input_data = self._retrieve_hass.df_final.copy()
+
+        # Get PV and load forecasts
+        df_weather = fcst.get_weather_forecast(method=self._optim_conf['weather_forecast_method'])
+        P_PV_forecast = fcst.get_power_from_weather(df_weather, set_mix_forecast=True, df_now=df_input_data)
+        P_load_forecast = fcst.get_load_forecast(method=self._optim_conf['load_forecast_method'], set_mix_forecast=True, df_now=df_input_data)
+        df_input_data_dayahead = pd.concat([pd.Series(P_PV_forecast, name='P_PV_forecast'), pd.Series(P_load_forecast, name='P_load_forecast')], axis=1)
+        df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
+
+        #params_naive_mpc_optim: dict = json.loads(params)
+        #if 'prediction_horizon' in params_naive_mpc_optim['passed_data'] and params_naive_mpc_optim['passed_data']['prediction_horizon'] is not None:
+        #    prediction_horizon = params_naive_mpc_optim['passed_data']['prediction_horizon']
+        #    df_input_data_dayahead = copy.deepcopy(df_input_data_dayahead)[df_input_data_dayahead.index[0]:df_input_data_dayahead.index[prediction_horizon-1]]
+
+
+        self._logger.info("Performing naive MPC optimization")
+        # Load cost and prod price forecast
+        df_input_data_dayahead = fcst.get_load_cost_forecast(
+            df_input_data_dayahead,
+            method=fcst.optim_conf['load_cost_forecast_method'])
+        df_input_data_dayahead = fcst.get_prod_price_forecast(
+            df_input_data_dayahead, method=fcst.optim_conf['prod_price_forecast_method'])
+
+        # The specifics params for the MPC at runtime
+        #TODO: Make this real parameters
+        params_dict = json.loads(params)
+        prediction_horizon = params_dict['passed_data']['prediction_horizon']
+        soc_init = params_dict['passed_data']['soc_init']
+        soc_final = params_dict['passed_data']['soc_final']
+        def_total_hours = [1, 1] #  input_data_dict['params']['passed_data']['def_total_hours']
+
+        opt_res_naive_mpc = opt.perform_naive_mpc_optim(
+            df_input_data_dayahead, P_PV_forecast, P_load_forecast,
+            prediction_horizon, soc_init, soc_final, def_total_hours)
+        # Save CSV file for publish_data
+        if save_data_to_file:
+            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            filename = 'opt_res_naive_mpc_'+today.strftime("%Y_%m_%d")+'.csv'
+        else: # Just save the latest optimization results
+            filename = "opt_res_naive_mpc_latest.csv"
+        if not debug:
+            opt_res_naive_mpc.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
+        return opt_res_naive_mpc
+
+
+
+    def forecast_model_fit(self, debug: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame, mlforecaster]:
+        """Perform a forecast model fit from training data retrieved from Home Assistant.
+
+        :param debug: True to debug, useful for unit testing, defaults to False
+        :type debug: Optional[bool], optional
+        :return: The DataFrame containing the forecast data results without and with backtest and the `mlforecaster` object
+        :rtype: Tuple[pd.DataFrame, pd.DataFrame, mlforecaster]
+        """
+        self._logger.info("Setting up needed data")
+
+        # Treat runtimeparams
+        params : str = ""
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+            json.dumps(self.get_ml_runtime_params()), json.dumps(self._emhass_config), self._retrieve_hass_conf,
+            self._optim_conf, self._plant_conf, "forecast-model-fit", self._logger) # type: ignore
+
+        params_dict: dict = json.loads(params)
+        # Retrieve data from hass
+        days_to_retrieve = params_dict['passed_data']['days_to_retrieve']
+
+        days_list = utils.get_days_list(days_to_retrieve)
+        var_list = [SENSOR_POWER_NO_VAR_LOADS]
+        self._retrieve_hass.get_data(days_list, var_list)
+        df_input_data = self._retrieve_hass.df_final.copy()
+
+
+        data = copy.deepcopy(df_input_data)
+        model_type = params_dict['passed_data']['model_type']
+        sklearn_model = params_dict['passed_data']['sklearn_model']
+        num_lags = params_dict['passed_data']['num_lags']
+        split_date_delta = params_dict['passed_data']['split_date_delta']
+        perform_backtest = params_dict['passed_data']['perform_backtest']
+        # The ML forecaster object
+        mlf = mlforecaster(data, model_type, SENSOR_POWER_NO_VAR_LOADS, sklearn_model, num_lags, self._data_folder, self._logger)
+        # Fit the ML model
+        df_pred, df_pred_backtest = mlf.fit(split_date_delta=split_date_delta,
+                                            perform_backtest=perform_backtest)
+        # Save model
+        if not debug:
+            filename = model_type+'_mlf.pkl'
+            with open(pathlib.Path(self._data_folder) / filename, 'wb') as outp:
+                pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
+        return df_pred, df_pred_backtest, mlf
+
+
+    def forecast_model_predict(self,
+        use_last_window: bool = True, debug: bool = False,
+        mlf: mlforecaster | None = None) -> pd.Series | None:
+        """Perform a forecast model predict using a previously trained skforecast model.
+
+        :param input_data_dict: A dictionnary with multiple data used by the action functions
+        :type input_data_dict: dict
+        :param logger: The passed logger object
+        :type logger: logging.Logger
+        :param use_last_window: True if the 'last_window' option should be used for the \
+            custom machine learning forecast model. The 'last_window=True' means that the data \
+            that will be used to generate the new forecast will be freshly retrieved from \
+            Home Assistant. This data is needed because the forecast model is an auto-regressive \
+            model with lags. If 'False' then the data using during the model train is used. Defaults to True
+        :type use_last_window: Optional[bool], optional
+        :param debug: True to debug, useful for unit testing, defaults to False
+        :type debug: Optional[bool], optional
+        :param mlf: The 'mlforecaster' object previously trained. This is mainly used for debug \
+            and unit testing. In production the actual model will be read from a saved pickle file. Defaults to None
+        :type mlf: Optional[mlforecaster], optional
+        :return: The DataFrame containing the forecast prediction data
+        :rtype: pd.DataFrame
+        """
+        # Treat runtimeparams
+        params : str = ""
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+            json.dumps(self.get_ml_runtime_params()), json.dumps(self._emhass_config), self._retrieve_hass_conf,
+            self._optim_conf, self._plant_conf, "forecast-model-fit", self._logger) # type: ignore
+
+        params_dict: dict = json.loads(params)
+        # Retrieve data from hass
+        days_to_retrieve = params_dict['passed_data']['days_to_retrieve']
+
+        days_list = utils.get_days_list(days_to_retrieve)
+        var_list = [SENSOR_POWER_NO_VAR_LOADS]
+        self._retrieve_hass.get_data(days_list, var_list)
+        df_input_data = self._retrieve_hass.df_final.copy()
+
+        # Load model
+        model_type = "load_forecast"
+        root = self._data_folder
+        filename = model_type+'_mlf.pkl'
+        filename_path = pathlib.Path(root) / filename
+        if not debug:
+            if filename_path.is_file():
+                with open(filename_path, 'rb') as inp:
+                    mlf = pickle.load(inp)
+            else:
+                self._logger.error("The ML forecaster file was not found, please run a model fit method before this predict method")
+                return None
+        # Make predictions
+        if use_last_window:
+            data_last_window = copy.deepcopy(df_input_data)
+        else:
+            data_last_window = None
+        if mlf is not None:
+            return mlf.predict(data_last_window)
+        return None
+
 
     def get_forecast(self) -> ForecastSchema:
         """Get the previously calculated forecast."""
