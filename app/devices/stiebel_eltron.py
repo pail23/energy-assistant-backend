@@ -1,7 +1,14 @@
 """Stiebel Eltron device implementation."""
 from app import Optimizer
 
-from . import PowerModes, SessionStorage, State, StateId, StatesRepository
+from . import (
+    DeferrableLoadInfo,
+    PowerModes,
+    SessionStorage,
+    State,
+    StateId,
+    StatesRepository,
+)
 from .analysis import DataBuffer
 from .config import get_config_param
 from .device import Device, DeviceWithState
@@ -98,6 +105,13 @@ class StiebelEltronDevice(Device, DeviceWithState):
                 return self._target_temperature_normal
         else:
             return current_target_temperature
+
+    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+        """Get the current deferrable load info."""
+        if self.power_mode == PowerModes.OPTIMIZED:
+            return DeferrableLoadInfo(device_id=self.id, nominal_power=STIEBEL_ELTRON_POWER, deferrable_hours=1, is_continous=False)
+        return None
+
 
     @property
     def requested_additional_power(self) -> float:

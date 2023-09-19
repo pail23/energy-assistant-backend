@@ -9,6 +9,15 @@ import uuid
 import pytz  # type: ignore
 
 
+@dataclass
+class DeferrableLoadInfo:
+    """Information about a deferrable load."""
+
+    device_id: uuid.UUID
+    nominal_power: float
+    deferrable_hours: float
+    is_continous: bool
+
 class SessionStorage(ABC):
     """Session storage base class."""
 

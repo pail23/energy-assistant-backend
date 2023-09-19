@@ -14,6 +14,7 @@ import pandas as pd
 
 from app import Optimizer
 from app.devices import Location, StateId, StatesRepository
+from app.devices.device import Device
 from app.devices.home import Home
 from app.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from app.models.forecast import ForecastSchema, ForecastSerieSchema
@@ -43,7 +44,8 @@ class EmhassOptimizer(Optimizer):
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
         self._emhass_config : dict | None = config.get("emhass")
-        if self._emhass_config:
+        if self._emhass_config is not None:
+            self._cost_fun = self._emhass_config.get("costfun")
             params = json.dumps(self._emhass_config)
             retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
                 pathlib.Path(), False, params=params)
@@ -64,15 +66,21 @@ class EmhassOptimizer(Optimizer):
             self._optim_conf = optim_conf
             self._plant_conf = plant_conf
 
+            self._method_ts_round = retrieve_hass_conf.get("method_ts_round")
+
             # Define main objects
             self._retrieve_hass = retrieve_hass(self._hass_url, self._hass_token, retrieve_hass_conf['freq'], self._location.get_time_zone(), params, self._data_folder, self._logger, get_data_from_file=False) # type: ignore
 
+        if self._cost_fun is None:
+            self._cost_fun = "profit"
+        if self._method_ts_round is None:
+            self._method_ts_round = "nearest"
 
         self._day_ahead_forecast : pd.DataFrame | None = None
-        self._optimzed_devices : list[uuid.UUID] = [uuid.UUID("67ca8a1e-0181-4528-88bf-dabf646c1af2"), uuid.UUID("7c916c76-4454-450c-8d2e-ccc45ed58f94")]
+        self._optimzed_devices : list = []
 
 
-    def update_power_non_var_loads(self, home: Home, state_repository: StatesRepository) -> None:
+    def update_repository_states(self, home: Home, state_repository: StatesRepository) -> None:
         """Calculate the power of the non varibale/non controllable loads."""
         power = home.home_consumption_power
         for device in home.devices:
@@ -86,9 +94,12 @@ class EmhassOptimizer(Optimizer):
             "device_class": "power"
         }
         state_repository.set_state(StateId(id=SENSOR_POWER_NO_VAR_LOADS, channel=HOMEASSISTANT_CHANNEL), str(power), attributes)
+        state_repository.set_state(StateId(id="sensor.em_p_pv", channel=HOMEASSISTANT_CHANNEL), str(self._get_forecast_value("P_PV")), attributes)
+        state_repository.set_state(StateId(id="sensor.em_p_consumption", channel=HOMEASSISTANT_CHANNEL), str(self._get_forecast_value("P_Load")), attributes)
 
 
-    def perfect_forecast_optim(self, costfun: str,
+
+    def perfect_forecast_optim(self,
         save_data_to_file: bool = True, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the perfect forecast optimization routine.
 
@@ -115,7 +126,7 @@ class EmhassOptimizer(Optimizer):
                         params, self._data_folder, self._logger, get_data_from_file=False)
         opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
                         fcst.var_load_cost, fcst.var_prod_price,
-                            costfun, self._data_folder, self._logger)
+                            self._cost_fun, self._data_folder, self._logger)
 
         days_list = utils.get_days_list(self._retrieve_hass_conf['days_to_retrieve'])
         var_list = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
@@ -138,7 +149,7 @@ class EmhassOptimizer(Optimizer):
         opt_res = opt.perform_perfect_forecast_optim(df_input_data, days_list)
         # Save CSV file for analysis
         if save_data_to_file:
-            filename = f"opt_res_perfect_optim_{costfun}.csv"
+            filename = f"opt_res_perfect_optim_{self._cost_fun}.csv"
         else: # Just save the latest optimization results
             filename = 'opt_res_perfect_optim_latest.csv'
         if not debug:
@@ -161,12 +172,10 @@ class EmhassOptimizer(Optimizer):
         }
         return runtimeparams
 
-    def dayahead_forecast_optim(self, costfun: str,
+    def dayahead_forecast_optim(self,
         save_data_to_file: bool = False, debug: bool = False) -> None:
         """Perform a call to the day-ahead optimization routine.
 
-        :param costfun: The type of cost function to use for optimization problem
-        :type costfun: str
         :param save_data_to_file: Save optimization results to CSV file
         :type save_data_to_file: bool, optional
         :param debug: A debug option useful for unittests
@@ -184,7 +193,7 @@ class EmhassOptimizer(Optimizer):
                         params, self._data_folder, self._logger, get_data_from_file=False)
         opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
                         fcst.var_load_cost, fcst.var_prod_price,
-                            costfun, self._data_folder, self._logger)
+                            self._cost_fun, self._data_folder, self._logger)
 
         df_weather = fcst.get_weather_forecast(method=self._optim_conf['weather_forecast_method'])
         P_PV_forecast = fcst.get_power_from_weather(df_weather)
@@ -218,7 +227,7 @@ class EmhassOptimizer(Optimizer):
         if not debug:
             self._day_ahead_forecast.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
 
-    def naive_mpc_optim(self, costfun: str,
+    def naive_mpc_optim(self,
         save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the naive Model Predictive Controller optimization routine.
 
@@ -250,7 +259,7 @@ class EmhassOptimizer(Optimizer):
                         params, self._data_folder, self._logger, get_data_from_file=False)
         opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
                         fcst.var_load_cost, fcst.var_prod_price,
-                            costfun, self._data_folder, self._logger)
+                            self._cost_fun, self._data_folder, self._logger)
 
         # Retrieve data from hass
         days_list = utils.get_days_list(1)
@@ -426,34 +435,61 @@ class EmhassOptimizer(Optimizer):
             ]
             for i, d in enumerate(self._optimzed_devices):
                 device = self._day_ahead_forecast[f"P_deferrable{i}"].to_list()
-                series.append(ForecastSerieSchema(name=str(d), data=device))
+                series.append(ForecastSerieSchema(name=str(d.device_id), data=device))
             return ForecastSchema(time=time, series=series)
         else:
             raise Exception("Optimizer forecast is not initialized.")
 
-    def get_optimized_power(self, deviceId: uuid.UUID) -> float:
+    def get_optimized_power(self, device_id: uuid.UUID) -> float:
         """Get the optimized power budget for a give device."""
-        if self._emhass_config is not None:
-            retrieve_hass_conf = {key: d[key] for d in self._emhass_config['retrieve_hass_conf'] for key in d}
-            method_ts_round = retrieve_hass_conf['method_ts_round']
-        else:
-            method_ts_round = "nearest"
         if self._day_ahead_forecast is not None:
-            try:
-                columnName = f"P_deferrable{self._optimzed_devices.index(deviceId)}"
-            except ValueError:
-                return -1
-            else:
-                now_precise = datetime.now(self._location.get_time_zone()).replace(second=0, microsecond=0)
-                if method_ts_round == 'nearest':
-                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='nearest')[0] # type: ignore
-                elif method_ts_round == 'first':
-                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='ffill')[0] # type: ignore
-                elif retrieve_hass_conf['method_ts_round'] == 'last':
-                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='bfill')[0] # type: ignore
-                if idx_closest == -1:
-                    idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='nearest')[0] # type: ignore
-
-                value = self._day_ahead_forecast.iloc[idx_closest][columnName]
-                return float(value)
+            for i, deferrable_load_info in enumerate(self._optimzed_devices):
+                if deferrable_load_info.device_id == device_id:
+                    columnName = f"P_deferrable{i}"
+                    return self._get_forecast_value(columnName)
         return -1
+
+    def _get_forecast_value(self, columnName: str) -> float:
+        """Get a forcasted value."""
+        if self._day_ahead_forecast is not None:
+            now_precise = datetime.now(self._location.get_time_zone()).replace(second=0, microsecond=0)
+            if self._method_ts_round == 'nearest':
+                method = "nearest"
+            elif self._method_ts_round == 'first':
+                method = "ffill"
+            elif self._method_ts_round == 'last':
+                method = "bfill"
+            else:
+                method = "nearest"
+
+            idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[0] # type: ignore
+            if idx_closest == -1:
+                idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method='nearest')[0] # type: ignore
+
+            value = self._day_ahead_forecast.iloc[idx_closest][columnName]
+            return float(value)
+        return -1
+
+
+    def _has_deferrable_load(self, device_id: uuid.UUID) -> bool:
+        for deferrable_load_info in self._optimzed_devices:
+            if deferrable_load_info.device_id == device_id:
+                return True
+        return False
+
+    def update_devices(self, devices: list[Device]) -> None:
+        """Update the selected devices from the list of devices."""
+        new_optimizhed_devices = []
+        needs_update = False
+        for device in devices:
+            deferrable_load_info = device.get_deferrable_load_info()
+            if deferrable_load_info is not None:
+                if not self._has_deferrable_load(device.id):
+                    needs_update = True
+                new_optimizhed_devices.append(deferrable_load_info)
+            else:
+                if self._has_deferrable_load(device.id):
+                    needs_update = True
+        self._optimzed_devices = new_optimizhed_devices
+        if needs_update:
+            self.dayahead_forecast_optim()

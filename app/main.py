@@ -48,13 +48,17 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
-async def async_handle_state_update(home: Home, state_repository: StatesRepository, optimizer: EmhassOptimizer, db: Database, session: AsyncSession) -> None:
+async def async_handle_state_update(home: Home, state_repository: StatesRepository, optimizer: EmhassOptimizer | None, db: Database, session: AsyncSession) -> None:
     """Read the values from home assistant and process the update."""
     try:
         state_repository.read_states()
         await home.update_state(state_repository)
-        await home.update_power_consumption(state_repository, optimizer)
-        optimizer.update_power_non_var_loads(home, state_repository)
+        if optimizer is not None:
+            await home.update_power_consumption(state_repository, optimizer)
+            optimizer.update_repository_states(home, state_repository)
+        else:
+            logging.error(
+                "The variable optimizer is None in async_handle_state_update")
         state_repository.write_states()
         # print("Send refresh: " + get_home_message(home))
         if db:
@@ -66,11 +70,13 @@ async def async_handle_state_update(home: Home, state_repository: StatesReposito
         else:
             logging.error(
                 "The variable db is None in async_handle_state_update")
+        if optimizer is not None and home is not None:
+            optimizer.update_devices(home.devices)
     except Exception:
         logging.exception("error during sending refresh")
 
 
-async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOptimizer, mqtt: MqttConnection, db: Database) -> None:
+async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOptimizer | None, mqtt: MqttConnection, db: Database) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     async_session = await get_async_session()
@@ -333,7 +339,7 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
         optimizer.forecast_model_fit()
        # optimizer.forecast_model_predict()
 
-        optimizer.dayahead_forecast_optim("profit", False)
+        optimizer.dayahead_forecast_optim()
     except Exception:
         logging.exception("Optimization failed")
 
@@ -342,8 +348,8 @@ def daily_optimize() -> None:
     try:
         optimizer = app.optimizer # type: ignore
         if optimizer is not None:
-            logging.info("Start optimizer  ")
-            optimizer.dayahead_forecast_optim("profit", False)
+            logging.info("Start optimizer run")
+            optimizer.dayahead_forecast_optim()
     except Exception :
         logging.exception("Daily optimization run failed")
 

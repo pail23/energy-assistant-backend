@@ -6,6 +6,7 @@ import uuid
 from app import Optimizer
 
 from . import (
+    DeferrableLoadInfo,
     EnergyIntegrator,
     EnergySnapshot,
     PowerModes,
@@ -146,6 +147,10 @@ class Device(ABC):
     def attributes(self) -> dict[str, str]:
         """Get the attributes of the device for the UI."""
         return {}
+
+    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+        """Get the current deferrable load info."""
+        return None
 
 class DeviceWithState(ABC):
     """Device with a state."""
