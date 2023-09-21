@@ -263,8 +263,15 @@ async def init_app() -> None:
     app.db = None  # type: ignore
     app.optimizer = None # type: ignore
 
+    hass_options_file = "/data/options.json"
+    if os.path.isfile(hass_options_file):
+        with open(hass_options_file, "rb") as _file:
+            hass_options = json.loads(_file.read())
+    else:
+        hass_options = {}
 
-    config_file = settings.CONFIG_FILE
+
+    config_file = hass_options.get("config_file", settings.CONFIG_FILE)
     logfilename = settings.LOG_FILE
 
     rfh = RotatingFileHandler(
@@ -285,6 +292,10 @@ async def init_app() -> None:
     )
 
     logging.info("Hello from Energy Assistant")
+
+    for option in hass_options:
+        logging.info(f"{option}={hass_options[option]}")
+
 
     async_session = await get_async_session()
     db = Database()
