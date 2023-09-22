@@ -62,6 +62,8 @@ class EmhassOptimizer(Optimizer):
             retrieve_hass_conf["lon"] = self._location.longitude
             retrieve_hass_conf["alt"] = self._location.elevation
 
+            optim_conf["num_def_loads"] = 0
+
             self._retrieve_hass_conf = retrieve_hass_conf
             self._optim_conf = optim_conf
             self._plant_conf = plant_conf
@@ -169,7 +171,7 @@ class EmhassOptimizer(Optimizer):
             "set_def_constant": [device.is_constant for device in self._optimzed_devices],
 
 
-            "days_to_retrieve": 10, # TODO: Should be 30 or so
+            "days_to_retrieve": self._retrieve_hass_conf.get("days_to_retrieve", 10),
             "model_type": "load_forecast",
             "var_model": SENSOR_POWER_NO_VAR_LOADS,
             "sklearn_model": "KNeighborsRegressor",

@@ -25,6 +25,7 @@ class EvccDevice(Device, DeviceWithState):
         self._evcc_topic: str = get_config_param(
             config, "evcc_topic")
         self._loadpoint_id: int = int(get_config_param(config, "load_point_id"))
+        self._is_continous: bool = bool(config.get("continous", True))
         self._state = "unknown"
         self._power : State | None= None
         self._consumed_energy : State | None= None
@@ -150,5 +151,5 @@ class EvccDevice(Device, DeviceWithState):
                     device_id=self.id,
                     nominal_power=power,
                     deferrable_hours= math.ceil(max(remainingEnergy / power, 1.0)),
-                    is_continous=True)
+                    is_continous=self._is_continous)
         return None
