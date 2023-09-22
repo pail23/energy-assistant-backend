@@ -162,6 +162,13 @@ class EmhassOptimizer(Optimizer):
         freq = self._retrieve_hass_conf["freq"].total_seconds() / 3600
 
         runtimeparams: dict = {
+            "num_def_loads": len(self._optimzed_devices),
+            "P_deferrable_nom":[device.nominal_power for device in self._optimzed_devices],
+            "def_total_hours":[device.deferrable_hours for device in self._optimzed_devices],
+            "treat_def_as_semi_cont": [not device.is_continous for device in self._optimzed_devices],
+            "set_def_constant": [device.is_constant for device in self._optimzed_devices],
+
+
             "days_to_retrieve": 10, # TODO: Should be 30 or so
             "model_type": "load_forecast",
             "var_model": SENSOR_POWER_NO_VAR_LOADS,

@@ -350,7 +350,7 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
         optimizer.forecast_model_fit()
        # optimizer.forecast_model_predict()
 
-        optimizer.dayahead_forecast_optim()
+        # optimizer.dayahead_forecast_optim()
     except Exception:
         logging.exception("Optimization failed")
 

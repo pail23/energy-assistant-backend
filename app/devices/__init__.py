@@ -17,6 +17,7 @@ class DeferrableLoadInfo:
     nominal_power: float
     deferrable_hours: float
     is_continous: bool
+    is_constant: bool = False
 
 class SessionStorage(ABC):
     """Session storage base class."""

@@ -1,8 +1,17 @@
 """EVCC Devices."""
+import math
+
 from app import Optimizer
 from app.mqtt import MQTT_CHANNEL
 
-from . import PowerModes, SessionStorage, State, StateId, StatesRepository
+from . import (
+    DeferrableLoadInfo,
+    PowerModes,
+    SessionStorage,
+    State,
+    StateId,
+    StatesRepository,
+)
 from .config import get_config_param
 from .device import Device, DeviceWithState
 
@@ -19,9 +28,12 @@ class EvccDevice(Device, DeviceWithState):
         self._state = "unknown"
         self._power : State | None= None
         self._consumed_energy : State | None= None
-        self._mode : State | None= None
-        self._vehicle_soc : State | None= None
+        self._mode : State | None = None
+        self._vehicle_soc : State | None = None
+        self._max_current : State | None = None
+        self._is_connected : State | None = None
         self._supported_power_modes =[PowerModes.DEVICE_CONTROLLED, PowerModes.OFF, PowerModes.PV, PowerModes.MIN_PV, PowerModes.FAST, PowerModes.OPTIMIZED]
+
 
     def get_device_topic_id(self, name: str) -> StateId:
         """Get the id of a topic of this load point."""
@@ -42,6 +54,9 @@ class EvccDevice(Device, DeviceWithState):
         self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
         self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
         self._vehicle_soc = state_repository.get_state(self.get_device_topic_id("vehicleSoc"))
+        self._vehicle_capacity = state_repository.get_state(self.get_device_topic_id("vehicleCapacity"))
+        self._max_current = state_repository.get_state(self.get_device_topic_id("maxCurrent"))
+        self._is_connected = state_repository.get_state(self.get_device_topic_id("connected"))
 
         await super().update_session(old_state, new_state, "EVCC")
 
@@ -90,8 +105,13 @@ class EvccDevice(Device, DeviceWithState):
 
     @property
     def vehicle_soc(self) -> float:
-        """Current PV mode of the device."""
+        """State of Charge of the connected vehicle."""
         return self._vehicle_soc.numeric_value if self._vehicle_soc else 0.0
+
+    @property
+    def vehicle_capacity(self) -> float:
+        """Capacity of the connected vehicle."""
+        return self._vehicle_capacity.numeric_value if self._vehicle_capacity else 0.0
 
     @property
     def icon(self) -> str:
@@ -119,3 +139,16 @@ class EvccDevice(Device, DeviceWithState):
         if self._vehicle_soc is not None:
             result["vehicle_soc"] = f"{self.vehicle_soc} %"
         return result
+
+    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+        """Get the current deferrable load info."""
+        if self._is_connected is not None and self._max_current is not None and self._is_connected.value == "true":
+            power: float = self._max_current.numeric_value * 230 # TODO: Multiply with active phases
+            remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
+            if remainingEnergy > 0:
+                return DeferrableLoadInfo(
+                    device_id=self.id,
+                    nominal_power=power,
+                    deferrable_hours= math.ceil(max(remainingEnergy / power, 1.0)),
+                    is_continous=True)
+        return None
