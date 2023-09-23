@@ -71,7 +71,7 @@ async def async_handle_state_update(home: Home, state_repository: StatesReposito
             logging.error(
                 "The variable db is None in async_handle_state_update")
         if optimizer is not None and home is not None:
-            optimizer.update_devices(home.devices)
+            optimizer.update_devices(home)
     except Exception:
         logging.exception("error during sending refresh")
 
@@ -270,6 +270,7 @@ async def init_app() -> None:
     else:
         hass_options = {}
 
+    hass_options.get("log_level", "info").upper()
 
     config_file = hass_options.get("config_file", settings.CONFIG_FILE)
     logfilename = settings.LOG_FILE

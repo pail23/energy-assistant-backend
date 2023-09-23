@@ -73,6 +73,9 @@ class StiebelEltronDevice(Device, DeviceWithState):
         self._actual_temp = assign_if_available(
             self._actual_temp, state_repository.get_state(self._actual_temp_entity_id))
 
+        if self._energy_snapshot is None:
+            self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
+
         await super().update_session(old_state, new_state, "Water heater")
 
 

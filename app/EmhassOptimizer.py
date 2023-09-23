@@ -14,7 +14,7 @@ import pandas as pd
 
 from app import Optimizer
 from app.devices import Location, StateId, StatesRepository
-from app.devices.device import Device
+from app.devices.analysis import DataBuffer
 from app.devices.home import Home
 from app.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from app.models.forecast import ForecastSchema, ForecastSerieSchema
@@ -80,6 +80,7 @@ class EmhassOptimizer(Optimizer):
 
         self._day_ahead_forecast : pd.DataFrame | None = None
         self._optimzed_devices : list = []
+        self._pv: DataBuffer = DataBuffer()
 
 
     def update_repository_states(self, home: Home, state_repository: StatesRepository) -> None:
@@ -433,14 +434,25 @@ class EmhassOptimizer(Optimizer):
     def get_forecast(self) -> ForecastSchema:
         """Get the previously calculated forecast."""
         if self._day_ahead_forecast is not None:
-            time : list[datetime] = self._day_ahead_forecast.index.to_series().dt.to_pydatetime().tolist()
-            pv = self._day_ahead_forecast["P_PV"].to_list()
-            load = self._day_ahead_forecast["P_Load"].to_list()
+            freq = self._retrieve_hass_conf["freq"]
+            pv_df = self._pv.get_data_frame(self._location.get_time_zone())
+            pv_resampled = pv_df.resample(freq).mean()
+            df = pd.concat([self._day_ahead_forecast, pv_resampled], axis = 1)
+            df.rename(columns = {'P_PV':'pv_forecast'}, inplace = True)
+            df.rename(columns = {'value':'pv'}, inplace = True)
+
+            if not pd.notnull(df["pv_forecast"][0]):
+                df.drop([0])
+
+            time : list[datetime] = df.index.to_series().dt.to_pydatetime().tolist()
+            pv_forecast = df["pv_forecast"].to_list()
+            load = df["P_Load"].to_list()
+            pv_series = [x for x in df["pv"].to_list() if pd.notnull(x)]
 
             series=[
-                ForecastSerieSchema(name="pv", data=pv),
+                ForecastSerieSchema(name="pv_forecast", data=pv_forecast),
+                ForecastSerieSchema(name="pv", data=pv_series),
                 ForecastSerieSchema(name="consumption", data=load),
-
             ]
             for i, d in enumerate(self._optimzed_devices):
                 device = self._day_ahead_forecast[f"P_deferrable{i}"].to_list()
@@ -486,11 +498,12 @@ class EmhassOptimizer(Optimizer):
                 return True
         return False
 
-    def update_devices(self, devices: list[Device]) -> None:
+    def update_devices(self, home: Home) -> None:
         """Update the selected devices from the list of devices."""
         new_optimizhed_devices = []
         needs_update = False
-        for device in devices:
+        self._pv.add_data_point(home.solar_production_power)
+        for device in home.devices:
             deferrable_load_info = device.get_deferrable_load_info()
             if deferrable_load_info is not None:
                 if not self._has_deferrable_load(device.id):

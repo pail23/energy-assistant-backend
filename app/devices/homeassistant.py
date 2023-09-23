@@ -167,6 +167,8 @@ class HomeassistantDevice(Device):
         self._power = assign_if_available(self._power, state_repository.get_state(self._power_entity_id))
         self._consumed_energy = assign_if_available(self._consumed_energy, state_repository.get_state(self._consumed_energy_entity_id))
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
+        if self._energy_snapshot is None:
+            self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
     async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer, grid_exported_power: float) -> None:
         """"Update the device based on the current pv availablity."""
@@ -214,7 +216,8 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
         self._device_type : DeviceType | None = None
         if model is not None and manufacturer is not None:
             self._device_type = device_type_registry.get_device_type(manufacturer, model)
-
+        if self._device_type is None:
+            self._device_type = DeviceType(str(config.get("icon", "mdi:lightning-bolt")), 2, 0, 0, 0, 10)
 
 
         """

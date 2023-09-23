@@ -59,6 +59,9 @@ class EvccDevice(Device, DeviceWithState):
         self._max_current = state_repository.get_state(self.get_device_topic_id("maxCurrent"))
         self._is_connected = state_repository.get_state(self.get_device_topic_id("connected"))
 
+        if self._energy_snapshot is None:
+            self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
+
         await super().update_session(old_state, new_state, "EVCC")
 
 
@@ -138,7 +141,7 @@ class EvccDevice(Device, DeviceWithState):
             "pv_mode": self.mode,
         }
         if self._vehicle_soc is not None:
-            result["vehicle_soc"] = f"{self.vehicle_soc} %"
+            result["vehicle_soc"] = f"{round(self.vehicle_soc)} %"
         return result
 
     def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
