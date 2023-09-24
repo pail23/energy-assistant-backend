@@ -42,7 +42,7 @@ class HomeMeasurement(Base):
         stmt = select(cls)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        stream = await session.stream_scalars(stmt.order_by(cls.id))
+        stream = await session.stream_scalars(stmt.order_by(cls.measurement_date.desc()))
         async for row in stream:
             yield row
 
@@ -92,7 +92,7 @@ class HomeMeasurement(Base):
             cls.measurement_date>=from_date).where(cls.measurement_date <=to_date)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        stream = await session.stream_scalars(stmt.order_by(cls.id))
+        stream = await session.stream_scalars(stmt.order_by(cls.measurement_date.desc()))
         async for row in stream:
             yield row
 

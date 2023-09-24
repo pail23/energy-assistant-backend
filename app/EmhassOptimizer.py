@@ -440,14 +440,19 @@ class EmhassOptimizer(Optimizer):
             df = pd.concat([self._day_ahead_forecast, pv_resampled], axis = 1)
             df.rename(columns = {'P_PV':'pv_forecast'}, inplace = True)
             df.rename(columns = {'value':'pv'}, inplace = True)
+            df.to_csv(pathlib.Path(self._data_folder) / "forecast.csv", index_label="time_stamp")
 
-            if not pd.notnull(df["pv_forecast"][0]):
-                df.drop([0])
+            while not pd.notnull(df["pv_forecast"][0]) and len(df.index) > 0:
+                df.drop(df.index[0], inplace=True)
+
+            pv_series = [x for x in df["pv"].to_list() if pd.notnull(x)]
+
+            # TODO: Should be removed
+            df.fillna(-10000, inplace=True)
 
             time : list[datetime] = df.index.to_series().dt.to_pydatetime().tolist()
             pv_forecast = df["pv_forecast"].to_list()
             load = df["P_Load"].to_list()
-            pv_series = [x for x in df["pv"].to_list() if pd.notnull(x)]
 
             series=[
                 ForecastSerieSchema(name="pv_forecast", data=pv_forecast),
