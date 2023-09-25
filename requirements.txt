@@ -26,7 +26,7 @@ wheel
 numpy==1.25.2
 pandas==2.0.3
 scipy==1.11.2
-pvlib==0.10.1
+pvlib==0.10.2
 skforecast==0.10.0
 beautifulsoup4>=4.9.3
 pulp
