@@ -90,21 +90,22 @@ async def test_home_measurements_read_daily(ac: AsyncClient, session: AsyncSessi
     )
     assert response.status_code == 200
 
-    assert response.json() ==     {"measurements":[
+    assert response.json() == {"measurements":[
+        {"solar_consumed_energy":0.0,"consumed_energy":0.0,"solar_produced_energy":0.0,"grid_imported_energy":0.0,"grid_exported_energy":0.0,
+         "device_measurements":[
+             {"device_id":"1a8ac2d6-5695-427a-a3c5-ef567b34e5ec","solar_consumed_energy":0.0,"consumed_energy":0.0},
+             {"device_id":"9c0e0865-f3b0-488f-8d3f-b3b0cdda5de7","solar_consumed_energy":0.0,"consumed_energy":0.0}
+            ],
+            "measurement_date":"2023-01-09"
+        },
         {"solar_consumed_energy":1.0,"consumed_energy":2.0,"solar_produced_energy":1.0,"grid_imported_energy":1.0,"grid_exported_energy":1.0,
          "device_measurements":[
              {"device_id":"1a8ac2d6-5695-427a-a3c5-ef567b34e5ec","solar_consumed_energy":0.5,"consumed_energy":1.0},
              {"device_id":"9c0e0865-f3b0-488f-8d3f-b3b0cdda5de7","solar_consumed_energy":0.5,"consumed_energy":1.0}
-            ],
-            "measurement_date":"2023-01-10"
-        },
-        {"solar_consumed_energy":-1.0,"consumed_energy":-2.0,"solar_produced_energy":-1.0,"grid_imported_energy":-1.0,"grid_exported_energy":-1.0,
-         "device_measurements":[
-             {"device_id":"1a8ac2d6-5695-427a-a3c5-ef567b34e5ec","solar_consumed_energy":-0.5,"consumed_energy":-1.0},
-             {"device_id":"9c0e0865-f3b0-488f-8d3f-b3b0cdda5de7","solar_consumed_energy":-0.5,"consumed_energy":-1.0}
              ],
-             "measurement_date":"2023-01-09"
+             "measurement_date":"2023-01-10"
         }]}
+
 
 
 @pytest.mark.asyncio
