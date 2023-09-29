@@ -85,6 +85,7 @@ class EmhassOptimizer(Optimizer):
         self._day_ahead_forecast : pd.DataFrame | None = None
         self._optimzed_devices : list = []
         self._pv: DataBuffer = DataBuffer()
+        self._no_var_loads: DataBuffer = DataBuffer()
 
 
     def update_repository_states(self, home: Home, state_repository: StatesRepository) -> None:
@@ -95,6 +96,7 @@ class EmhassOptimizer(Optimizer):
                 power = power - device.power
         if power < 0:
             power = 0.0
+        self._no_var_loads.add_data_point(power)
         attributes = {
             "unit_of_measurement": "W",
             "state_class": "measurement",
@@ -439,17 +441,18 @@ class EmhassOptimizer(Optimizer):
         """Get the previously calculated forecast."""
         if self._day_ahead_forecast is not None:
             freq = self._retrieve_hass_conf["freq"]
-            pv_df = self._pv.get_data_frame(self._location.get_time_zone())
-            pv_resampled = pv_df.resample(freq).mean()
-            df = pd.concat([self._day_ahead_forecast, pv_resampled], axis = 1)
+            pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), 'pv')
+            no_var_load_df = self._no_var_loads.get_data_frame(freq, self._location.get_time_zone(), 'non_var_loads')
+            df = pd.concat([self._day_ahead_forecast, pv_df, no_var_load_df], axis = 1)
             df.rename(columns = {'P_PV':'pv_forecast'}, inplace = True)
-            df.rename(columns = {'value':'pv'}, inplace = True)
+            #df.rename(columns = {'value':'pv'}, inplace = True)
             df.to_csv(pathlib.Path(self._data_folder) / "forecast.csv", index_label="time_stamp")
 
             while not pd.notnull(df["pv_forecast"][0]) and len(df.index) > 0:
                 df.drop(df.index[0], inplace=True)
 
             pv_series = [x for x in df["pv"].to_list() if pd.notnull(x)]
+            no_var_load_series = [x for x in df["non_var_loads"].to_list() if pd.notnull(x)]
 
             # TODO: Should be removed
             df.fillna(-10000, inplace=True)
@@ -462,6 +465,7 @@ class EmhassOptimizer(Optimizer):
                 ForecastSerieSchema(name="pv_forecast", data=pv_forecast),
                 ForecastSerieSchema(name="pv", data=pv_series),
                 ForecastSerieSchema(name="consumption", data=load),
+                ForecastSerieSchema(name="no_var_loads", data=no_var_load_series),
             ]
             for i, d in enumerate(self._optimzed_devices):
                 device = self._day_ahead_forecast[f"P_deferrable{i}"].to_list()

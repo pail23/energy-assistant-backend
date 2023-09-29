@@ -73,9 +73,9 @@ class DataBuffer:
         else:
             return False
 
-    def get_data_frame(self, time_zone: tzinfo) -> pd.DataFrame:
+    def get_data_frame(self, freq:pd.Timedelta, time_zone: tzinfo, value_name: str) -> pd.DataFrame:
         """Get a pandas data from from the available data."""
         data =[(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
-        result = pd.DataFrame.from_records(data, index="time_stamp", columns = ["time_stamp", "value"])
+        result = pd.DataFrame.from_records(data, index="time_stamp", columns = ["time_stamp", value_name])
         result.index = result.index.tz_convert(time_zone) # type: ignore
-        return result
+        return result.resample(freq).mean()
