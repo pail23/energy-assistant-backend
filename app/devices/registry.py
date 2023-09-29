@@ -5,6 +5,9 @@ import os
 
 import yaml
 
+from app.constants import ROOT_LOGGER_NAME
+
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 @dataclass(frozen=True, eq=True)
 class DeviceTypeId:
@@ -47,19 +50,19 @@ class DeviceTypeRegistry:
             try:
                 config = yaml.safe_load(stream)
             except yaml.YAMLError as ex:
-                logging.error(ex)
+                LOGGER.error(ex)
             except Exception as ex:
-                logging.error(ex)
+                LOGGER.error(ex)
             else:
                 device_type_config = config.get("device_type")
                 if device_type_config is None:
-                    logging.error(f"Device type config file {filename} does not contain a device_type item.")
+                    LOGGER.error(f"Device type config file {filename} does not contain a device_type item.")
                 else:
                     manufacturer = device_type_config.get("manufacturer")
                     model = device_type_config.get("model")
                     icon = device_type_config.get("icon")
                     if model is None or manufacturer is None or icon is None:
-                        logging.error(f"Manufacturer or Model or Icon not set in device type config file {filename}")
+                        LOGGER.error(f"Manufacturer or Model or Icon not set in device type config file {filename}")
                     else:
                         device_state_config = device_type_config.get("state")
                         state_on_threshold : float | None = None

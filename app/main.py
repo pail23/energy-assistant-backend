@@ -1,12 +1,17 @@
 """Main module for the energy assistant application."""
 import asyncio
+from contextlib import suppress
 from datetime import date
 import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import sys
+import threading
+from typing import Final
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
+from colorlog import ColoredFormatter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -28,6 +33,14 @@ from app.devices.registry import DeviceTypeRegistry
 from app.mqtt import MqttConnection
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
+
+from .constants import ROOT_LOGGER_NAME
+
+FORMAT_DATE: Final = "%Y-%m-%d"
+FORMAT_TIME: Final = "%H:%M:%S"
+FORMAT_DATETIME: Final = f"{FORMAT_DATE} {FORMAT_TIME}"
+MAX_LOG_FILESIZE = 1000000 * 10  # 10 MB
+
 
 app = FastAPI(title="energy-assistant")
 sio = SocketManager(app=app, cors_allowed_origins="*")
@@ -255,6 +268,73 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
     return None
 
 
+
+def setup_logger(log_filename: str, level: str = "DEBUG") -> logging.Logger:
+    """Initialize logger."""
+    # define log formatter
+    log_fmt = "%(asctime)s.%(msecs)03d %(levelname)s (%(threadName)s) [%(name)s] %(message)s"
+
+    # base logging config for the root logger
+    logging.basicConfig(level=logging.INFO)
+
+    colorfmt = f"%(log_color)s{log_fmt}%(reset)s"
+    logging.getLogger().handlers[0].setFormatter(
+        ColoredFormatter(
+            colorfmt,
+            datefmt=FORMAT_DATETIME,
+            reset=True,
+            log_colors={
+                "DEBUG": "cyan",
+                "INFO": "green",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red",
+            },
+        )
+    )
+
+    # Capture warnings.warn(...) and friends messages in logs.
+    # The standard destination for them is stderr, which may end up unnoticed.
+    # This way they're where other messages are, and can be filtered as usual.
+    logging.captureWarnings(True)
+
+    # setup file handler
+    #log_filename = os.path.join(data_path, "energy_assistant.log")
+    file_handler = RotatingFileHandler(log_filename, maxBytes=MAX_LOG_FILESIZE, backupCount=1)
+    # rotate log at each start
+    with suppress(OSError):
+        file_handler.doRollover()
+    file_handler.setFormatter(logging.Formatter(log_fmt, datefmt=FORMAT_DATETIME))
+    # file_handler.setLevel(logging.INFO)
+
+    logger = logging.getLogger()
+    logger.addHandler(file_handler)
+
+    # apply the configured global log level to the (root) music assistant logger
+    logging.getLogger(ROOT_LOGGER_NAME).setLevel(level)
+
+    # silence some noisy loggers
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logging.getLogger("aiosqlite").setLevel(logging.WARNING)
+    logging.getLogger("databases").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+    sys.excepthook = lambda *args: logging.getLogger(None).exception(
+        "Uncaught exception", exc_info=args  # type: ignore[arg-type]
+    )
+    threading.excepthook = lambda args: logging.getLogger(None).exception(
+        "Uncaught thread exception",
+        exc_info=(  # type: ignore[arg-type]
+            args.exc_type,
+            args.exc_value,
+            args.exc_traceback,
+        ),
+    )
+
+    return logger
+
+
 async def init_app() -> None:
     """Initialize the application."""
     app.home = None  # type: ignore
@@ -270,29 +350,13 @@ async def init_app() -> None:
     else:
         hass_options = {}
 
-    hass_options.get("log_level", "info").upper()
+    log_level = hass_options.get("log_level", "info").upper()
+
+    logger = setup_logger(settings.LOG_FILE, log_level)
 
     config_file = hass_options.get("config_file", settings.CONFIG_FILE)
-    logfilename = settings.LOG_FILE
 
-    rfh = RotatingFileHandler(
-        filename=logfilename,
-        mode='a',
-        maxBytes=5*1024*1024,
-        backupCount=2,
-        encoding='utf-8'
-    )
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(name)-25s %(levelname)-8s %(message)s",
-        datefmt="%y-%m-%d %H:%M:%S",
-        handlers=[
-            rfh
-        ]
-    )
-
-    logging.info("Hello from Energy Assistant")
+    logger.info("Hello from Energy Assistant")
 
     for option in hass_options:
         logging.info(f"{option}={hass_options[option]}")
@@ -305,17 +369,17 @@ async def init_app() -> None:
     device_type_registry = DeviceTypeRegistry()
     device_type_registry.load(settings.DEVICE_TYPE_REGISTRY)
 
-    logging.info(f"Loading config file {config_file}")
+    logger.info(f"Loading config file {config_file}")
     try:
         with open(config_file) as stream:
-            logging.debug(f"Successfully opened config file {config_file}")
+            logger.debug(f"Successfully opened config file {config_file}")
             try:
                 config = yaml.safe_load(stream)
-                logging.debug(f"config file {config_file} successfully loaded")
+                logger.debug(f"config file {config_file} successfully loaded")
             except yaml.YAMLError:
-                logging.exception("Failed to parse the config file")
+                logger.exception("Failed to parse the config file")
             except Exception:
-                logging.exception("Failed to parse the config file")
+                logger.exception("Failed to parse the config file")
             else:
                 hass = create_hass_connection(config)
                 app.hass = hass  # type: ignore
@@ -338,10 +402,10 @@ async def init_app() -> None:
 
                         await db.restore_home_state(home, session)
                 else:
-                    logging.error(f"home not found in config file: {config}")
-                logging.info("Initialization completed")
+                    logger.error(f"home not found in config file: {config}")
+                logger.info("Initialization completed")
     except Exception :
-        logging.exception("Initialization of the app failed")
+        logger.exception("Initialization of the app failed")
 
 
 async def optimize(optimizer: EmhassOptimizer) -> None:

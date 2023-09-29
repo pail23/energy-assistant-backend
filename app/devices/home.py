@@ -4,6 +4,7 @@ import logging
 import uuid
 
 from app import Optimizer
+from app.constants import ROOT_LOGGER_NAME
 from app.devices.evcc import EvccDevice
 from app.devices.registry import DeviceTypeRegistry
 
@@ -19,6 +20,7 @@ from .device import Device
 from .homeassistant import HomeassistantDevice, PowerStateDevice
 from .stiebel_eltron import StiebelEltronDevice
 
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 class Home:
     """The home."""
@@ -68,7 +70,7 @@ class Home:
                 elif type == "evcc":
                     self.devices.append(EvccDevice(config_device, session_storage))
                 else:
-                    logging.error(
+                    LOGGER.error(
                         f"Unknown device type {type} in configuration")
 
     def add_device(self, device: Device) -> None:

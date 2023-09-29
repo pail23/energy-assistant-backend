@@ -4,6 +4,7 @@ import logging
 import requests  # type: ignore
 
 from app import Optimizer
+from app.constants import ROOT_LOGGER_NAME
 from app.devices.analysis import DataBuffer
 from app.devices.registry import DeviceType, DeviceTypeRegistry
 
@@ -18,6 +19,7 @@ from . import (
 from .config import get_config_param
 from .device import Device, DeviceWithState
 
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 UNAVAILABLE = "unavailable"
 
 HOMEASSISTANT_CHANNEL = "ha"
@@ -99,7 +101,7 @@ class Homeassistant(StatesSingleRepository):
                         self._read_states[entity_id] = HomeassistantState(entity_id, state.get("state"), state.get("attributes"))
 
             except Exception:
-                logging.exception("Exception during homeassistant update_states: ")
+                LOGGER.exception("Exception during homeassistant update_states: ")
 
     def write_states(self) -> None:
         """Send the changed states to hass."""
@@ -115,7 +117,7 @@ class Homeassistant(StatesSingleRepository):
                         response = requests.post(
                             f"{self._url}/api/services/number/set_value", headers=headers, json=data)
                         if not response.ok:
-                            logging.error("State update in hass failed")
+                            LOGGER.error("State update in hass failed")
                     elif id.startswith("sensor"):
                         sensor_data : dict = {
                             "state": state.value,
@@ -124,11 +126,11 @@ class Homeassistant(StatesSingleRepository):
                         response = requests.post(
                             f"{self._url}/api/states/{id}", headers=headers, json=sensor_data)
                         if not response.ok:
-                            logging.error(f"State update for {id} in hass failed")
+                            LOGGER.error(f"State update for {id} in hass failed")
                     else:
-                        logging.error(f"Writing to id {id} is not yet implemented.")
+                        LOGGER.error(f"Writing to id {id} is not yet implemented.")
             except Exception as ex:
-                logging.error("Exception during homeassistant update_states: ", ex)
+                LOGGER.error("Exception during homeassistant update_states: ", ex)
             self._write_states.clear()
 
     def get_location(self) -> Location:

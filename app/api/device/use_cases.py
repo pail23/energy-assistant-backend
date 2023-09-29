@@ -5,6 +5,7 @@ import uuid
 
 from fastapi import HTTPException
 
+from app.constants import ROOT_LOGGER_NAME
 from app.db import AsyncSession
 from app.devices import PowerModes
 from app.devices.home import Home
@@ -13,6 +14,7 @@ from app.models.device import Device, DeviceMeasurement
 
 from . import OTHER_DEVICE
 
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 class ReadAllDevices:
     """Read all devices use case."""
@@ -93,7 +95,7 @@ class UpdateDevicePowerMode:
                 result.power_mode = d.power_mode
                 return result
             except Exception:
-                logging.error("Invalid power mode: " + power_mode)
+                LOGGER.error("Invalid power mode: " + power_mode)
                 raise HTTPException(status_code=404)
 
 class DeleteDevice:

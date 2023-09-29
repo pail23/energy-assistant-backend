@@ -24,6 +24,10 @@ from emhass.machine_learning_forecaster import mlforecaster
 from emhass.optimization import optimization
 from emhass.retrieve_hass import retrieve_hass
 
+from .constants import ROOT_LOGGER_NAME
+
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
+
 SENSOR_POWER_NO_VAR_LOADS = "sensor.power_load_no_var_loads"
 
 class EmhassOptimizer(Optimizer):
@@ -32,7 +36,7 @@ class EmhassOptimizer(Optimizer):
     def __init__(self, data_folder: str, config: dict, hass: Homeassistant) -> None:
         """Create an emhass optimizer instance."""
         self._data_folder = data_folder
-        self._logger = logging.getLogger("EmhassOptimizer")
+        self._logger = LOGGER
         self._hass_url: str = hass.url
         if self._hass_url is not None and self._hass_url[-1] != "/":
             self._hass_url = self._hass_url + "/"

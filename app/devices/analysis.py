@@ -73,8 +73,9 @@ class DataBuffer:
         else:
             return False
 
-    def get_data_frame(self, tz: tzinfo) -> pd.DataFrame:
+    def get_data_frame(self, time_zone: tzinfo) -> pd.DataFrame:
         """Get a pandas data from from the available data."""
         data =[(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
         result = pd.DataFrame.from_records(data, index="time_stamp", columns = ["time_stamp", "value"])
+        result.index = result.index.tz_convert(time_zone)
         return result

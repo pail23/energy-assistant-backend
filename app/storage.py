@@ -13,6 +13,9 @@ from app.models.device import Device as DeviceDTO, DeviceMeasurement
 from app.models.home import HomeMeasurement
 from app.models.sessionlog import SessionLogEntry
 
+from .constants import ROOT_LOGGER_NAME
+
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 async def get_async_session() -> async_sessionmaker:
     """Get a async database session."""
@@ -51,7 +54,7 @@ class Database:
                             device.set_snapshot(
                                 device_measurement.solar_consumed_energy, device_measurement.consumed_energy)
             except Exception as ex:
-                logging.error(
+                LOGGER.error(
                     "Error while restoring state of home", ex)
 
     async def store_home_state(self, home: Home, session: AsyncSession) -> None:
@@ -79,7 +82,7 @@ class Database:
             await session.flush()
             await session.commit()
         except Exception as ex:
-            logging.error(
+            LOGGER.error(
                 "Error while storing state of home", ex)
 
     async def update_devices(self, home: Home, session: AsyncSession) -> None:
@@ -97,7 +100,7 @@ class Database:
                 await session.commit()
 
             except Exception as ex:
-                logging.error(
+                LOGGER.error(
                     "Error while udpateing the devices of home", ex)
 
 

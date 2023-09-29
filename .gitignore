@@ -3,6 +3,7 @@ energy_assistant.yaml
 *.db
 client
 *.log
+*.log.*
 *.bak
 .mypycache
 data/

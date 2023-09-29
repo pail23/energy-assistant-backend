@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.models.base import Base
 from app.settings import settings
 
-logger = logging.getLogger(__name__)
+from .constants import ROOT_LOGGER_NAME
+
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 async_engine = create_async_engine(
     settings.DB_URI,
@@ -35,7 +37,7 @@ async def get_session() -> AsyncIterator[async_sessionmaker]:
     try:
         yield AsyncSessionLocal
     except SQLAlchemyError as e:
-        logger.exception(e)
+        LOGGER.exception(e)
 
 
 AsyncSession = Annotated[async_sessionmaker, Depends(get_session)]

@@ -4,6 +4,7 @@ import logging
 import uuid
 
 from app import Optimizer
+from app.constants import ROOT_LOGGER_NAME
 
 from . import (
     DeferrableLoadInfo,
@@ -15,6 +16,7 @@ from . import (
 )
 from .config import get_config_param
 
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 class Device(ABC):
     """A device which tracks energy consumption."""
@@ -135,11 +137,11 @@ class Device(ABC):
                     if self.current_session is not None:
                         await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
                 else:
-                    logging.info("Start Session")
+                    LOGGER.info("Start Session")
                     await self.start_session(text)
             else:
                 if old_state:
-                    logging.info("End Session")
+                    LOGGER.info("End Session")
                 if self.current_session is not None:
                     await self.session_storage.update_session_energy(self.current_session, self.consumed_solar_energy, self.consumed_energy)
 

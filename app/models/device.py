@@ -6,7 +6,7 @@ import datetime
 from typing import TYPE_CHECKING, AsyncIterator
 import uuid
 
-from sqlalchemy import ForeignKey, select
+from sqlalchemy import ForeignKey, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, joinedload, mapped_column, relationship, selectinload
@@ -145,7 +145,7 @@ class DeviceMeasurement(Base):
         """Read a device measurements by id."""
         stmt = select(cls).where(cls.device_id == device_id).options(
             joinedload(cls.home_measurement))
-        stream = await session.stream_scalars(stmt.order_by(cls.id))
+        stream = await session.stream_scalars(stmt.order_by(text("HomeMeasurement_1.date DESC")))
         async for row in stream:
             yield row
 
