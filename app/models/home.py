@@ -82,7 +82,7 @@ class HomeMeasurement(Base):
             cls.measurement_date==measurement_date)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        return await session.scalar(stmt.order_by(cls.measurement_date).limit(1))
+        return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
     @classmethod
     async def read_between_dates(
@@ -106,7 +106,7 @@ class HomeMeasurement(Base):
             cls.measurement_date<measurement_date)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        return await session.scalar(stmt.order_by(cls.measurement_date).limit(1))
+        return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
 
 
