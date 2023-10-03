@@ -35,7 +35,7 @@ class EmhassOptimizer(Optimizer):
 
     def __init__(self, data_folder: str, config: dict, hass: Homeassistant) -> None:
         """Create an emhass optimizer instance."""
-        self._data_folder = data_folder
+        self._data_folder : pathlib.Path = pathlib.Path(data_folder)
         self._logger = LOGGER
         self._hass_url: str = hass.url
         if self._hass_url is not None and self._hass_url[-1] != "/":
@@ -132,10 +132,10 @@ class EmhassOptimizer(Optimizer):
             None, json.dumps(self._emhass_config), self._retrieve_hass_conf,
             self._optim_conf, self._plant_conf, "perfect-optim", self._logger) # type: ignore
         fcst = forecast(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
-                        params, self._data_folder, self._logger, get_data_from_file=False)
+                        params, str(self._data_folder), self._logger, get_data_from_file=False)
         opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
                         fcst.var_load_cost, fcst.var_prod_price,
-                            self._cost_fun, self._data_folder, self._logger)
+                            self._cost_fun, str(self._data_folder), self._logger)
 
         days_list = utils.get_days_list(self._retrieve_hass_conf['days_to_retrieve'])
         var_list = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
@@ -162,7 +162,7 @@ class EmhassOptimizer(Optimizer):
         else: # Just save the latest optimization results
             filename = 'opt_res_perfect_optim_latest.csv'
         if not debug:
-            opt_res.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
+            opt_res.to_csv(self._data_folder / filename, index_label='timestamp')
         return opt_res
 
 
@@ -206,10 +206,10 @@ class EmhassOptimizer(Optimizer):
             json.dumps(self.get_ml_runtime_params()), json.dumps(self._emhass_config), self._retrieve_hass_conf,
             self._optim_conf, self._plant_conf, "dayahead-optim", self._logger) # type: ignore
         fcst = forecast(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
-                        params, self._data_folder, self._logger, get_data_from_file=False)
+                        params, str(self._data_folder), self._logger, get_data_from_file=False)
         opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
                         fcst.var_load_cost, fcst.var_prod_price,
-                            self._cost_fun, self._data_folder, self._logger)
+                            self._cost_fun, str(self._data_folder), self._logger)
 
         df_weather = fcst.get_weather_forecast(method=self._optim_conf['weather_forecast_method'])
         P_PV_forecast = fcst.get_power_from_weather(df_weather)
@@ -241,7 +241,7 @@ class EmhassOptimizer(Optimizer):
         else: # Just save the latest optimization results
             filename = 'opt_res_latest.csv'
         if not debug:
-            self._day_ahead_forecast.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
+            self._day_ahead_forecast.to_csv(self._data_folder / filename, index_label='timestamp')
 
     def naive_mpc_optim(self,
         save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
@@ -272,10 +272,10 @@ class EmhassOptimizer(Optimizer):
             json.dumps(runtimeparams), json.dumps(self._emhass_config), self._retrieve_hass_conf,
             self._optim_conf, self._plant_conf, "naive-mpc-optim", self._logger) # type: ignore
         fcst = forecast(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
-                        params, self._data_folder, self._logger, get_data_from_file=False)
+                        params, str(self._data_folder), self._logger, get_data_from_file=False)
         opt = optimization(self._retrieve_hass_conf, self._optim_conf, self._plant_conf,
                         fcst.var_load_cost, fcst.var_prod_price,
-                            self._cost_fun, self._data_folder, self._logger)
+                            self._cost_fun, str(self._data_folder), self._logger)
 
         # Retrieve data from hass
         days_list = utils.get_days_list(1)
@@ -327,7 +327,7 @@ class EmhassOptimizer(Optimizer):
         else: # Just save the latest optimization results
             filename = "opt_res_naive_mpc_latest.csv"
         if not debug:
-            opt_res_naive_mpc.to_csv(pathlib.Path(self._data_folder) / filename, index_label='timestamp')
+            opt_res_naive_mpc.to_csv(self._data_folder / filename, index_label='timestamp')
         return opt_res_naive_mpc
 
 
@@ -365,14 +365,14 @@ class EmhassOptimizer(Optimizer):
         split_date_delta = params_dict['passed_data']['split_date_delta']
         perform_backtest = params_dict['passed_data']['perform_backtest']
         # The ML forecaster object
-        mlf = mlforecaster(data, model_type, SENSOR_POWER_NO_VAR_LOADS, sklearn_model, num_lags, self._data_folder, self._logger)
+        mlf = mlforecaster(data, model_type, SENSOR_POWER_NO_VAR_LOADS, sklearn_model, num_lags, str(self._data_folder), self._logger)
         # Fit the ML model
         df_pred, df_pred_backtest = mlf.fit(split_date_delta=split_date_delta,
                                             perform_backtest=perform_backtest)
         # Save model
         if not debug:
             filename = model_type+'_mlf.pkl'
-            with open(pathlib.Path(self._data_folder) / filename, 'wb') as outp:
+            with open(self._data_folder / filename, 'wb') as outp:
                 pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
         return df_pred, df_pred_backtest, mlf
 
@@ -417,9 +417,8 @@ class EmhassOptimizer(Optimizer):
 
         # Load model
         model_type = "load_forecast"
-        root = self._data_folder
         filename = model_type+'_mlf.pkl'
-        filename_path = pathlib.Path(root) / filename
+        filename_path = self._data_folder / filename
         if not debug:
             if filename_path.is_file():
                 with open(filename_path, 'rb') as inp:
@@ -441,16 +440,16 @@ class EmhassOptimizer(Optimizer):
         """Get the previously calculated forecast."""
         if self._day_ahead_forecast is not None:
             freq = self._retrieve_hass_conf["freq"]
-            folder = pathlib.Path(self._data_folder) / "temp"
-            folder.mkdir(parents=True, exist_ok=True)
-            pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), 'pv', folder)
-            pv_df.to_csv(folder / "pv_df.csv")
-            no_var_load_df = self._no_var_loads.get_data_frame(freq, self._location.get_time_zone(), 'non_var_loads', folder)
+            temp_folder = self._data_folder / "temp"
+            temp_folder.mkdir(parents=True, exist_ok=True)
+            pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), 'pv', temp_folder)
+            pv_df.to_csv(temp_folder / "pv_df.csv")
+            no_var_load_df = self._no_var_loads.get_data_frame(freq, self._location.get_time_zone(), 'non_var_loads', temp_folder)
             df = self._day_ahead_forecast.merge(pv_df, how="left", left_index=True, right_index=True)
             df = df.merge(no_var_load_df, how="left", left_index=True, right_index=True)
 
             df.rename(columns = {'P_PV':'pv_forecast'}, inplace = True)
-            df.to_csv(folder / "forecast.csv", index_label="time_stamp")
+            df.to_csv(temp_folder / "forecast.csv", index_label="time_stamp")
 
             while not pd.notnull(df["pv_forecast"][0]) and len(df.index) > 0:
                 df.drop(df.index[0], inplace=True)

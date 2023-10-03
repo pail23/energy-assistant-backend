@@ -1,6 +1,6 @@
 """Storage of the Home state including the connected devices."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import logging
 import uuid
 
@@ -111,7 +111,7 @@ class DbSessionStorage(SessionStorage):
         """Start a new session."""
         async_session = await get_async_session()
         async with async_session.begin() as session:
-            entry = await SessionLogEntry.create(session, text, device_id, datetime.now(), solar_consumed_energy, consumed_energy, datetime.now(), solar_consumed_energy, consumed_energy)
+            entry = await SessionLogEntry.create(session, text, device_id, datetime.now(timezone.utc), solar_consumed_energy, consumed_energy, datetime.now(timezone.utc), solar_consumed_energy, consumed_energy)
             return entry.id
 
     async def update_session(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
@@ -120,7 +120,7 @@ class DbSessionStorage(SessionStorage):
         async with async_session.begin() as session:
             entry = await SessionLogEntry.read_by_id(session, id)
             if entry is not None:
-                await entry.update(session, entry.text, entry.device_id, entry.start, entry.start_solar_consumed_energy, entry.start_consumed_energy, datetime.now(),
+                await entry.update(session, entry.text, entry.device_id, entry.start, entry.start_solar_consumed_energy, entry.start_consumed_energy, datetime.now(timezone.utc),
                                    solar_consumed_energy, consumed_energy)
 
     async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
