@@ -441,14 +441,16 @@ class EmhassOptimizer(Optimizer):
         """Get the previously calculated forecast."""
         if self._day_ahead_forecast is not None:
             freq = self._retrieve_hass_conf["freq"]
-            pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), 'pv')
-            pv_df.to_csv(pathlib.Path(self._data_folder) /"pv_df.csv")
-            no_var_load_df = self._no_var_loads.get_data_frame(freq, self._location.get_time_zone(), 'non_var_loads')
+            folder = pathlib.Path(self._data_folder) / "temp"
+            folder.mkdir(parents=True, exist_ok=True)
+            pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), 'pv', folder)
+            pv_df.to_csv(folder / "pv_df.csv")
+            no_var_load_df = self._no_var_loads.get_data_frame(freq, self._location.get_time_zone(), 'non_var_loads', folder)
             df = self._day_ahead_forecast.merge(pv_df, how="left", left_index=True, right_index=True)
             df = df.merge(no_var_load_df, how="left", left_index=True, right_index=True)
 
             df.rename(columns = {'P_PV':'pv_forecast'}, inplace = True)
-            df.to_csv(pathlib.Path(self._data_folder) / "forecast.csv", index_label="time_stamp")
+            df.to_csv(folder / "forecast.csv", index_label="time_stamp")
 
             while not pd.notnull(df["pv_forecast"][0]) and len(df.index) > 0:
                 df.drop(df.index[0], inplace=True)

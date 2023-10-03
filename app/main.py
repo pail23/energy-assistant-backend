@@ -95,7 +95,7 @@ async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOpti
     async_session = await get_async_session()
     state_repository = StatesMultipleRepositories([hass, mqtt])
     while True:
-        await sio.sleep(10)
+        await sio.sleep(30)
         # delta_t = datetime.now().timestamp()
         # print("Start refresh from home assistant")
         today = date.today()

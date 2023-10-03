@@ -3,6 +3,7 @@
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, tzinfo
+import pathlib
 from statistics import mean
 
 import pandas as pd
@@ -73,9 +74,10 @@ class DataBuffer:
         else:
             return False
 
-    def get_data_frame(self, freq:pd.Timedelta, time_zone: tzinfo, value_name: str) -> pd.DataFrame:
+    def get_data_frame(self, freq:pd.Timedelta, time_zone: tzinfo, value_name: str, folder: pathlib.Path) -> pd.DataFrame:
         """Get a pandas data from from the available data."""
         data =[(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
         result = pd.DataFrame.from_records(data, index="timestamp", columns = ["timestamp", value_name])
+        result.to_csv(folder / f"{value_name}.csv")
         result.index = result.index.tz_convert(time_zone) # type: ignore
         return result.resample(freq).mean()
