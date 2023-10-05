@@ -1,6 +1,6 @@
 # Energy Assistant Configuration file
 
-The `energy_assistant.yaml` file is used to configure Energy Assistant. It consists of the followin sections.
+The `energy_assistant.yaml` file is used to configure Energy Assistant. An starting point for your configuration file can be found [here](https://raw.githubusercontent.com/pail23/energy-assistant-backend/main/energy_assistant.yaml.dist).
 
 # Home
 
@@ -32,7 +32,9 @@ This is a device (e.g. a charger) managed by Evcc. You need to configure a MQTT 
 - `evcc_topic`: The mqtt topic configured in the [Evcc MQTT Configuration](https://docs.evcc.io/docs/reference/configuration/mqtt).
 - `load_point_id`: The Evcc id of the load point (typically the ids are just numbers from 1..x)
 
-Example:
+### power-state-device type
+
+## Example:
 
 ```
 home:
