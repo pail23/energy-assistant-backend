@@ -3,4 +3,4 @@
 
 ## Configure Energy Assistant
 
-See [here](docs/config_file.md)
+See [here](config_file.md)
