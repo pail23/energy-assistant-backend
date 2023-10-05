@@ -29,5 +29,9 @@ An alternative way to run the Energy Assistant is by running the docker image:
 docker run --name em -p 8080:5000 -v "$(pwd)/energy_assistant.yaml:/config/energy_assistant.yaml" ghcr.io/pail23/energy-assistant-backend:latest
 ```
 
+## Config file
+
+Please find information on how to configure Energy Assistant [here](https://raw.githubusercontent.com/pail23/energy-assistant-backend/main/docs/config_file.md).
+
 [repository-badge]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
 [repository-url]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpail23%2Fenergy-assistant-addon
