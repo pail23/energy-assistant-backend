@@ -1,13 +1,93 @@
 mqtt:
-  host: example.org
+  host: mqtt.example.net
   username: x
   password: y
   topic: energyassistant
 
-homeassistant:
-  url: https://homeassistant.local
-  token: xyz
-
-
 home:
   name: "My Home"
+  solar_power: sensor.solaredge_i1_ac_power
+  solar_energy: sensor.solaredge_i1_ac_energy_kwh
+  grid_supply_power: sensor.solaredge_m1_ac_power
+  imported_energy: sensor.solaredge_m1_imported_kwh
+  exported_energy: sensor.solaredge_m1_exported_kwh
+  devices:
+    - name: Evcc loadpoint 1
+      id: 7d480adc-2c45-4de9-8f36-063c5dea0253
+      type: evcc
+      evcc_topic: "evcc"
+      load_point_id: 1
+      store_sessions: true
+    - name: Tumbler
+      id: 75203c88-216f-4712-8a94-80513793f7e1
+      type: power-state-device
+      power: sensor.tumbler_power
+      energy: sensor.tumbler_energy
+      energy_scale: 0.001
+      store_sessions: true
+      manufacturer: v-zug
+      model: Adora TS WP
+    - name: Server
+      id: eb6b3f0a-1175-4ff3-9ebe-8c22663cba48
+      type: homeassistant
+      icon: mdi-server-network
+      power: sensor.server_power
+      energy: sensor.server_energy
+      energy_scale: 0.001
+
+emhass:
+  retrieve_hass_conf:
+    - freq: 30 # The time step to resample retrieved data from hass in minutes
+    - days_to_retrieve: 8 # We will retrieve data from now and up to days_to_retrieve days
+    - load_negative: False # Set to True if the retrived load variable is negative by convention
+    - set_zero_min: True # A special treatment for a minimum value saturation to zero. Values below zero are replaced by nans
+    - method_ts_round: "nearest" # Set the method for timestamp rounding, options are: first, last and nearest
+
+  optim_conf:
+    - set_use_battery: False # consider a battery storage
+    - delta_forecast: 1 # days
+    - weather_forecast_method: "scrapper" # options are 'scrapper' and 'csv'
+    - load_forecast_method: "naive" # options are 'csv' to load a custom load forecast from a CSV file or 'naive' for a persistance model
+    - load_cost_forecast_method: "hp_hc_periods" # options are 'hp_hc_periods' for peak and non-peak hours contracts and 'csv' to load custom cost from CSV file
+    - list_hp_periods: # list of different tariff periods (only needed if load_cost_forecast_method='hp_hc_periods')
+      - period_hp_1:
+        - start: '02:54'
+        - end: '15:24'
+      - period_hp_2:
+        - start: '17:24'
+        - end: '20:24'
+    - load_cost_hp: 0.1907 # peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
+    - load_cost_hc: 0.1419 # non-peak hours load cost in €/kWh (only needed if load_cost_forecast_method='hp_hc_periods')
+    - prod_price_forecast_method: 'constant' # options are 'constant' for constant fixed value or 'csv' to load custom price forecast from a CSV file
+    - prod_sell_price: 0.065 # power production selling price in €/kWh (only needed if prod_price_forecast_method='constant')
+    - set_total_pv_sell: False # consider that all PV power is injected to the grid (self-consumption with total sell)
+    - lp_solver: 'PULP_CBC_CMD' # set the name of the linear programming solver that will be used
+    - lp_solver_path: 'empty' # set the path to the LP solver
+    - set_nocharge_from_grid: False # avoid battery charging from the grid
+    - set_nodischarge_to_grid: True # avoid battery discharging to the grid
+    - set_battery_dynamic: False # add a constraint to limit the dynamic of the battery power in power per time unit
+    - battery_dynamic_max: 0.9 # maximum dynamic positive power variation in percentage of battery maximum power
+    - battery_dynamic_min: -0.9 # minimum dynamic negative power variation in percentage of battery maximum power
+
+  plant_conf:
+    - P_grid_max: 9000 # The maximum power that can be supplied by the utility grid in Watts
+    - module_model: # The PV module model
+      - 'CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M'
+    - inverter_model: # The PV inverter model
+      - 'Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_'
+    - surface_tilt: # The tilt angle of your solar panels
+      - 30
+    - surface_azimuth: # The azimuth angle of your PV installation
+      - 205
+    - modules_per_string: # The number of modules per string
+      - 16
+    - strings_per_inverter: # The number of used strings per inverter
+      - 1
+    - Pd_max: 1000 # If your system has a battery (set_use_battery=True), the maximum discharge power in Watts
+    - Pc_max: 1000 # If your system has a battery (set_use_battery=True), the maximum charge power in Watts
+    - eta_disch: 0.95 # If your system has a battery (set_use_battery=True), the discharge efficiency
+    - eta_ch: 0.95 # If your system has a battery (set_use_battery=True), the charge efficiency
+    - Enom: 5000 # If your system has a battery (set_use_battery=True), the total capacity of the battery stack in Wh
+    - SOCmin: 0.3 # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
+    - SOCmax: 0.9 # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
+    - SOCtarget: 0.6 # If your system has a battery (set_use_battery=True), the desired battery state of charge at the end of each optimization cycle
