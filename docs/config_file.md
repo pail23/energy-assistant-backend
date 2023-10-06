@@ -48,6 +48,11 @@ This device type is extending the `homeassistant` device type by the ability to 
 - `manufacturer`: Manufacturer of the device.
 - `model`: Model of the device
 
+In case `manufacturer` or `model` is not defined, the following defaults are used:
+
+- Device is `on` if power is above 2 Watt
+- Device is `off` if power is 0 Watt for 10 seconds
+
 Energy Assistant is providing detection for the device types listed [here](device_models.md).
 
 ### stiebel-eltron
