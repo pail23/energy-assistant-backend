@@ -41,3 +41,19 @@ Please consult the user documentation for [Energy Assistant](https://pail23.gith
 
 [repository-badge]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
 [repository-url]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpail23%2Fenergy-assistant-addon
+
+## Local Development
+
+The easiest way to get started with development is to use Visual Studio Code with devcontainers. This approach will create a preconfigured development environment with all the tools you need. This approach is enabled for the Energy Assistant frontend and the Energy Assistant backend repository. [Learn more about devcontainers](https://code.visualstudio.com/docs/devcontainers/containers).
+
+Getting started:
+
+1. Go to [Energy Assistant backend](https://github.com/pail23/energy-assistant-backend) repository and click "fork".
+2. Clone the forked repository locally (git clone ...)
+3. Open the devcontainer in VSCode
+4. Copy `energy_assistan.yaml.dist` to `energy_assistan.yaml` and configure your setup (e.g. connection to Home Assistant)
+5. Press F5 to start Energy Assistant
+6. Go to [Energy Assistant frontend](https://github.com/pail23/energy-assistant-frontend) repository and click "fork".
+7. Clone the forked repository locally (git clone ...)
+8. Open the devcontainer in VSCode
+9. Enter `yarn install` and then `yarn dev` in the Terminal of VSCode
