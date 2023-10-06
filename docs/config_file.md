@@ -25,14 +25,14 @@ This is a list of the devices to monitored and managed by the Energy Assistant.
 - `store_sessions`: Needs to be set to true in case you want to log the sessions of the devie in the Session Log.
 - `energy_scale`: In case the device does provide the total energy in other units than kWh, this is the conversion factor (e.g. 0.001 in case the energy is provided in Wh.)
 
-### Evcc Device Type
+### `evcc` type
 
 This is a device (e.g. a charger) managed by Evcc. You need to configure a MQTT connection for the Evcc connect.
 
 - `evcc_topic`: The mqtt topic configured in the [Evcc MQTT Configuration](https://docs.evcc.io/docs/reference/configuration/mqtt).
 - `load_point_id`: The Evcc id of the load point (typically the ids are just numbers from 1..x)
 
-### homeassistant
+### `homeassistant` type
 
 This is a device managed by Home Assistant. Energy Assistant will display the current power consumption and provides different statistics on energy consumption like self sufficiency.
 
@@ -41,7 +41,7 @@ This is a device managed by Home Assistant. Energy Assistant will display the cu
 - `energy`: Home Assistant entity for the total energy meter of the device (in kWh). In case the device does not provide this entity, you can setup a integration helper in Home Assistant.
 - `energy_scale`: (optional) This value can be used to convert the energy meter value into kWh. Example: In case the value is provided in Wh in Home Assistant, set this value to 0.001
 
-### power-state-device type
+### `power-state-device` type
 
 This device type is extending the `homeassistant` device type by the ability to detect when the device is `on` or `off`. THis state information can then be used to log the sessions of the device (in case `store_sessions` is set to True). Example: You have a dish washer connected through a smart plug. This device type the detects if the dishwasher is running or not. You need to provide the same values as for the `homeassistant` device type. In addition there you can provide:
 
@@ -55,7 +55,7 @@ In case `manufacturer` or `model` is not defined, the following defaults are use
 
 Energy Assistant is providing detection for the device types listed [here](device_models.md).
 
-### stiebel-eltron
+### `stiebel-eltron` type
 
 This device type is used for Stiebel Eltron heat pumps. Often, you will configure two instances: One for heating, one for water heating.
 
