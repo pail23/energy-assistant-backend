@@ -25,13 +25,19 @@ By far the most convenient way to run the Energy Assistant is to install the Ene
 
 An alternative way to run the Energy Assistant is by running the docker image:
 
+Copy the `energy_assistant.yaml.dist` file to `energy_assistant.yaml` and modify it to match your setup and then start the docker container in the same folder.
+
 ```
 docker run --name em -p 8080:5000 -v "$(pwd)/energy_assistant.yaml:/config/energy_assistant.yaml" ghcr.io/pail23/energy-assistant-backend:latest
 ```
 
 ## Configure Energy Assistant
 
-Please find information on how to configure Energy Assistant [here](docs/config_file.md).
+Please find information on how to configure Energy Assistant [here](https://pail23.github.io/energy-assistant-backend/config_file.html).
+
+## User documentation
+
+Please consult the user documentation for [Energy Assistant](https://pail23.github.io/energy-assistant-backend/).
 
 [repository-badge]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
 [repository-url]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpail23%2Fenergy-assistant-addon
