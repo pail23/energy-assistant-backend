@@ -32,7 +32,35 @@ This is a device (e.g. a charger) managed by Evcc. You need to configure a MQTT 
 - `evcc_topic`: The mqtt topic configured in the [Evcc MQTT Configuration](https://docs.evcc.io/docs/reference/configuration/mqtt).
 - `load_point_id`: The Evcc id of the load point (typically the ids are just numbers from 1..x)
 
+### homeassistant
+
+This is a device managed by Home Assistant. Energy Assistant will display the current power consumption and provides different statistics on energy consumption like self sufficiency.
+
+- `icon`: mdi icon shown in the UI
+- `power`: Home Assistant entity for the current power consumtion of the device (in Watt)
+- `energy`: Home Assistant entity for the total energy meter of the device (in kWh). In case the device does not provide this entity, you can setup a integration helper in Home Assistant.
+- `energy_scale`: (optional) This value can be used to convert the energy meter value into kWh. Example: In case the value is provided in Wh in Home Assistant, set this value to 0.001
+
 ### power-state-device type
+
+This device type is extending the `homeassistant` device type by the ability to detect when the device is `on` or `off`. THis state information can then be used to log the sessions of the device (in case `store_sessions` is set to True). Example: You have a dish washer connected through a smart plug. This device type the detects if the dishwasher is running or not. You need to provide the same values as for the `homeassistant` device type. In addition there you can provide:
+
+- `manufacturer`: Manufacturer of the device.
+- `model`: Model of the device
+
+Energy Assistant is providing detection for the device types listed [here](device_models.md).
+
+### stiebel-eltron
+
+This device type is used for Stiebel Eltron heat pumps. Often, you will configure two instances: One for heating, one for water heating.
+
+- `state`: Home Assistant entity for the state of the device (`on` or `off`)
+- `energy_today`: Home Assistant entity for total energy used today
+- `energy_total`: Home Assistant entity for total energy used (before today)
+- `temperature`: Home Assistant entity for the current temperature
+- `comfort_target_temperature`: Home Assistant entity for the target temperature
+- `target_temperature_normal`: Target temperature for normal operation
+- `target_temperatrure_pv`: Target temperature for the case when enough PV power is available or the timeslot for the Optimized Energy consumption is now.
 
 ## Example:
 
