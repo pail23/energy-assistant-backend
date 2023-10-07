@@ -57,3 +57,6 @@ Getting started:
 7. Clone the forked repository locally (git clone ...)
 8. Open the devcontainer in VSCode
 9. Enter `yarn install` and then `yarn dev` in the Terminal of VSCode
+
+Usefull commands:
+`./scripts/install-client.sh` Install the client (Web UI) from Github in the `/client` folder in the container.
