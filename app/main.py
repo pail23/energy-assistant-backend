@@ -93,7 +93,10 @@ async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOpti
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     async_session = await get_async_session()
-    state_repository = StatesMultipleRepositories([hass, mqtt])
+    repositories = [hass]
+    if mqtt is not None:
+        repositories.append(mqtt)
+    state_repository = StatesMultipleRepositories(repositories)
     while True:
         await sio.sleep(30)
         # delta_t = datetime.now().timestamp()
