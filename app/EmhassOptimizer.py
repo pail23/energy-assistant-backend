@@ -213,8 +213,15 @@ class EmhassOptimizer(Optimizer):
 
         df_weather = fcst.get_weather_forecast(method=self._optim_conf['weather_forecast_method'])
         P_PV_forecast = fcst.get_power_from_weather(df_weather)
-        P_load_forecast = fcst.get_load_forecast(method=self._optim_conf['load_forecast_method'])
-        df_input_data_dayahead = pd.DataFrame(np.transpose(np.vstack([np.array(P_PV_forecast.values), np.array(P_load_forecast.values)])),
+        try:
+            P_load_forecast = fcst.get_load_forecast(method=self._optim_conf['load_forecast_method'])
+            P_load_forecast_values = np.array(P_load_forecast.values)
+        except Exception:
+            self._logger.warning("Forcasting the load failed, probably due to missing history data in Home Assistant.")
+            P_load_forecast = pd.DataFrame([10 for x in P_PV_forecast.values], index=P_PV_forecast.index)
+            P_load_forecast_values = np.array([10 for x in P_PV_forecast.values])
+
+        df_input_data_dayahead = pd.DataFrame(np.transpose(np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])),
                                             index=P_PV_forecast.index,
                                             columns=['P_PV_forecast', 'P_load_forecast'])
         df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)

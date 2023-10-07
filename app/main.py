@@ -420,7 +420,7 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
 
         # optimizer.dayahead_forecast_optim()
     except Exception:
-        logging.exception("Optimization failed")
+        logging.exception("Optimization of the power consumption forcast model failed, probably due to missing history data in Home Assistant.")
 
 def daily_optimize() -> None:
     """Optimze once a day."""
