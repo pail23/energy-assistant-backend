@@ -350,7 +350,7 @@ class EmhassOptimizer(Optimizer):
 
         params_dict: dict = json.loads(params)
         # Retrieve data from hass
-        days_to_retrieve = params_dict['passed_data']['days_to_retrieve']
+        days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
 
         days_list = utils.get_days_list(days_to_retrieve)
         var_list = [SENSOR_POWER_NO_VAR_LOADS]
