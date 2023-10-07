@@ -59,4 +59,7 @@ Getting started:
 9. Enter `yarn install` and then `yarn dev` in the Terminal of VSCode
 
 Usefull commands:
+
 `./scripts/install-client.sh` Install the client (Web UI) from Github in the `/client` folder in the container.
+`./scripts/lint.sh` run the linker to check the code quality.
+
