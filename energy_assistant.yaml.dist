@@ -47,7 +47,7 @@ emhass:
     - set_use_battery: False # consider a battery storage
     - delta_forecast: 1 # days
     - weather_forecast_method: "scrapper" # options are 'scrapper' and 'csv'
-    - load_forecast_method: "naive" # options are 'csv' to load a custom load forecast from a CSV file or 'naive' for a persistance model
+    - load_forecast_method: "mlforecaster" # options are 'csv' to load a custom load forecast from a CSV file or 'naive' for a persistance model
     - load_cost_forecast_method: "hp_hc_periods" # options are 'hp_hc_periods' for peak and non-peak hours contracts and 'csv' to load custom cost from CSV file
     - list_hp_periods: # list of different tariff periods (only needed if load_cost_forecast_method='hp_hc_periods')
       - period_hp_1:
