@@ -28,7 +28,7 @@ from .constants import ROOT_LOGGER_NAME
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
-SENSOR_POWER_NO_VAR_LOADS = "sensor.power_load_no_var_loads"
+SENSOR_POWER_NO_VAR_LOADS = "sensor.1power_load_no_var_loads"
 
 class EmhassOptimizer(Optimizer):
     """Optimizer based on Emhass."""
@@ -218,8 +218,9 @@ class EmhassOptimizer(Optimizer):
             P_load_forecast_values = np.array(P_load_forecast.values)
         except Exception:
             self._logger.warning("Forcasting the load failed, probably due to missing history data in Home Assistant.")
-            P_load_forecast = pd.DataFrame([10 for x in P_PV_forecast.values], index=P_PV_forecast.index)
-            P_load_forecast_values = np.array([10 for x in P_PV_forecast.values])
+            avg_non_var_power = self._no_var_loads.average()
+            P_load_forecast = pd.DataFrame([avg_non_var_power for x in P_PV_forecast.values], index=P_PV_forecast.index)
+            P_load_forecast_values = np.array([avg_non_var_power for x in P_PV_forecast.values])
 
         df_input_data_dayahead = pd.DataFrame(np.transpose(np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])),
                                             index=P_PV_forecast.index,

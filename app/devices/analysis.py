@@ -50,6 +50,13 @@ class DataBuffer:
             now = datetime.now(timezone.utc)
         return mean(self.get_data_for(timespan, now))
 
+    def average(self) -> float:
+        """Average of the data buffer."""
+        if len(self.data) > 0:
+            return mean([d.value for d in self.data])
+        else:
+            return 0.0
+
     def get_min_for(self, timespan: float, now: datetime | None = None) -> float:
         """Calculate the min over the last timespan seconds."""
         if now is None:
