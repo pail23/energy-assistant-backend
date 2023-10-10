@@ -204,6 +204,7 @@ class EmhassOptimizer(Optimizer):
         filename_path = self._data_folder / "load_forecast_mlf.pkl"
         if not filename_path.exists():
             self._optim_conf["load_forecast_method"] = "naive"
+            self._logger.warning("Falling back to the naive load forecaster.")
 
         # Treat runtimeparams
         params : str = ""
