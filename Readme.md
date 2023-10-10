@@ -62,5 +62,5 @@ Usefull commands:
 
 `./scripts/install-client.sh` Install the client (Web UI) from Github in the `/client` folder in the container.
 
-`./scripts/lint.sh` run the linker to check the code quality.
+`./scripts/lint.sh` run the linter to check the code quality.
 `./scripts/create-dev-db.sh` create a new database in the root folder of the project.
