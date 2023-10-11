@@ -23,7 +23,9 @@ class Device(Base):
 
     __tablename__ = "devices"
 
-    id : Mapped[uuid.UUID] = mapped_column("id", nullable=False, unique=True, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        "id", nullable=False, unique=True, primary_key=True
+    )
     name: Mapped[str]
     icon: Mapped[str]
     power_mode: Mapped[str]
@@ -43,7 +45,9 @@ class Device(Base):
     )
 
     @classmethod
-    async def read_all(cls, session: AsyncSession, include_device_measurements: bool = False) -> AsyncIterator[Device]:
+    async def read_all(
+        cls, session: AsyncSession, include_device_measurements: bool = False
+    ) -> AsyncIterator[Device]:
         """Read all devices."""
         stmt = select(cls)
         if include_device_measurements:
@@ -54,7 +58,10 @@ class Device(Base):
 
     @classmethod
     async def read_by_id(
-        cls, session: AsyncSession, id: uuid.UUID, include_device_measurements: bool = False
+        cls,
+        session: AsyncSession,
+        id: uuid.UUID,
+        include_device_measurements: bool = False,
     ) -> Device | None:
         """Read a device by id."""
         stmt = select(cls).where(cls.id == id)
@@ -62,21 +69,19 @@ class Device(Base):
             stmt = stmt.options(selectinload(cls.device_measurements))
         return await session.scalar(stmt.order_by(cls.id))
 
-
     @classmethod
-    async def create(cls, session: AsyncSession, id: uuid.UUID, name: str, icon: str, power_mode: str) -> Device:
+    async def create(
+        cls, session: AsyncSession, id: uuid.UUID, name: str, icon: str, power_mode: str
+    ) -> Device:
         """Create a device."""
-        device = Device(
-            id = id,
-            name=name,
-            icon = icon,
-            power_mode = power_mode
-        )
+        device = Device(id=id, name=name, icon=icon, power_mode=power_mode)
         session.add(device)
         await session.flush()
         return device
 
-    async def update(self, session: AsyncSession, name: str, icon: str, power_mode: str) -> None:
+    async def update(
+        self, session: AsyncSession, name: str, icon: str, power_mode: str
+    ) -> None:
         """Update a device."""
         self.name = name
         self.icon = icon
@@ -90,15 +95,14 @@ class Device(Base):
         await session.flush()
 
 
-
-
 class DeviceMeasurement(Base):
     """Data model for a measurement."""
 
     __tablename__ = "DeviceMeasurement"
 
     id: Mapped[int] = mapped_column(
-        "id", autoincrement=True, nullable=False, unique=True, primary_key=True)
+        "id", autoincrement=True, nullable=False, unique=True, primary_key=True
+    )
     consumed_energy: Mapped[float]
     solar_consumed_energy: Mapped[float]
 
@@ -107,15 +111,16 @@ class DeviceMeasurement(Base):
     )
 
     home_measurement: Mapped[HomeMeasurement] = relationship(
-        "HomeMeasurement", back_populates="device_measurements")
-
+        "HomeMeasurement", back_populates="device_measurements"
+    )
 
     device_id: Mapped[uuid.UUID] = mapped_column(
         "device_id", ForeignKey("devices.id"), nullable=False
     )
 
     device: Mapped[Device] = relationship(
-        "Device", back_populates="device_measurements")
+        "Device", back_populates="device_measurements"
+    )
 
     @hybrid_property
     def measurement_date(self) -> datetime.date:
@@ -125,32 +130,43 @@ class DeviceMeasurement(Base):
     @classmethod
     async def read_all(cls, session: AsyncSession) -> AsyncIterator[DeviceMeasurement]:
         """Read all device measurements."""
-        stmt = select(cls).options(joinedload(
-            cls.home_measurement, innerjoin=True))
+        stmt = select(cls).options(joinedload(cls.home_measurement, innerjoin=True))
         stream = await session.stream_scalars(stmt.order_by(cls.id))
         async for row in stream:
             yield row
 
     @classmethod
     async def read_by_id(
-            cls, session: AsyncSession, measurement_id: int) -> DeviceMeasurement | None:
+        cls, session: AsyncSession, measurement_id: int
+    ) -> DeviceMeasurement | None:
         """Read a device measurements by id."""
-        stmt = select(cls).where(cls.id == measurement_id).options(
-            joinedload(cls.home_measurement))
+        stmt = (
+            select(cls)
+            .where(cls.id == measurement_id)
+            .options(joinedload(cls.home_measurement))
+        )
         return await session.scalar(stmt.order_by(cls.id))
 
     @classmethod
     async def read_by_device_id(
-            cls, session: AsyncSession,  device_id: uuid.UUID) -> AsyncIterator[DeviceMeasurement]:
+        cls, session: AsyncSession, device_id: uuid.UUID
+    ) -> AsyncIterator[DeviceMeasurement]:
         """Read a device measurements by id."""
-        stmt = select(cls).where(cls.device_id == device_id).options(
-            joinedload(cls.home_measurement))
-        stream = await session.stream_scalars(stmt.order_by(text("HomeMeasurement_1.date DESC")))
+        stmt = (
+            select(cls)
+            .where(cls.device_id == device_id)
+            .options(joinedload(cls.home_measurement))
+        )
+        stream = await session.stream_scalars(
+            stmt.order_by(text("HomeMeasurement_1.date DESC"))
+        )
         async for row in stream:
             yield row
 
     @classmethod
-    async def read_by_ids(cls, session: AsyncSession, measurement_ids: list[int]) -> AsyncIterator[DeviceMeasurement]:
+    async def read_by_ids(
+        cls, session: AsyncSession, measurement_ids: list[int]
+    ) -> AsyncIterator[DeviceMeasurement]:
         """Read the device measurements by within a set of ids."""
         stmt = (
             select(cls)
@@ -162,14 +178,21 @@ class DeviceMeasurement(Base):
             yield row
 
     @classmethod
-    async def create(cls, session: AsyncSession, home_measurement: HomeMeasurement, solar_consumed_energy: float, consumed_energy: float, device: Device) -> DeviceMeasurement:
+    async def create(
+        cls,
+        session: AsyncSession,
+        home_measurement: HomeMeasurement,
+        solar_consumed_energy: float,
+        consumed_energy: float,
+        device: Device,
+    ) -> DeviceMeasurement:
         """Create a device measurement."""
 
         measurement = DeviceMeasurement(
             home_measurement_id=home_measurement.id,
             solar_consumed_energy=solar_consumed_energy,
             consumed_energy=consumed_energy,
-            device_id = device.id
+            device_id=device.id,
         )
         session.add(measurement)
         await session.flush()
@@ -179,7 +202,14 @@ class DeviceMeasurement(Base):
             raise RuntimeError()
         return new
 
-    async def update(self, session: AsyncSession, home_measurement: HomeMeasurement, solar_consumed_energy: float, consumed_energy: float, device: Device) -> None:
+    async def update(
+        self,
+        session: AsyncSession,
+        home_measurement: HomeMeasurement,
+        solar_consumed_energy: float,
+        consumed_energy: float,
+        device: Device,
+    ) -> None:
         """Update a device measurement."""
 
         self.home_measurement_id = home_measurement.id
@@ -190,7 +220,9 @@ class DeviceMeasurement(Base):
         await session.flush()
 
     @classmethod
-    async def delete(cls, session: AsyncSession, measurement: DeviceMeasurement) -> None:
+    async def delete(
+        cls, session: AsyncSession, measurement: DeviceMeasurement
+    ) -> None:
         """Delete a device measurement."""
         await session.delete(measurement)
         await session.flush()

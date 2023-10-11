@@ -10,6 +10,7 @@ class ForecastSerieSchema(BaseModel):
     name: str
     data: list[float]
 
+
 class ForecastSchema(BaseModel):
     """Schema for the forecast."""
 

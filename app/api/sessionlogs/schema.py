@@ -11,12 +11,13 @@ class SessionLogEntrySchema(BaseModel):
 
     start: datetime
     end: datetime
-    text:str
+    text: str
     device_id: uuid.UUID
     solar_consumed_energy: float
     consumed_energy: float
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class ReadAllSessionLogEntriesResponse(BaseModel):
     """API Response for reading session log entries."""

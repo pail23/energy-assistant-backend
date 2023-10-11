@@ -61,7 +61,13 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
-async def async_handle_state_update(home: Home, state_repository: StatesRepository, optimizer: EmhassOptimizer | None, db: Database, session: AsyncSession) -> None:
+async def async_handle_state_update(
+    home: Home,
+    state_repository: StatesRepository,
+    optimizer: EmhassOptimizer | None,
+    db: Database,
+    session: AsyncSession,
+) -> None:
     """Read the values from home assistant and process the update."""
     try:
         state_repository.read_states()
@@ -70,26 +76,32 @@ async def async_handle_state_update(home: Home, state_repository: StatesReposito
             await home.update_power_consumption(state_repository, optimizer)
             optimizer.update_repository_states(home, state_repository)
         else:
-            logging.error(
-                "The variable optimizer is None in async_handle_state_update")
+            logging.error("The variable optimizer is None in async_handle_state_update")
         state_repository.write_states()
         # print("Send refresh: " + get_home_message(home))
         if db:
             if home:
-                await asyncio.gather(sio.emit('refresh', {'data': get_home_message(home)}), db.store_home_state(home, session))
+                await asyncio.gather(
+                    sio.emit("refresh", {"data": get_home_message(home)}),
+                    db.store_home_state(home, session),
+                )
             else:
-                logging.error(
-                    "The variable home is None in async_handle_state_update")
+                logging.error("The variable home is None in async_handle_state_update")
         else:
-            logging.error(
-                "The variable db is None in async_handle_state_update")
+            logging.error("The variable db is None in async_handle_state_update")
         if optimizer is not None and home is not None:
             optimizer.update_devices(home)
     except Exception:
         logging.exception("error during sending refresh")
 
 
-async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOptimizer | None, mqtt: MqttConnection, db: Database) -> None:
+async def background_task(
+    home: Home,
+    hass: Homeassistant,
+    optimizer: EmhassOptimizer | None,
+    mqtt: MqttConnection,
+    db: Database,
+) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     async_session = await get_async_session()
@@ -107,7 +119,9 @@ async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOpti
                 home.store_energy_snapshot()
             last_update = today
             async with async_session() as session:
-                await async_handle_state_update(home, state_repository, optimizer, db, session)
+                await async_handle_state_update(
+                    home, state_repository, optimizer, db, session
+                )
         except Exception:
             logging.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
@@ -115,16 +129,23 @@ async def background_task(home: Home, hass: Homeassistant, optimizer: EmhassOpti
 
 def get_self_sufficiency(consumed_solar_energy: float, consumed_energy: float) -> float:
     """Calulate the self sufficiency value."""
-    return min(round(consumed_solar_energy / consumed_energy * 100) if consumed_energy > 0 else 0.0, 100)
+    return min(
+        round(consumed_solar_energy / consumed_energy * 100)
+        if consumed_energy > 0
+        else 0.0,
+        100,
+    )
 
 
 def get_device_message(device: Device) -> dict:
     """Generate the update data message for a device."""
     if device.energy_snapshot is not None:
-        consumed_energy_today = device.consumed_energy - \
-            device.energy_snapshot.consumed_energy
-        consumed_solar_energy_today = device.consumed_solar_energy - \
-            device.energy_snapshot.consumed_solar_energy
+        consumed_energy_today = (
+            device.consumed_energy - device.energy_snapshot.consumed_energy
+        )
+        consumed_solar_energy_today = (
+            device.consumed_solar_energy - device.energy_snapshot.consumed_solar_energy
+        )
     else:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
@@ -134,9 +155,11 @@ def get_device_message(device: Device) -> dict:
         "power": device.power,
         "available": device.available,
         "today": {
-            "consumed_solar_energy":  consumed_solar_energy_today,
+            "consumed_solar_energy": consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
-            "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
+            "self_sufficiency": get_self_sufficiency(
+                consumed_solar_energy_today, consumed_energy_today
+            ),
         },
     }
     result["attributes"] = device.attributes
@@ -147,10 +170,12 @@ def get_home_message(home: Home) -> str:
     """Generate the update data message for a home."""
     devices_messages = []
     if home.energy_snapshop is not None:
-        consumed_energy_today = home.consumed_energy - \
-            home.energy_snapshop.consumed_energy
-        consumed_solar_energy_today = home.consumed_solar_energy - \
-            home.energy_snapshop.consumed_solar_energy
+        consumed_energy_today = (
+            home.consumed_energy - home.energy_snapshop.consumed_energy
+        )
+        consumed_solar_energy_today = (
+            home.consumed_solar_energy - home.energy_snapshop.consumed_solar_energy
+        )
     else:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
@@ -162,10 +187,13 @@ def get_home_message(home: Home) -> str:
         device_message = get_device_message(device)
         devices_messages.append(device_message)
         other_power = other_power - device.power
-        other_consumed_energy = other_consumed_energy - \
-            device_message["today"]["consumed_energy"]
-        other_consumed_solar_energy = other_consumed_solar_energy - \
-            device_message["today"]["consumed_solar_energy"]
+        other_consumed_energy = (
+            other_consumed_energy - device_message["today"]["consumed_energy"]
+        )
+        other_consumed_solar_energy = (
+            other_consumed_solar_energy
+            - device_message["today"]["consumed_solar_energy"]
+        )
 
     other_device = {
         "device_id": str(OTHER_DEVICE),
@@ -173,9 +201,11 @@ def get_home_message(home: Home) -> str:
         "power": other_power,
         "available": True,
         "today": {
-            "consumed_solar_energy":  other_consumed_solar_energy,
+            "consumed_solar_energy": other_consumed_solar_energy,
             "consumed_energy": other_consumed_energy,
-            "self_sufficiency": get_self_sufficiency(other_consumed_solar_energy, other_consumed_energy)
+            "self_sufficiency": get_self_sufficiency(
+                other_consumed_solar_energy, other_consumed_energy
+            ),
         },
     }
     devices_messages.append(other_device)
@@ -187,14 +217,16 @@ def get_home_message(home: Home) -> str:
             "grid_supply": home.grid_imported_power,
             "solar_self_consumption": home.solar_self_consumption_power,
             "home_consumption": home.home_consumption_power,
-            "self_sufficiency": round(home.self_sufficiency * 100)
+            "self_sufficiency": round(home.self_sufficiency * 100),
         },
         "today": {
-            "consumed_solar_energy":  consumed_solar_energy_today,
+            "consumed_solar_energy": consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
-            "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today)
+            "self_sufficiency": get_self_sufficiency(
+                consumed_solar_energy_today, consumed_energy_today
+            ),
         },
-        "devices": devices_messages
+        "devices": devices_messages,
     }
     return json.dumps(home_message)
 
@@ -203,7 +235,7 @@ def get_home_message(home: Home) -> str:
 async def connect(sid, environ):
     """Handle the connect of a client via socket.io to the server."""
     logging.info(f"connect {sid}")
-    await sio.emit('refresh', {'data': get_home_message(app.home)}, room=sid)
+    await sio.emit("refresh", {"data": get_home_message(app.home)}, room=sid)
 
 
 @app.sio.event  # type: ignore
@@ -221,10 +253,13 @@ def create_mqtt_connection(config: dict) -> MqttConnection | None:
         mqtt_username = mqtt_config.get("username")
         mqtt_password = mqtt_config.get("password")
         mqtt_topic = mqtt_config.get("topic")
-        mqtt_connection = MqttConnection(mqtt_host, mqtt_username, mqtt_password, mqtt_topic)
+        mqtt_connection = MqttConnection(
+            mqtt_host, mqtt_username, mqtt_password, mqtt_topic
+        )
         mqtt_connection.connect()
         return mqtt_connection
     return None
+
 
 def subscribe_mqtt_topics(mqtt_connection: MqttConnection, home: Home) -> None:
     """Subscribe the mqtt based devices on the mqtt connection."""
@@ -236,10 +271,10 @@ def subscribe_mqtt_topics(mqtt_connection: MqttConnection, home: Home) -> None:
 
 def create_hass_connection(config: dict) -> Homeassistant | None:
     """Create a connection to home assistant."""
-    token : str | None = None
+    token: str | None = None
     url: str | None = None
     try:
-        token = os.getenv('SUPERVISOR_TOKEN')
+        token = os.getenv("SUPERVISOR_TOKEN")
         if token is not None:
             logging.info(f"suvervisor token detected. len={len(token)}")
             url = "http://supervisor/core"
@@ -248,15 +283,18 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
                 "Authorization": f"Bearer {token}",
                 "content-type": "application/json",
             }
-            response = requests.get(
-                f"{url}/api/states", headers=headers)
-            logging.info(f"pinging homeassistant api succeeeded. Status code = {response.status_code}")
+            response = requests.get(f"{url}/api/states", headers=headers)
+            logging.info(
+                f"pinging homeassistant api succeeeded. Status code = {response.status_code}"
+            )
             if response.ok:
                 logging.info(f"Using {url} to connect")
                 hass = Homeassistant(url, token, False)
                 return hass
     except Exception:
-        logging.exception("Error while trying to connect to the homeassistant supervisor api")
+        logging.exception(
+            "Error while trying to connect to the homeassistant supervisor api"
+        )
         url = None
         token = None
 
@@ -271,11 +309,12 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
     return None
 
 
-
 def setup_logger(log_filename: str, level: str = "DEBUG") -> logging.Logger:
     """Initialize logger."""
     # define log formatter
-    log_fmt = "%(asctime)s.%(msecs)03d %(levelname)s (%(threadName)s) [%(name)s] %(message)s"
+    log_fmt = (
+        "%(asctime)s.%(msecs)03d %(levelname)s (%(threadName)s) [%(name)s] %(message)s"
+    )
 
     # base logging config for the root logger
     logging.basicConfig(level=logging.INFO)
@@ -302,8 +341,10 @@ def setup_logger(log_filename: str, level: str = "DEBUG") -> logging.Logger:
     logging.captureWarnings(True)
 
     # setup file handler
-    #log_filename = os.path.join(data_path, "energy_assistant.log")
-    file_handler = RotatingFileHandler(log_filename, maxBytes=MAX_LOG_FILESIZE, backupCount=1)
+    # log_filename = os.path.join(data_path, "energy_assistant.log")
+    file_handler = RotatingFileHandler(
+        log_filename, maxBytes=MAX_LOG_FILESIZE, backupCount=1
+    )
     # rotate log at each start
     with suppress(OSError):
         file_handler.doRollover()
@@ -342,9 +383,9 @@ async def init_app() -> None:
     """Initialize the application."""
     app.home = None  # type: ignore
     app.hass = None  # type: ignore
-    app.mqtt = None # type: ignore
+    app.mqtt = None  # type: ignore
     app.db = None  # type: ignore
-    app.optimizer = None # type: ignore
+    app.optimizer = None  # type: ignore
 
     hass_options_file = "/data/options.json"
     if os.path.isfile(hass_options_file):
@@ -363,7 +404,6 @@ async def init_app() -> None:
 
     for option in hass_options:
         logging.info(f"{option}={hass_options[option]}")
-
 
     async_session = await get_async_session()
     db = Database()
@@ -389,8 +429,8 @@ async def init_app() -> None:
                 if hass is not None:
                     hass.read_states()
 
-                mqtt_connection : MqttConnection | None = create_mqtt_connection(config)
-                app.mqtt = mqtt_connection # type: ignore
+                mqtt_connection: MqttConnection | None = create_mqtt_connection(config)
+                app.mqtt = mqtt_connection  # type: ignore
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
@@ -398,7 +438,7 @@ async def init_app() -> None:
                     app.home = home  # type: ignore
                     if mqtt_connection is not None:
                         subscribe_mqtt_topics(mqtt_connection, home)
-                    app.optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass) # type: ignore
+                    app.optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass)  # type: ignore
 
                     async with async_session() as session:
                         await db.update_devices(home, session)
@@ -407,7 +447,7 @@ async def init_app() -> None:
                 else:
                     logger.error(f"home not found in config file: {config}")
                 logger.info("Initialization completed")
-    except Exception :
+    except Exception:
         logger.exception("Initialization of the app failed")
 
 
@@ -416,22 +456,24 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
     try:
         # optimizer.perfect_forecast_optim("profit", False)
         optimizer.forecast_model_fit()
-       # optimizer.forecast_model_predict()
+    # optimizer.forecast_model_predict()
 
-        # optimizer.dayahead_forecast_optim()
+    # optimizer.dayahead_forecast_optim()
     except Exception:
-        logging.exception("Optimization of the power consumption forcast model failed, probably due to missing history data in Home Assistant.")
+        logging.exception(
+            "Optimization of the power consumption forcast model failed, probably due to missing history data in Home Assistant."
+        )
+
 
 def daily_optimize() -> None:
     """Optimze once a day."""
     try:
-        optimizer = app.optimizer # type: ignore
+        optimizer = app.optimizer  # type: ignore
         if optimizer is not None:
             logging.info("Start optimizer run")
             optimizer.dayahead_forecast_optim()
-    except Exception :
+    except Exception:
         logging.exception("Daily optimization run failed")
-
 
 
 @app.on_event("startup")
@@ -439,13 +481,15 @@ async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
     sio.start_background_task(
-        background_task, app.home, app.hass, app.optimizer, app.mqtt, app.db)  # type: ignore
-    sio.start_background_task(optimize, app.optimizer) # type: ignore
+        background_task, app.home, app.hass, app.optimizer, app.mqtt, app.db
+    )  # type: ignore
+    sio.start_background_task(optimize, app.optimizer)  # type: ignore
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(daily_optimize, trigger='cron', hour='3', minute='0') # time is UTC
+    scheduler.add_job(
+        daily_optimize, trigger="cron", hour="3", minute="0"
+    )  # time is UTC
     scheduler.start()
-
 
 
 @app.on_event("shutdown")
@@ -454,17 +498,17 @@ async def shutdown_event() -> None:
     print("Shutdown app")
 
 
-
 @app.get("/check", include_in_schema=False)
 async def health() -> JSONResponse:
     """Test the web server with a ping."""
     return JSONResponse({"message": "It worked!!"})
 
+
 # This needs to be the last mount
 app.mount("/", StaticFiles(directory="client", html=True), name="frontend")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=5000)
