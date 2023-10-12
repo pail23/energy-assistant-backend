@@ -15,6 +15,7 @@ from .base import Base
 if TYPE_CHECKING:
     from .device import DeviceMeasurement
 
+
 class HomeMeasurement(Base):
     """Data model for a measurement."""
 
@@ -37,18 +38,25 @@ class HomeMeasurement(Base):
     )
 
     @classmethod
-    async def read_all(cls, session: AsyncSession, include_device_measurements: bool) -> AsyncIterator[HomeMeasurement]:
+    async def read_all(
+        cls, session: AsyncSession, include_device_measurements: bool
+    ) -> AsyncIterator[HomeMeasurement]:
         """Read all home measurements."""
         stmt = select(cls)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        stream = await session.stream_scalars(stmt.order_by(cls.measurement_date.desc()))
+        stream = await session.stream_scalars(
+            stmt.order_by(cls.measurement_date.desc())
+        )
         async for row in stream:
             yield row
 
     @classmethod
     async def read_by_id(
-        cls, session: AsyncSession, HomeMeasurement_id: int, include_device_measurements: bool = False
+        cls,
+        session: AsyncSession,
+        HomeMeasurement_id: int,
+        include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read a home measurements by id."""
         stmt = select(cls).where(cls.id == HomeMeasurement_id)
@@ -58,7 +66,8 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_first(
-            cls, session: AsyncSession, include_device_measurements: bool = False) -> HomeMeasurement | None:
+        cls, session: AsyncSession, include_device_measurements: bool = False
+    ) -> HomeMeasurement | None:
         """Read last home measurement by date."""
         stmt = select(cls)
         if include_device_measurements:
@@ -67,7 +76,8 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_last(
-            cls, session: AsyncSession, include_device_measurements: bool = False) -> HomeMeasurement | None:
+        cls, session: AsyncSession, include_device_measurements: bool = False
+    ) -> HomeMeasurement | None:
         """Read last home measurement."""
         stmt = select(cls)
         if include_device_measurements:
@@ -76,42 +86,63 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_by_date(
-            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> HomeMeasurement | None:
+        cls,
+        session: AsyncSession,
+        measurement_date: date,
+        include_device_measurements: bool = False,
+    ) -> HomeMeasurement | None:
         """Read last home measurement by date."""
-        stmt = select(cls).where(
-            cls.measurement_date==measurement_date)
+        stmt = select(cls).where(cls.measurement_date == measurement_date)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
         return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
     @classmethod
     async def read_between_dates(
-            cls, session: AsyncSession, from_date: date, to_date:date, include_device_measurements: bool = False) -> AsyncIterator[HomeMeasurement]:
+        cls,
+        session: AsyncSession,
+        from_date: date,
+        to_date: date,
+        include_device_measurements: bool = False,
+    ) -> AsyncIterator[HomeMeasurement]:
         """Read last home measurement by date."""
-        stmt = select(cls).where(
-            cls.measurement_date>=from_date).where(cls.measurement_date <=to_date)
+        stmt = (
+            select(cls)
+            .where(cls.measurement_date >= from_date)
+            .where(cls.measurement_date <= to_date)
+        )
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
         stream = await session.stream_scalars(stmt.order_by(cls.measurement_date))
         async for row in stream:
             yield row
 
-
-
     @classmethod
     async def read_before_date(
-            cls, session: AsyncSession, measurement_date: date, include_device_measurements: bool = False) -> HomeMeasurement | None:
+        cls,
+        session: AsyncSession,
+        measurement_date: date,
+        include_device_measurements: bool = False,
+    ) -> HomeMeasurement | None:
         """Read last home measurement by date."""
-        stmt = select(cls).where(
-            cls.measurement_date<measurement_date)
+        stmt = select(cls).where(cls.measurement_date < measurement_date)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
         return await session.scalar(stmt.order_by(cls.measurement_date.desc()).limit(1))
 
-
-
     @classmethod
-    async def create(cls, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, measurement_date: date, device_measurements: list[DeviceMeasurement]) -> HomeMeasurement:
+    async def create(
+        cls,
+        session: AsyncSession,
+        name: str,
+        solar_consumed_energy: float,
+        consumed_energy: float,
+        solar_produced_energy: float,
+        grid_imported_energy: float,
+        grid_exported_energy: float,
+        measurement_date: date,
+        device_measurements: list[DeviceMeasurement],
+    ) -> HomeMeasurement:
         """Create a home measurement."""
         home_measurement = HomeMeasurement(
             name=name,
@@ -121,17 +152,29 @@ class HomeMeasurement(Base):
             grid_imported_energy=grid_imported_energy,
             grid_exported_energy=grid_exported_energy,
             measurement_date=measurement_date,
-            device_measurements=device_measurements
+            device_measurements=device_measurements,
         )
         session.add(home_measurement)
         await session.flush()
         # To fetch device measurements
-        new = await cls.read_by_id(session, home_measurement.id, include_device_measurements=True)
+        new = await cls.read_by_id(
+            session, home_measurement.id, include_device_measurements=True
+        )
         if not new:
             raise RuntimeError()
         return new
 
-    async def update(self, session: AsyncSession, name: str, solar_consumed_energy: float, consumed_energy: float, solar_produced_energy: float, grid_imported_energy: float, grid_exported_energy: float, measurement_date: date) -> None:
+    async def update(
+        self,
+        session: AsyncSession,
+        name: str,
+        solar_consumed_energy: float,
+        consumed_energy: float,
+        solar_produced_energy: float,
+        grid_imported_energy: float,
+        grid_exported_energy: float,
+        measurement_date: date,
+    ) -> None:
         """Update a home measurement."""
         self.name = name
         self.solar_consumed_energy = solar_consumed_energy
@@ -144,12 +187,14 @@ class HomeMeasurement(Base):
         await session.flush()
 
     @classmethod
-    async def delete(cls, session: AsyncSession, HomeMeasurement: HomeMeasurement) -> None:
+    async def delete(
+        cls, session: AsyncSession, HomeMeasurement: HomeMeasurement
+    ) -> None:
         """Delete a home measurement."""
         await session.delete(HomeMeasurement)
         await session.flush()
 
-    def get_device_measurement(self, device_id:uuid.UUID) -> DeviceMeasurement | None:
+    def get_device_measurement(self, device_id: uuid.UUID) -> DeviceMeasurement | None:
         """Find the device measurement of the device with the given id."""
         for device_measurement in self.device_measurements:
             if device_measurement.device_id == device_id:

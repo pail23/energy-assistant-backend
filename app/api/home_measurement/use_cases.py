@@ -19,7 +19,9 @@ class ReadAllHomeMeasurement:
     async def execute(self) -> AsyncIterator[HomeMeasurementSchema]:
         """Execute the read all home measurements use case."""
         async with self.async_session() as session:
-            async for home_measurement in HomeMeasurement.read_all(session, include_device_measurements=True):
+            async for home_measurement in HomeMeasurement.read_all(
+                session, include_device_measurements=True
+            ):
                 yield HomeMeasurementSchema.model_validate(home_measurement)
 
 
@@ -33,7 +35,9 @@ class ReadHomeMeasurement:
     async def execute(self, home_measurement_id: int) -> HomeMeasurementSchema:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
-            home_measurement = await HomeMeasurement.read_by_id(session, home_measurement_id, include_device_measurements=True)
+            home_measurement = await HomeMeasurement.read_by_id(
+                session, home_measurement_id, include_device_measurements=True
+            )
             if not home_measurement:
                 raise HTTPException(status_code=404)
             return HomeMeasurementSchema.model_validate(home_measurement)
@@ -49,10 +53,13 @@ class ReadHomeMeasurementByDate:
     async def execute(self, measurement_date: date) -> HomeMeasurementSchema:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
-            home_measurement = await HomeMeasurement.read_by_date(session, measurement_date, include_device_measurements=True)
+            home_measurement = await HomeMeasurement.read_by_date(
+                session, measurement_date, include_device_measurements=True
+            )
             if not home_measurement:
                 raise HTTPException(status_code=404)
             return HomeMeasurementSchema.model_validate(home_measurement)
+
 
 class ReadHomeMeasurementLastBeforeDate:
     """Read the last home measurement before a date use case."""
@@ -64,10 +71,13 @@ class ReadHomeMeasurementLastBeforeDate:
     async def execute(self, measurement_date: date) -> HomeMeasurementSchema:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
-            home_measurement = await HomeMeasurement.read_before_date(session, measurement_date, include_device_measurements=True)
+            home_measurement = await HomeMeasurement.read_before_date(
+                session, measurement_date, include_device_measurements=True
+            )
             if not home_measurement:
                 raise HTTPException(status_code=404)
             return HomeMeasurementSchema.model_validate(home_measurement)
+
 
 class DeleteHomeMeasurement:
     """Delete a home measurement use case."""
@@ -79,7 +89,9 @@ class DeleteHomeMeasurement:
     async def execute(self, home_heasurement_id: int) -> None:
         """Execute the delete a home measurement use case."""
         async with self.async_session.begin() as session:
-            home_measurement = await HomeMeasurement.read_by_id(session, home_heasurement_id)
+            home_measurement = await HomeMeasurement.read_by_id(
+                session, home_heasurement_id
+            )
             if not home_measurement:
                 return
             await HomeMeasurement.delete(session, home_measurement)

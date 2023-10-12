@@ -25,10 +25,11 @@ class DeviceSchema(BaseModel):
     id: uuid.UUID
     name: str
     icon: str
-    supported_power_modes:  list[str] | None = None
+    supported_power_modes: list[str] | None = None
     power_mode: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class HomeMeasurementSchema(BaseModel):
     """Schema class for a home measurement."""

@@ -29,7 +29,7 @@ AsyncSessionLocal = async_sessionmaker(
 async def create_all() -> None:
     """Create all tables in the database."""
     async with async_engine.begin() as conn:
-       await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
 
 
 async def get_session() -> AsyncIterator[async_sessionmaker]:
