@@ -9,6 +9,7 @@ home:
   solar_power: sensor.solaredge_i1_ac_power
   solar_energy: sensor.solaredge_i1_ac_energy_kwh
   grid_supply_power: sensor.solaredge_m1_ac_power
+  grid_inverted: False
   imported_energy: sensor.solaredge_m1_imported_kwh
   exported_energy: sensor.solaredge_m1_exported_kwh
   devices:
