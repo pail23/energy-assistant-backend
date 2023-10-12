@@ -216,7 +216,7 @@ class Home:
     async def update_power_consumption(
         self, state_repository: StatesRepository, optimizer: Optimizer
     ) -> None:
-        """ "Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availablity."""
         if not self._disable_device_control:
             for device in self.devices:
                 await device.update_power_consumption(
