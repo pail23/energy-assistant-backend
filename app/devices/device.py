@@ -109,7 +109,7 @@ class Device(ABC):
         optimizer: Optimizer,
         grid_exported_power: float,
     ) -> None:
-        """ "Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availablity."""
         pass
 
     @abstractmethod

@@ -94,7 +94,7 @@ class EvccDevice(Device, DeviceWithState):
         optimizer: Optimizer,
         grid_exported_power: float,
     ) -> None:
-        """ "Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availablity."""
         new_state = ""
         if self.power_mode == PowerModes.OFF:
             new_state = "off"

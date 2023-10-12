@@ -101,7 +101,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
         optimizer: Optimizer,
         grid_exported_power: float,
     ) -> None:
-        """ "Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availablity."""
         self.grid_exported_power_data.add_data_point(grid_exported_power)
         if (
             self._target_temperature_normal is not None
