@@ -33,6 +33,7 @@ pulp
 
 # local dev packages
 ruff
+black
 mypy>=0.930
 mypy-extensions==1.0.0
 typing_extensions==4.8.0
