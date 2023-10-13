@@ -63,25 +63,15 @@ class EvccDevice(Device, DeviceWithState):
         self._consumed_energy = state_repository.get_state(
             self.get_device_topic_id("chargeTotalImport")
         )
-        self._consumed_solar_energy.add_measurement(
-            self.consumed_energy, self_sufficiency
-        )
-        self._power = state_repository.get_state(
-            self.get_device_topic_id("chargePower")
-        )
+        self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
+        self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
         self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
-        self._vehicle_soc = state_repository.get_state(
-            self.get_device_topic_id("vehicleSoc")
-        )
+        self._vehicle_soc = state_repository.get_state(self.get_device_topic_id("vehicleSoc"))
         self._vehicle_capacity = state_repository.get_state(
             self.get_device_topic_id("vehicleCapacity")
         )
-        self._max_current = state_repository.get_state(
-            self.get_device_topic_id("maxCurrent")
-        )
-        self._is_connected = state_repository.get_state(
-            self.get_device_topic_id("connected")
-        )
+        self._max_current = state_repository.get_state(self.get_device_topic_id("maxCurrent"))
+        self._is_connected = state_repository.get_state(self.get_device_topic_id("connected"))
 
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
@@ -155,9 +145,7 @@ class EvccDevice(Device, DeviceWithState):
         """Check if the device is available."""
         return True
 
-    def restore_state(
-        self, consumed_solar_energy: float, consumed_energy: float
-    ) -> None:
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore the previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
         self._consumed_energy = State(
@@ -185,9 +173,7 @@ class EvccDevice(Device, DeviceWithState):
             power: float = (
                 self._max_current.numeric_value * 230
             )  # TODO: Multiply with active phases
-            remainingEnergy = (
-                (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
-            )
+            remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
             if remainingEnergy > 0:
                 return DeferrableLoadInfo(
                     device_id=self.id,

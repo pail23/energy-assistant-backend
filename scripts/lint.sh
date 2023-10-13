@@ -5,4 +5,5 @@ set -e
 cd "$(dirname "$0")/.."
 
 ruff check . --fix
+black .
 mypy app --ignore-missing-imports

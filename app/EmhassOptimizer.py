@@ -92,9 +92,7 @@ class EmhassOptimizer(Optimizer):
         self._pv: DataBuffer = DataBuffer()
         self._no_var_loads: DataBuffer = DataBuffer()
 
-    def update_repository_states(
-        self, home: Home, state_repository: StatesRepository
-    ) -> None:
+    def update_repository_states(self, home: Home, state_repository: StatesRepository) -> None:
         """Calculate the power of the non varibale/non controllable loads."""
         power = home.home_consumption_power
         for device in home.devices:
@@ -212,18 +210,12 @@ class EmhassOptimizer(Optimizer):
 
         runtimeparams: dict = {
             "num_def_loads": len(self._optimzed_devices),
-            "P_deferrable_nom": [
-                device.nominal_power for device in self._optimzed_devices
-            ],
-            "def_total_hours": [
-                device.deferrable_hours for device in self._optimzed_devices
-            ],
+            "P_deferrable_nom": [device.nominal_power for device in self._optimzed_devices],
+            "def_total_hours": [device.deferrable_hours for device in self._optimzed_devices],
             "treat_def_as_semi_cont": [
                 not device.is_continous for device in self._optimzed_devices
             ],
-            "set_def_constant": [
-                device.is_constant for device in self._optimzed_devices
-            ],
+            "set_def_constant": [device.is_constant for device in self._optimzed_devices],
             "days_to_retrieve": self._retrieve_hass_conf.get("days_to_retrieve", 10),
             "model_type": "load_forecast",
             "var_model": SENSOR_POWER_NO_VAR_LOADS,
@@ -234,9 +226,7 @@ class EmhassOptimizer(Optimizer):
         }
         return runtimeparams
 
-    def dayahead_forecast_optim(
-        self, save_data_to_file: bool = False, debug: bool = False
-    ) -> None:
+    def dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> None:
         """Perform a call to the day-ahead optimization routine.
 
         :param save_data_to_file: Save optimization results to CSV file
@@ -284,9 +274,7 @@ class EmhassOptimizer(Optimizer):
             self._logger,
         )
 
-        df_weather = fcst.get_weather_forecast(
-            method=self._optim_conf["weather_forecast_method"]
-        )
+        df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
         P_PV_forecast = fcst.get_power_from_weather(df_weather)
         try:
             P_load_forecast = fcst.get_load_forecast(
@@ -302,14 +290,10 @@ class EmhassOptimizer(Optimizer):
                 [avg_non_var_power for x in P_PV_forecast.values],
                 index=P_PV_forecast.index,
             )
-            P_load_forecast_values = np.array(
-                [avg_non_var_power for x in P_PV_forecast.values]
-            )
+            P_load_forecast_values = np.array([avg_non_var_power for x in P_PV_forecast.values])
 
         df_input_data_dayahead = pd.DataFrame(
-            np.transpose(
-                np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])
-            ),
+            np.transpose(np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])),
             index=P_PV_forecast.index,
             columns=["P_PV_forecast", "P_load_forecast"],
         )
@@ -333,20 +317,14 @@ class EmhassOptimizer(Optimizer):
         )
         # Save CSV file for publish_data
         if save_data_to_file:
-            today = datetime.now(timezone.utc).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             filename = "opt_res_dayahead_" + today.strftime("%Y_%m_%d") + ".csv"
         else:  # Just save the latest optimization results
             filename = "opt_res_latest.csv"
         if not debug:
-            self._day_ahead_forecast.to_csv(
-                self._data_folder / filename, index_label="timestamp"
-            )
+            self._day_ahead_forecast.to_csv(self._data_folder / filename, index_label="timestamp")
 
-    def naive_mpc_optim(
-        self, save_data_to_file: bool = False, debug: bool = False
-    ) -> pd.DataFrame:
+    def naive_mpc_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the naive Model Predictive Controller optimization routine.
 
         :param input_data_dict:  A dictionnary with multiple data used by the action functions
@@ -415,9 +393,7 @@ class EmhassOptimizer(Optimizer):
         df_input_data = self._retrieve_hass.df_final.copy()
 
         # Get PV and load forecasts
-        df_weather = fcst.get_weather_forecast(
-            method=self._optim_conf["weather_forecast_method"]
-        )
+        df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
         P_PV_forecast = fcst.get_power_from_weather(
             df_weather, set_mix_forecast=True, df_now=df_input_data
         )
@@ -471,16 +447,12 @@ class EmhassOptimizer(Optimizer):
         )
         # Save CSV file for publish_data
         if save_data_to_file:
-            today = datetime.now(timezone.utc).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             filename = "opt_res_naive_mpc_" + today.strftime("%Y_%m_%d") + ".csv"
         else:  # Just save the latest optimization results
             filename = "opt_res_naive_mpc_latest.csv"
         if not debug:
-            opt_res_naive_mpc.to_csv(
-                self._data_folder / filename, index_label="timestamp"
-            )
+            opt_res_naive_mpc.to_csv(self._data_folder / filename, index_label="timestamp")
         return opt_res_naive_mpc
 
     def forecast_model_fit(
@@ -618,9 +590,7 @@ class EmhassOptimizer(Optimizer):
             freq = self._retrieve_hass_conf["freq"]
             temp_folder = self._data_folder / "temp"
             temp_folder.mkdir(parents=True, exist_ok=True)
-            pv_df = self._pv.get_data_frame(
-                freq, self._location.get_time_zone(), "pv", temp_folder
-            )
+            pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), "pv", temp_folder)
             pv_df.to_csv(temp_folder / "pv_df.csv")
             no_var_load_df = self._no_var_loads.get_data_frame(
                 freq, self._location.get_time_zone(), "non_var_loads", temp_folder
@@ -637,9 +607,7 @@ class EmhassOptimizer(Optimizer):
                 df.drop(df.index[0], inplace=True)
 
             pv_series = [x for x in df["pv"].to_list() if pd.notnull(x)]
-            no_var_load_series = [
-                x for x in df["non_var_loads"].to_list() if pd.notnull(x)
-            ]
+            no_var_load_series = [x for x in df["non_var_loads"].to_list() if pd.notnull(x)]
 
             # TODO: Should be removed
             df.fillna(-10000, inplace=True)

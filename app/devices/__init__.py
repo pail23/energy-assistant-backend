@@ -76,15 +76,11 @@ class Integrator:
                 if measurement > self.last_measurement:
                     self._value = self._value + (
                         delta_t
-                        * (
-                            self.last_measurement
-                            + (measurement - self.last_measurement) / 2
-                        )
+                        * (self.last_measurement + (measurement - self.last_measurement) / 2)
                     )
                 else:
                     self._value = self._value + (
-                        delta_t
-                        * (measurement + (self.last_measurement - measurement) / 2)
+                        delta_t * (measurement + (self.last_measurement - measurement) / 2)
                     )
 
     def restore_state(self, state: float) -> None:
@@ -113,9 +109,7 @@ class EnergyIntegrator:
         )
         self._last_consumed_energy = consumed_energy
 
-    def restore_state(
-        self, consumed_solar_energy: float, last_consumed_energy: float
-    ) -> None:
+    def restore_state(self, consumed_solar_energy: float, last_consumed_energy: float) -> None:
         """Restores the integrator value with a previously saved state."""
         self._consumed_solar_energy = consumed_solar_energy
         self._last_consumed_energy = last_consumed_energy
@@ -223,9 +217,7 @@ class State:
         return self._attributes
 
 
-def assign_if_available(
-    old_state: State | None, new_state: State | None
-) -> State | None:
+def assign_if_available(old_state: State | None, new_state: State | None) -> State | None:
     """Return new state in case the state is available, otherwise old state."""
     if new_state and new_state.available:
         return new_state

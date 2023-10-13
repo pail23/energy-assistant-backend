@@ -84,9 +84,7 @@ class DeviceTypeRegistry:
                             state_off_upper = state_off_config.get("upper")
                             state_off_lower = state_off_config.get("lower")
                             state_off_for = state_off_config.get("for")
-                            trailing_zeros_for = state_off_config.get(
-                                "trailing_zeros_for"
-                            )
+                            trailing_zeros_for = state_off_config.get("trailing_zeros_for")
                         if (
                             state_on_threshold is not None
                             and state_off_upper is not None

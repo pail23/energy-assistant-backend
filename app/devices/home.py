@@ -35,16 +35,10 @@ class Home:
         """Create a home instance."""
         self._name: str = get_config_param(config, "name")
         self._solar_power_entity_id: str = get_config_param(config, "solar_power")
-        self._grid_supply_power_entity_id: str = get_config_param(
-            config, "grid_supply_power"
-        )
+        self._grid_supply_power_entity_id: str = get_config_param(config, "grid_supply_power")
         self._solar_energy_entity_id: str = get_config_param(config, "solar_energy")
-        self._grid_imported_energy_entity_id: str = get_config_param(
-            config, "imported_energy"
-        )
-        self._grid_exported_energy_entity_id: str = get_config_param(
-            config, "exported_energy"
-        )
+        self._grid_imported_energy_entity_id: str = get_config_param(config, "imported_energy")
+        self._grid_exported_energy_entity_id: str = get_config_param(config, "exported_energy")
         self._grid_inverted: bool = False
         grid_inverted = config.get("grid_inverted")
         if grid_inverted is not None and grid_inverted:
@@ -71,18 +65,12 @@ class Home:
             for config_device in config_devices:
                 type = config_device.get("type")
                 if type == "homeassistant":
-                    self.devices.append(
-                        HomeassistantDevice(config_device, session_storage)
-                    )
+                    self.devices.append(HomeassistantDevice(config_device, session_storage))
                 elif type == "stiebel-eltron":
-                    self.devices.append(
-                        StiebelEltronDevice(config_device, session_storage)
-                    )
+                    self.devices.append(StiebelEltronDevice(config_device, session_storage))
                 elif type == "power-state-device":
                     self.devices.append(
-                        PowerStateDevice(
-                            config_device, session_storage, device_type_registry
-                        )
+                        PowerStateDevice(config_device, session_storage, device_type_registry)
                     )
                 elif type == "evcc":
                     self.devices.append(EvccDevice(config_device, session_storage))
@@ -108,29 +96,17 @@ class Home:
     @property
     def produced_solar_energy(self) -> float:
         """Solar energy in kWh."""
-        return (
-            self._produced_solar_energy.numeric_value
-            if self._produced_solar_energy
-            else 0.0
-        )
+        return self._produced_solar_energy.numeric_value if self._produced_solar_energy else 0.0
 
     @property
     def grid_imported_energy(self) -> float:
         """Imported energy from the grid in kWh."""
-        return (
-            self._grid_imported_energy.numeric_value
-            if self._grid_imported_energy
-            else 0.0
-        )
+        return self._grid_imported_energy.numeric_value if self._grid_imported_energy else 0.0
 
     @property
     def grid_exported_energy(self) -> float:
         """Exported energy from the grid in kWh."""
-        return (
-            self._grid_exported_energy.numeric_value
-            if self._grid_exported_energy
-            else 0.0
-        )
+        return self._grid_exported_energy.numeric_value if self._grid_exported_energy else 0.0
 
     @property
     def consumed_energy(self) -> float:
@@ -193,13 +169,9 @@ class Home:
         )
 
         self._consumed_energy = (
-            self.grid_imported_energy
-            - self.grid_exported_energy
-            + self.produced_solar_energy
+            self.grid_imported_energy - self.grid_exported_energy + self.produced_solar_energy
         )
-        self._consumed_solar_energy = (
-            self.produced_solar_energy - self.grid_exported_energy
-        )
+        self._consumed_solar_energy = self.produced_solar_energy - self.grid_exported_energy
 
         if self._energy_snapshop is None:
             self.set_snapshot(
@@ -231,28 +203,18 @@ class Home:
     @property
     def solar_production_power(self) -> float:
         """Solar production power of the home."""
-        return (
-            self._solar_production_power.numeric_value
-            if self._solar_production_power
-            else 0.0
-        )
+        return self._solar_production_power.numeric_value if self._solar_production_power else 0.0
 
     @property
     def grid_imported_power(self) -> float:
         """Grid supply power of the home."""
         if self._grid_inverted:
             return (
-                self._grid_imported_power.numeric_value * -1
-                if self._grid_imported_power
-                else 0.0
+                self._grid_imported_power.numeric_value * -1 if self._grid_imported_power else 0.0
             )
 
         else:
-            return (
-                self._grid_imported_power.numeric_value
-                if self._grid_imported_power
-                else 0.0
-            )
+            return self._grid_imported_power.numeric_value if self._grid_imported_power else 0.0
 
     def restore_state(
         self,

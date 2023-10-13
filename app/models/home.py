@@ -45,9 +45,7 @@ class HomeMeasurement(Base):
         stmt = select(cls)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
-        stream = await session.stream_scalars(
-            stmt.order_by(cls.measurement_date.desc())
-        )
+        stream = await session.stream_scalars(stmt.order_by(cls.measurement_date.desc()))
         async for row in stream:
             yield row
 
@@ -157,9 +155,7 @@ class HomeMeasurement(Base):
         session.add(home_measurement)
         await session.flush()
         # To fetch device measurements
-        new = await cls.read_by_id(
-            session, home_measurement.id, include_device_measurements=True
-        )
+        new = await cls.read_by_id(session, home_measurement.id, include_device_measurements=True)
         if not new:
             raise RuntimeError()
         return new
@@ -187,9 +183,7 @@ class HomeMeasurement(Base):
         await session.flush()
 
     @classmethod
-    async def delete(
-        cls, session: AsyncSession, HomeMeasurement: HomeMeasurement
-    ) -> None:
+    async def delete(cls, session: AsyncSession, HomeMeasurement: HomeMeasurement) -> None:
         """Delete a home measurement."""
         await session.delete(HomeMeasurement)
         await session.flush()

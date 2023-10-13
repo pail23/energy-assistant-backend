@@ -57,8 +57,7 @@ async def read_measurements(
     """REST end pont for read a device."""
     return ReadDeviceMeasurementsResponse(
         device_measurements=[
-            device_measurement
-            async for device_measurement in use_case.execute(device_id)
+            device_measurement async for device_measurement in use_case.execute(device_id)
         ]
     )
 

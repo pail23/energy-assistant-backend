@@ -119,18 +119,12 @@ class Device(ABC):
         """Update the state of the device."""
         pass
 
-    def restore_state(
-        self, consumed_solar_energy: float, consumed_energy: float
-    ) -> None:
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state of the device."""
-        self._consumed_solar_energy.restore_state(
-            consumed_solar_energy, consumed_energy
-        )
+        self._consumed_solar_energy.restore_state(consumed_solar_energy, consumed_energy)
         self.set_snapshot(consumed_solar_energy, consumed_energy)
 
-    def set_snapshot(
-        self, consumed_solar_energy: float, consumed_energy: float
-    ) -> None:
+    def set_snapshot(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Set the snapshot values."""
         self._energy_snapshot = EnergySnapshot(consumed_solar_energy, consumed_energy)
 

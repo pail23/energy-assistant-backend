@@ -71,9 +71,7 @@ def test_integrator() -> None:
 
 
 @pytest.mark.asyncio
-async def test_load(
-    session: AsyncSession, device_type_registry: DeviceTypeRegistry
-) -> None:
+async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegistry) -> None:
     """Test the loading of the devices."""
     await setup_data(session)
 

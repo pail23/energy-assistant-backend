@@ -71,14 +71,10 @@ class ReadDeviceMeasurements:
         """Create a read device use case."""
         self.async_session = session
 
-    async def execute(
-        self, device_id: uuid.UUID
-    ) -> AsyncIterator[DeviceMeasurementSchema]:
+    async def execute(self, device_id: uuid.UUID) -> AsyncIterator[DeviceMeasurementSchema]:
         """Execute the read device use case."""
         async with self.async_session() as session:
-            async for device_measurement in DeviceMeasurement.read_by_device_id(
-                session, device_id
-            ):
+            async for device_measurement in DeviceMeasurement.read_by_device_id(session, device_id):
                 yield DeviceMeasurementSchema.model_validate(device_measurement)
 
 
@@ -89,9 +85,7 @@ class UpdateDevicePowerMode:
         """Create a uodate device power mode use case."""
         self.async_session = session
 
-    async def execute(
-        self, device_id: uuid.UUID, power_mode: str, home: Home
-    ) -> DeviceSchema:
+    async def execute(self, device_id: uuid.UUID, power_mode: str, home: Home) -> DeviceSchema:
         """Execute the update device power nmode use case."""
         async with self.async_session.begin() as session:
             d = home.get_device(device_id)

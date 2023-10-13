@@ -22,9 +22,7 @@ def add_others_device(
     solar_consumed_energy = home_measurement.solar_consumed_energy
     consumed_energy = home_measurement.consumed_energy
     for device_measurement in home_measurement.device_measurements:
-        solar_consumed_energy = (
-            solar_consumed_energy - device_measurement.solar_consumed_energy
-        )
+        solar_consumed_energy = solar_consumed_energy - device_measurement.solar_consumed_energy
         consumed_energy = consumed_energy - device_measurement.consumed_energy
     other_device = DeviceMeasurementPeriodSchema(
         solar_consumed_energy=solar_consumed_energy,
@@ -42,9 +40,7 @@ class ReadHomeMeasurementDifference:
         """Create a read home measurement use case."""
         self.async_session = session
 
-    async def execute(
-        self, from_date: date, to_date: date
-    ) -> HomeMeasurementPeriodSchema:
+    async def execute(self, from_date: date, to_date: date) -> HomeMeasurementPeriodSchema:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement_from = await HomeMeasurement.read_before_date(
@@ -76,8 +72,7 @@ class ReadHomeMeasurementDifference:
                         device_id=from_device.device_id,
                         solar_consumed_energy=to_device.solar_consumed_energy
                         - from_device.solar_consumed_energy,
-                        consumed_energy=to_device.consumed_energy
-                        - from_device.consumed_energy,
+                        consumed_energy=to_device.consumed_energy - from_device.consumed_energy,
                     )
                     device_measurements.append(measurement)
 
@@ -105,9 +100,7 @@ class ReadHomeMeasurementDaily:
         """Create a read home measurement dates use case."""
         self.async_session = session
 
-    async def execute(
-        self, from_date: date, to_date: date
-    ) -> HomeMeasurementDailySchema:
+    async def execute(self, from_date: date, to_date: date) -> HomeMeasurementDailySchema:
         """Execute the read daily home measurement use case."""
         async with self.async_session() as session:
             last_measurement = await HomeMeasurement.read_before_date(
@@ -125,16 +118,13 @@ class ReadHomeMeasurementDaily:
             ):
                 device_measurements = []
                 for from_device in last_measurement.device_measurements:
-                    to_device = home_measurement.get_device_measurement(
-                        from_device.device_id
-                    )
+                    to_device = home_measurement.get_device_measurement(from_device.device_id)
                     if to_device is not None:
                         device_measurement = DeviceMeasurementPeriodSchema(
                             device_id=from_device.device_id,
                             solar_consumed_energy=to_device.solar_consumed_energy
                             - from_device.solar_consumed_energy,
-                            consumed_energy=to_device.consumed_energy
-                            - from_device.consumed_energy,
+                            consumed_energy=to_device.consumed_energy - from_device.consumed_energy,
                         )
                         device_measurements.append(device_measurement)
                 measurement = HomeMeasurementDateSchema(

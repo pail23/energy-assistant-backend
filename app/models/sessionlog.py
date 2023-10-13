@@ -28,9 +28,7 @@ class SessionLogEntry(Base):
         "device_id", ForeignKey("devices.id"), nullable=False
     )
 
-    device: Mapped[Device] = relationship(
-        "Device", back_populates="session_log_entries"
-    )
+    device: Mapped[Device] = relationship("Device", back_populates="session_log_entries")
 
     start: Mapped[datetime]
     end: Mapped[datetime]
@@ -117,9 +115,7 @@ class SessionLogEntry(Base):
         await session.flush()
 
     @classmethod
-    async def delete(
-        cls, session: AsyncSession, session_log_entry: SessionLogEntry
-    ) -> None:
+    async def delete(cls, session: AsyncSession, session_log_entry: SessionLogEntry) -> None:
         """Delete a session log entry."""
         await session.delete(session_log_entry)
         await session.flush()

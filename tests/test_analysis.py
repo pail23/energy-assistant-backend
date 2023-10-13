@@ -46,9 +46,7 @@ def test_average(power_data: DataBuffer):
 
 def test_get_data_without_trailing_zeros(power_data_with_trailing_zeros: DataBuffer):
     """Test getting the data without the trailing zeros."""
-    data = power_data_with_trailing_zeros.get_data_for(
-        8, datetime(2023, 1, 10, 10, 10, 23), True
-    )
+    data = power_data_with_trailing_zeros.get_data_for(8, datetime(2023, 1, 10, 10, 10, 23), True)
     assert len(data) == 5
     assert data == [15, 16, 17, 18, 19]
 

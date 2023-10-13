@@ -23,9 +23,7 @@ class Device(Base):
 
     __tablename__ = "devices"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        "id", nullable=False, unique=True, primary_key=True
-    )
+    id: Mapped[uuid.UUID] = mapped_column("id", nullable=False, unique=True, primary_key=True)
     name: Mapped[str]
     icon: Mapped[str]
     power_mode: Mapped[str]
@@ -79,9 +77,7 @@ class Device(Base):
         await session.flush()
         return device
 
-    async def update(
-        self, session: AsyncSession, name: str, icon: str, power_mode: str
-    ) -> None:
+    async def update(self, session: AsyncSession, name: str, icon: str, power_mode: str) -> None:
         """Update a device."""
         self.name = name
         self.icon = icon
@@ -118,9 +114,7 @@ class DeviceMeasurement(Base):
         "device_id", ForeignKey("devices.id"), nullable=False
     )
 
-    device: Mapped[Device] = relationship(
-        "Device", back_populates="device_measurements"
-    )
+    device: Mapped[Device] = relationship("Device", back_populates="device_measurements")
 
     @hybrid_property
     def measurement_date(self) -> datetime.date:
@@ -140,11 +134,7 @@ class DeviceMeasurement(Base):
         cls, session: AsyncSession, measurement_id: int
     ) -> DeviceMeasurement | None:
         """Read a device measurements by id."""
-        stmt = (
-            select(cls)
-            .where(cls.id == measurement_id)
-            .options(joinedload(cls.home_measurement))
-        )
+        stmt = select(cls).where(cls.id == measurement_id).options(joinedload(cls.home_measurement))
         return await session.scalar(stmt.order_by(cls.id))
 
     @classmethod
@@ -153,13 +143,9 @@ class DeviceMeasurement(Base):
     ) -> AsyncIterator[DeviceMeasurement]:
         """Read a device measurements by id."""
         stmt = (
-            select(cls)
-            .where(cls.device_id == device_id)
-            .options(joinedload(cls.home_measurement))
+            select(cls).where(cls.device_id == device_id).options(joinedload(cls.home_measurement))
         )
-        stream = await session.stream_scalars(
-            stmt.order_by(text("HomeMeasurement_1.date DESC"))
-        )
+        stream = await session.stream_scalars(stmt.order_by(text("HomeMeasurement_1.date DESC")))
         async for row in stream:
             yield row
 
@@ -220,9 +206,7 @@ class DeviceMeasurement(Base):
         await session.flush()
 
     @classmethod
-    async def delete(
-        cls, session: AsyncSession, measurement: DeviceMeasurement
-    ) -> None:
+    async def delete(cls, session: AsyncSession, measurement: DeviceMeasurement) -> None:
         """Delete a device measurement."""
         await session.delete(measurement)
         await session.flush()

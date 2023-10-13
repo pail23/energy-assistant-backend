@@ -47,9 +47,7 @@ class MqttConnection(StatesSingleRepository):
                 "energy_assistant" + str(random.randrange(1024)), userdata=self
             )
             self._client.username_pw_set(self._username, self._password)
-            self._client.will_set(
-                f"{self._topic}/status", payload="offline", qos=0, retain=True
-            )
+            self._client.will_set(f"{self._topic}/status", payload="offline", qos=0, retain=True)
             self._client.on_message = on_message
             self._client.on_connect = on_connect
             self._client.on_disconnect = on_disconnect

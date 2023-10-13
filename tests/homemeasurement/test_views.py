@@ -76,9 +76,7 @@ async def setup_data(session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_home_measurements_read_all(
-    ac: AsyncClient, session: AsyncSession
-) -> None:
+async def test_home_measurements_read_all(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all home_measurements."""
     # setup
     await setup_data(session)
@@ -92,9 +90,7 @@ async def test_home_measurements_read_all(
 
 
 @pytest.mark.asyncio
-async def test_home_measurements_read_difference(
-    ac: AsyncClient, session: AsyncSession
-) -> None:
+async def test_home_measurements_read_difference(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all home_measurements."""
     # setup
     await setup_data(session)
@@ -127,9 +123,7 @@ async def test_home_measurements_read_difference(
 
 
 @pytest.mark.asyncio
-async def test_home_measurements_read_daily(
-    ac: AsyncClient, session: AsyncSession
-) -> None:
+async def test_home_measurements_read_daily(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all home_measurements."""
     # setup
     await setup_data(session)

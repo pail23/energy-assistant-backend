@@ -89,9 +89,7 @@ class DeleteHomeMeasurement:
     async def execute(self, home_heasurement_id: int) -> None:
         """Execute the delete a home measurement use case."""
         async with self.async_session.begin() as session:
-            home_measurement = await HomeMeasurement.read_by_id(
-                session, home_heasurement_id
-            )
+            home_measurement = await HomeMeasurement.read_by_id(session, home_heasurement_id)
             if not home_measurement:
                 return
             await HomeMeasurement.delete(session, home_measurement)

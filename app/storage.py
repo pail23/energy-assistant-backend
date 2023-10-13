@@ -56,17 +56,13 @@ class Database:
                         snapshot_measurement.grid_exported_energy,
                     )
                     for device in home.devices:
-                        device_measurement = home_measurement.get_device_measurement(
-                            device.id
-                        )
+                        device_measurement = home_measurement.get_device_measurement(device.id)
                         if device_measurement is not None:
                             device.restore_state(
                                 device_measurement.solar_consumed_energy,
                                 device_measurement.consumed_energy,
                             )
-                        device_measurement = (
-                            snapshot_measurement.get_device_measurement(device.id)
-                        )
+                        device_measurement = snapshot_measurement.get_device_measurement(device.id)
                         if device_measurement is not None:
                             device.set_snapshot(
                                 device_measurement.solar_consumed_energy,
@@ -115,9 +111,7 @@ class Database:
                     grid_exported_energy=home.grid_exported_energy,
                 )
                 for device in home.devices:
-                    device_measurement = home_measurement.get_device_measurement(
-                        device.id
-                    )
+                    device_measurement = home_measurement.get_device_measurement(device.id)
                     if device_measurement is not None:
                         device_dto = await DeviceDTO.read_by_id(session, device.id)
                         if device_dto is not None:
@@ -141,9 +135,7 @@ class Database:
                 if device_dto is not None:
                     if device_dto.power_mode is not None:
                         device.set_power_mode(PowerModes[device_dto.power_mode.upper()])
-                    await device_dto.update(
-                        session, device.name, device.icon, device.power_mode
-                    )
+                    await device_dto.update(session, device.name, device.icon, device.power_mode)
                 else:
                     await DeviceDTO.create(
                         session, device.id, device.name, device.icon, device.power_mode

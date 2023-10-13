@@ -90,9 +90,7 @@ class Homeassistant(StatesSingleRepository):
             self._read_states["sensor.officedesk_power"] = HomeassistantState(
                 "sensor.officedesk_power", "40"
             )
-            self._read_states["sensor.rack_power"] = HomeassistantState(
-                "sensor.rack_power", "80"
-            )
+            self._read_states["sensor.rack_power"] = HomeassistantState("sensor.rack_power", "80")
         else:
             headers = {
                 "Authorization": f"Bearer {self._token}",
@@ -195,9 +193,7 @@ class HomeassistantDevice(Device):
             self._consumed_energy,
             state_repository.get_state(self._consumed_energy_entity_id),
         )
-        self._consumed_solar_energy.add_measurement(
-            self.consumed_energy, self_sufficiency
-        )
+        self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
@@ -236,9 +232,7 @@ class HomeassistantDevice(Device):
             and self._power.available
         )
 
-    def restore_state(
-        self, consumed_solar_energy: float, consumed_energy: float
-    ) -> None:
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
         self._consumed_energy = HomeassistantState(
@@ -263,9 +257,7 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
         model = config.get("model")
         self._device_type: DeviceType | None = None
         if model is not None and manufacturer is not None:
-            self._device_type = device_type_registry.get_device_type(
-                manufacturer, model
-            )
+            self._device_type = device_type_registry.get_device_type(manufacturer, model)
         if self._device_type is None:
             self._device_type = DeviceType(
                 str(config.get("icon", "mdi:lightning-bolt")), 2, 0, 0, 0, 10
@@ -321,11 +313,8 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
                             without_trailing_zeros=True,
                         )
                     )
-                    max = (
-                        self._device_type.trailing_zeros_for > 0
-                        and self._power_data.get_max_for(
-                            self._device_type.trailing_zeros_for
-                        )
+                    max = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(
+                        self._device_type.trailing_zeros_for
                     )
                     if is_between or max < 1:
                         self._state = "off"

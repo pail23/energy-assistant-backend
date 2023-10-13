@@ -36,16 +36,12 @@ class StiebelEltronDevice(Device, DeviceWithState):
         super().__init__(config, session_storage)
         self.grid_exported_power_data = DataBuffer()
         self._consumed_energy_today: State | None = None
-        self._consumed_energy_today_entity_id: str = get_config_param(
-            config, "energy_today"
-        )
+        self._consumed_energy_today_entity_id: str = get_config_param(config, "energy_today")
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
 
-        self._comfort_target_temperature_entity_id = config.get(
-            "comfort_target_temperature"
-        )
+        self._comfort_target_temperature_entity_id = config.get("comfort_target_temperature")
         self._target_temperature_normal: float | None = numeric_value(
             config.get("target_temperature_normal")
         )
@@ -83,9 +79,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
             self._consumed_energy,
             state_repository.get_state(self._consumed_energy_entity_id),
         )
-        self._consumed_solar_energy.add_measurement(
-            self.consumed_energy, self_sufficiency
-        )
+        self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
             self._actual_temp, state_repository.get_state(self._actual_temp_entity_id)
         )
@@ -116,13 +110,9 @@ class StiebelEltronDevice(Device, DeviceWithState):
                 if self.power_mode == PowerModes.PV:
                     if self.state == "off":
                         avg_300 = self.grid_exported_power_data.get_average_for(300)
-                        if avg_300 > self.requested_additional_power * (
-                            1 + POWER_HYSTERESIS
-                        ):
+                        if avg_300 > self.requested_additional_power * (1 + POWER_HYSTERESIS):
                             target_temperature = self._target_temperature_pv
-                        elif avg_300 < self.requested_additional_power * (
-                            1 - POWER_HYSTERESIS
-                        ):
+                        elif avg_300 < self.requested_additional_power * (1 - POWER_HYSTERESIS):
                             target_temperature = self._target_temperature_normal
                 elif self.power_mode == PowerModes.OPTIMIZED:
                     target_temperature = self._get_temperature_for_optimized(
@@ -175,9 +165,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
         """Consumed energy in kWh."""
         energy = self._consumed_energy.numeric_value if self._consumed_energy else 0.0
         energy_today = (
-            self._consumed_energy_today.numeric_value
-            if self._consumed_energy_today
-            else 0.0
+            self._consumed_energy_today.numeric_value if self._consumed_energy_today else 0.0
         )
         return energy + energy_today
 
@@ -218,14 +206,10 @@ class StiebelEltronDevice(Device, DeviceWithState):
             and self._state.available
         )
 
-    def restore_state(
-        self, consumed_solar_energy: float, consumed_energy: float
-    ) -> None:
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore the previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
-        self._consumed_energy = State(
-            self._consumed_energy_entity_id, str(consumed_energy)
-        )
+        self._consumed_energy = State(self._consumed_energy_entity_id, str(consumed_energy))
 
     @property
     def attributes(self) -> dict[str, str]:

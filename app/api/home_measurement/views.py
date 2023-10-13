@@ -24,9 +24,7 @@ async def read_all(
 ) -> ReadAllHomeMeasurementResponse:
     """Rest end point for read all home measurements."""
     return ReadAllHomeMeasurementResponse(
-        home_measurements=[
-            home_measurement async for home_measurement in use_case.execute()
-        ]
+        home_measurements=[home_measurement async for home_measurement in use_case.execute()]
     )
 
 
@@ -63,9 +61,7 @@ async def read_by_date(
 async def read_before_date(
     request: Request,
     measurement_date: date = Path(..., description=""),
-    use_case: ReadHomeMeasurementLastBeforeDate = Depends(
-        ReadHomeMeasurementLastBeforeDate
-    ),
+    use_case: ReadHomeMeasurementLastBeforeDate = Depends(ReadHomeMeasurementLastBeforeDate),
 ) -> HomeMeasurementSchema:
     """REST end pont for read the last home measurement before a date."""
     return await use_case.execute(measurement_date)
