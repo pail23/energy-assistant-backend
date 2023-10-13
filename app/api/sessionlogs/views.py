@@ -15,7 +15,9 @@ router = APIRouter(prefix="/sessionlog")
 async def read_all(
     request: Request,
     device_id: uuid.UUID | None = None,
-    use_case: ReadAllLogEntries = Depends(ReadAllLogEntries)
+    use_case: ReadAllLogEntries = Depends(ReadAllLogEntries),
 ) -> ReadAllSessionLogEntriesResponse:
     """Rest end point for read all devices."""
-    return ReadAllSessionLogEntriesResponse(entries=[entry async for entry in use_case.execute(device_id)])
+    return ReadAllSessionLogEntriesResponse(
+        entries=[entry async for entry in use_case.execute(device_id)]
+    )

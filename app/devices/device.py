@@ -18,6 +18,7 @@ from .config import get_config_param
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
+
 class Device(ABC):
     """A device which tracks energy consumption."""
 
@@ -28,21 +29,18 @@ class Device(ABC):
         self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshot: EnergySnapshot | None = None
         self.session_storage: SessionStorage = session_storage
-        self.current_session : int | None = None
-        self._supported_power_modes : list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
-        self._power_mode : PowerModes = PowerModes.DEVICE_CONTROLLED
+        self.current_session: int | None = None
+        self._supported_power_modes: list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
+        self._power_mode: PowerModes = PowerModes.DEVICE_CONTROLLED
         self._store_sessions = False
         store_sessions = config.get("store_sessions")
         if store_sessions is not None and store_sessions:
             self._store_sessions = True
 
-
-
     @property
     def name(self) -> str:
         """The name of the device."""
         return self._name
-
 
     @property
     def supported_power_modes(self) -> list[PowerModes]:
@@ -57,7 +55,10 @@ class Device(ABC):
     @property
     def power_controllable(self) -> bool:
         """The power mode of the device."""
-        return not(len(self._supported_power_modes) == 1 and self._supported_power_modes[0] == PowerModes.DEVICE_CONTROLLED)
+        return not (
+            len(self._supported_power_modes) == 1
+            and self._supported_power_modes[0] == PowerModes.DEVICE_CONTROLLED
+        )
 
     def set_power_mode(self, power_mode: PowerModes) -> None:
         """Set the power mode of the device."""
@@ -71,7 +72,11 @@ class Device(ABC):
     @property
     def consumed_solar_energy(self) -> float:
         """Solar energy in kWh."""
-        return self._consumed_solar_energy.consumed_solar_energy if self._consumed_solar_energy.consumed_solar_energy is not None else 0.0
+        return (
+            self._consumed_solar_energy.consumed_solar_energy
+            if self._consumed_solar_energy.consumed_solar_energy is not None
+            else 0.0
+        )
 
     @property
     @abstractmethod
@@ -98,26 +103,39 @@ class Device(ABC):
         pass
 
     @abstractmethod
-    async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer, grid_exported_power: float) -> None:
-        """"Update the device based on the current pv availablity."""
+    async def update_power_consumption(
+        self,
+        state_repository: StatesRepository,
+        optimizer: Optimizer,
+        grid_exported_power: float,
+    ) -> None:
+        """Update the device based on the current pv availablity."""
         pass
 
     @abstractmethod
-    async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
+    async def update_state(
+        self, state_repository: StatesRepository, self_sufficiency: float
+    ) -> None:
         """Update the state of the device."""
         pass
 
-    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
+    def restore_state(
+        self, consumed_solar_energy: float, consumed_energy: float
+    ) -> None:
         """Restore a previously stored state of the device."""
-        self._consumed_solar_energy.restore_state(consumed_solar_energy, consumed_energy)
+        self._consumed_solar_energy.restore_state(
+            consumed_solar_energy, consumed_energy
+        )
         self.set_snapshot(consumed_solar_energy, consumed_energy)
 
-    def set_snapshot(self, consumed_solar_energy: float, consumed_energy: float) -> None:
+    def set_snapshot(
+        self, consumed_solar_energy: float, consumed_energy: float
+    ) -> None:
         """Set the snapshot values."""
         self._energy_snapshot = EnergySnapshot(consumed_solar_energy, consumed_energy)
 
     @property
-    def energy_snapshot(self)-> EnergySnapshot | None:
+    def energy_snapshot(self) -> EnergySnapshot | None:
         """The last energy snapshot of the device."""
         return self._energy_snapshot
 
@@ -127,7 +145,9 @@ class Device(ABC):
 
     async def start_session(self, text: str) -> None:
         """Start a session."""
-        self.current_session = await self.session_storage.start_session(self._id, text,self.consumed_solar_energy, self.consumed_energy)
+        self.current_session = await self.session_storage.start_session(
+            self._id, text, self.consumed_solar_energy, self.consumed_energy
+        )
 
     async def update_session(self, old_state: bool, new_state: bool, text: str) -> None:
         """Update the session log."""
@@ -135,7 +155,11 @@ class Device(ABC):
             if new_state:
                 if old_state:
                     if self.current_session is not None:
-                        await self.session_storage.update_session(self.current_session, self.consumed_solar_energy, self.consumed_energy)
+                        await self.session_storage.update_session(
+                            self.current_session,
+                            self.consumed_solar_energy,
+                            self.consumed_energy,
+                        )
                 else:
                     LOGGER.info("Start Session")
                     await self.start_session(text)
@@ -143,7 +167,11 @@ class Device(ABC):
                 if old_state:
                     LOGGER.info("End Session")
                 if self.current_session is not None:
-                    await self.session_storage.update_session_energy(self.current_session, self.consumed_solar_energy, self.consumed_energy)
+                    await self.session_storage.update_session_energy(
+                        self.current_session,
+                        self.consumed_solar_energy,
+                        self.consumed_energy,
+                    )
 
     @property
     def attributes(self) -> dict[str, str]:
@@ -153,6 +181,7 @@ class Device(ABC):
     def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
         """Get the current deferrable load info."""
         return None
+
 
 class DeviceWithState(ABC):
     """Device with a state."""

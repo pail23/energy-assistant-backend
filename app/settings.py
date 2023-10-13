@@ -21,5 +21,4 @@ class Settings(BaseSettings):
     )
 
 
-
 settings = Settings.model_validate({})

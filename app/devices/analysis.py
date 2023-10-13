@@ -8,7 +8,8 @@ from statistics import mean
 
 import pandas as pd
 
-MAX_DATA_LEN = 3000 # in case of 30 seconds interval, this is about one day.
+MAX_DATA_LEN = 3000  # in case of 30 seconds interval, this is about one day.
+
 
 @dataclass
 class DataPoint:
@@ -17,12 +18,13 @@ class DataPoint:
     value: float
     time_stamp: datetime
 
+
 class DataBuffer:
     """Data buffer for analysis."""
 
     def __init__(self) -> None:
         """Create a DataBuffer instance."""
-        self.data : deque = deque([], MAX_DATA_LEN)
+        self.data: deque = deque([], MAX_DATA_LEN)
 
     def add_data_point(self, value: float, time_stamp: datetime | None = None) -> None:
         """Add a new data point for tracking."""
@@ -30,7 +32,12 @@ class DataBuffer:
             time_stamp = datetime.now(timezone.utc)
         self.data.append(DataPoint(value, time_stamp))
 
-    def get_data_for(self, timespan:float, now: datetime | None = None, without_trailing_zeros: bool = False) -> list[float]:
+    def get_data_for(
+        self,
+        timespan: float,
+        now: datetime | None = None,
+        without_trailing_zeros: bool = False,
+    ) -> list[float]:
         """Extract data for the last timespan seconds."""
         if now is None:
             now = datetime.now(timezone.utc)
@@ -69,7 +76,14 @@ class DataBuffer:
             now = datetime.now(timezone.utc)
         return max(self.get_data_for(timespan, now))
 
-    def is_between(self, lower: float, upper: float, timespan:float, now: datetime | None = None, without_trailing_zeros: bool = False) -> bool:
+    def is_between(
+        self,
+        lower: float,
+        upper: float,
+        timespan: float,
+        now: datetime | None = None,
+        without_trailing_zeros: bool = False,
+    ) -> bool:
         """Check if the value in the timespan is always between lower and upper."""
         if now is None:
             now = datetime.now(timezone.utc)
@@ -81,10 +95,18 @@ class DataBuffer:
         else:
             return False
 
-    def get_data_frame(self, freq:pd.Timedelta, time_zone: tzinfo, value_name: str, folder: pathlib.Path) -> pd.DataFrame:
+    def get_data_frame(
+        self,
+        freq: pd.Timedelta,
+        time_zone: tzinfo,
+        value_name: str,
+        folder: pathlib.Path,
+    ) -> pd.DataFrame:
         """Get a pandas data from from the available data."""
-        data =[(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
-        result = pd.DataFrame.from_records(data, index="timestamp", columns = ["timestamp", value_name])
+        data = [(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
+        result = pd.DataFrame.from_records(
+            data, index="timestamp", columns=["timestamp", value_name]
+        )
         result.to_csv(folder / f"{value_name}.csv")
-        result.index = result.index.tz_convert(time_zone) # type: ignore
+        result.index = result.index.tz_convert(time_zone)  # type: ignore
         return result.resample(freq).mean()

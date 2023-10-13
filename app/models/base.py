@@ -9,13 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.types import CHAR, TypeDecorator
 
-convention : Mapping[str, str] = {
+convention: Mapping[str, str] = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
     "pk": "pk_%(table_name)s",
 }
+
 
 class GUID(TypeDecorator):
     """Platform-independent GUID type.
@@ -28,14 +29,14 @@ class GUID(TypeDecorator):
     impl = CHAR
     cache_ok = True
 
-    def load_dialect_impl(self, dialect): # type:ignore
+    def load_dialect_impl(self, dialect):  # type:ignore
         """Load the dialect implementation."""
         if dialect.name == "postgresql":
             return dialect.type_descriptor(UUID())
         else:
             return dialect.type_descriptor(CHAR(32))
 
-    def process_bind_param(self, value, dialect): # type:ignore
+    def process_bind_param(self, value, dialect):  # type:ignore
         """Process the bind parameters."""
         if value is None:
             return value
@@ -48,7 +49,7 @@ class GUID(TypeDecorator):
                 # hexstring
                 return "%.32x" % value.int
 
-    def process_result_value(self, value, dialect): # type:ignore
+    def process_result_value(self, value, dialect):  # type:ignore
         """Process the result value."""
         if value is None:
             return value
@@ -62,7 +63,7 @@ class Base(AsyncAttrs, DeclarativeBase):
     """Base class for energy assistant data models."""
 
     __abstract__ = True
-    metadata = MetaData(naming_convention=convention) # type: ignore
+    metadata = MetaData(naming_convention=convention)  # type: ignore
 
     type_annotation_map = {
         uuid.UUID: GUID,
@@ -71,6 +72,10 @@ class Base(AsyncAttrs, DeclarativeBase):
     def __repr__(self) -> str:
         """Representation of a data model object."""
         columns = ", ".join(
-            [f"{k}={repr(v)}" for k, v in self.__dict__.items() if not k.startswith("_")]
+            [
+                f"{k}={repr(v)}"
+                for k, v in self.__dict__.items()
+                if not k.startswith("_")
+            ]
         )
         return f"<{self.__class__.__name__}({columns})>"

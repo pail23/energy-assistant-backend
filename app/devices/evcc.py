@@ -22,51 +22,79 @@ class EvccDevice(Device, DeviceWithState):
     def __init__(self, config: dict, session_storage: SessionStorage):
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
-        self._evcc_topic: str = get_config_param(
-            config, "evcc_topic")
+        self._evcc_topic: str = get_config_param(config, "evcc_topic")
         self._loadpoint_id: int = int(get_config_param(config, "load_point_id"))
         self._is_continous: bool = bool(config.get("continous", True))
         self._state = "unknown"
-        self._power : State | None= None
-        self._consumed_energy : State | None= None
-        self._mode : State | None = None
-        self._vehicle_soc : State | None = None
-        self._max_current : State | None = None
-        self._is_connected : State | None = None
-        self._supported_power_modes =[PowerModes.DEVICE_CONTROLLED, PowerModes.OFF, PowerModes.PV, PowerModes.MIN_PV, PowerModes.FAST, PowerModes.OPTIMIZED]
-
+        self._power: State | None = None
+        self._consumed_energy: State | None = None
+        self._mode: State | None = None
+        self._vehicle_soc: State | None = None
+        self._max_current: State | None = None
+        self._is_connected: State | None = None
+        self._supported_power_modes = [
+            PowerModes.DEVICE_CONTROLLED,
+            PowerModes.OFF,
+            PowerModes.PV,
+            PowerModes.MIN_PV,
+            PowerModes.FAST,
+            PowerModes.OPTIMIZED,
+        ]
 
     def get_device_topic_id(self, name: str) -> StateId:
         """Get the id of a topic of this load point."""
-        return StateId(id=f"{self._evcc_topic}/loadpoints/{self._loadpoint_id}/{name}", channel=MQTT_CHANNEL)
+        return StateId(
+            id=f"{self._evcc_topic}/loadpoints/{self._loadpoint_id}/{name}",
+            channel=MQTT_CHANNEL,
+        )
 
-    async def update_state(self, state_repository:StatesRepository, self_sufficiency: float) -> None:
+    async def update_state(
+        self, state_repository: StatesRepository, self_sufficiency: float
+    ) -> None:
         """Update the state of the Stiebel Eltron device."""
-        old_state = self.state == 'on'
+        old_state = self.state == "on"
         charging = state_repository.get_state(self.get_device_topic_id("charging"))
         if charging is not None:
-            self._state = 'on' if charging.value == "true" else 'off'
+            self._state = "on" if charging.value == "true" else "off"
         else:
-            self._state = 'unknown'
-        new_state = self.state == 'on'
+            self._state = "unknown"
+        new_state = self.state == "on"
 
-        self._consumed_energy = state_repository.get_state(self.get_device_topic_id("chargeTotalImport"))
-        self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
-        self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
+        self._consumed_energy = state_repository.get_state(
+            self.get_device_topic_id("chargeTotalImport")
+        )
+        self._consumed_solar_energy.add_measurement(
+            self.consumed_energy, self_sufficiency
+        )
+        self._power = state_repository.get_state(
+            self.get_device_topic_id("chargePower")
+        )
         self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
-        self._vehicle_soc = state_repository.get_state(self.get_device_topic_id("vehicleSoc"))
-        self._vehicle_capacity = state_repository.get_state(self.get_device_topic_id("vehicleCapacity"))
-        self._max_current = state_repository.get_state(self.get_device_topic_id("maxCurrent"))
-        self._is_connected = state_repository.get_state(self.get_device_topic_id("connected"))
+        self._vehicle_soc = state_repository.get_state(
+            self.get_device_topic_id("vehicleSoc")
+        )
+        self._vehicle_capacity = state_repository.get_state(
+            self.get_device_topic_id("vehicleCapacity")
+        )
+        self._max_current = state_repository.get_state(
+            self.get_device_topic_id("maxCurrent")
+        )
+        self._is_connected = state_repository.get_state(
+            self.get_device_topic_id("connected")
+        )
 
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
         await super().update_session(old_state, new_state, "EVCC")
 
-
-    async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer, grid_exported_power: float) -> None:
-        """"Update the device based on the current pv availablity."""
+    async def update_power_consumption(
+        self,
+        state_repository: StatesRepository,
+        optimizer: Optimizer,
+        grid_exported_power: float,
+    ) -> None:
+        """Update the device based on the current pv availablity."""
         new_state = ""
         if self.power_mode == PowerModes.OFF:
             new_state = "off"
@@ -75,7 +103,7 @@ class EvccDevice(Device, DeviceWithState):
         elif self.power_mode == PowerModes.MIN_PV:
             new_state = "minpv"
         elif self.power_mode == PowerModes.FAST:
-           new_state = "now"
+            new_state = "now"
         elif self.power_mode == PowerModes.OPTIMIZED:
             # TODO: Implement Optimized with emhass
             new_state = "pv"
@@ -127,16 +155,19 @@ class EvccDevice(Device, DeviceWithState):
         """Check if the device is available."""
         return True
 
-    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
+    def restore_state(
+        self, consumed_solar_energy: float, consumed_energy: float
+    ) -> None:
         """Restore the previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
         self._consumed_energy = State(
-            self.get_device_topic_id("chargeTotalImport").id, str(consumed_energy))
+            self.get_device_topic_id("chargeTotalImport").id, str(consumed_energy)
+        )
 
     @property
     def attributes(self) -> dict[str, str]:
         """Get the attributes of the device for the UI."""
-        result : dict[str, str]= {
+        result: dict[str, str] = {
             "state": self.state,
             "pv_mode": self.mode,
         }
@@ -146,13 +177,22 @@ class EvccDevice(Device, DeviceWithState):
 
     def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
         """Get the current deferrable load info."""
-        if self._is_connected is not None and self._max_current is not None and self._is_connected.value == "true":
-            power: float = self._max_current.numeric_value * 230 # TODO: Multiply with active phases
-            remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
+        if (
+            self._is_connected is not None
+            and self._max_current is not None
+            and self._is_connected.value == "true"
+        ):
+            power: float = (
+                self._max_current.numeric_value * 230
+            )  # TODO: Multiply with active phases
+            remainingEnergy = (
+                (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
+            )
             if remainingEnergy > 0:
                 return DeferrableLoadInfo(
                     device_id=self.id,
                     nominal_power=power,
-                    deferrable_hours= math.ceil(max(remainingEnergy / power, 1.0)),
-                    is_continous=self._is_continous)
+                    deferrable_hours=math.ceil(max(remainingEnergy / power, 1.0)),
+                    is_continous=self._is_continous,
+                )
         return None

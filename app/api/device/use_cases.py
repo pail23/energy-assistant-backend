@@ -16,6 +16,7 @@ from . import OTHER_DEVICE
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
+
 class ReadAllDevices:
     """Read all devices use case."""
 
@@ -33,7 +34,13 @@ class ReadAllDevices:
                     result.supported_power_modes = list(d.supported_power_modes)
                     result.power_mode = d.power_mode
                 yield result
-        yield DeviceSchema(id=OTHER_DEVICE, name="Andere", icon="mdi-home", supported_power_modes=[], power_mode="")
+        yield DeviceSchema(
+            id=OTHER_DEVICE,
+            name="Andere",
+            icon="mdi-home",
+            supported_power_modes=[],
+            power_mode="",
+        )
 
 
 class ReadDevice:
@@ -56,6 +63,7 @@ class ReadDevice:
                 result.power_mode = d.power_mode
             return result
 
+
 class ReadDeviceMeasurements:
     """Read the device measurements use case."""
 
@@ -63,11 +71,16 @@ class ReadDeviceMeasurements:
         """Create a read device use case."""
         self.async_session = session
 
-    async def execute(self, device_id: uuid.UUID) -> AsyncIterator[DeviceMeasurementSchema]:
+    async def execute(
+        self, device_id: uuid.UUID
+    ) -> AsyncIterator[DeviceMeasurementSchema]:
         """Execute the read device use case."""
         async with self.async_session() as session:
-            async for device_measurement in DeviceMeasurement.read_by_device_id(session, device_id):
+            async for device_measurement in DeviceMeasurement.read_by_device_id(
+                session, device_id
+            ):
                 yield DeviceMeasurementSchema.model_validate(device_measurement)
+
 
 class UpdateDevicePowerMode:
     """Update the power mode of  a device use case."""
@@ -76,7 +89,9 @@ class UpdateDevicePowerMode:
         """Create a uodate device power mode use case."""
         self.async_session = session
 
-    async def execute(self, device_id: uuid.UUID, power_mode:str, home: Home) -> DeviceSchema:
+    async def execute(
+        self, device_id: uuid.UUID, power_mode: str, home: Home
+    ) -> DeviceSchema:
         """Execute the update device power nmode use case."""
         async with self.async_session.begin() as session:
             d = home.get_device(device_id)
@@ -97,6 +112,7 @@ class UpdateDevicePowerMode:
             except Exception:
                 LOGGER.error("Invalid power mode: " + power_mode)
                 raise HTTPException(status_code=404)
+
 
 class DeleteDevice:
     """Delete a device use case."""

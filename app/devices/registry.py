@@ -9,12 +9,14 @@ from app.constants import ROOT_LOGGER_NAME
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
+
 @dataclass(frozen=True, eq=True)
 class DeviceTypeId:
     """The of a device type."""
 
     manufacturer: str
     model: str
+
 
 @dataclass
 class DeviceType:
@@ -33,7 +35,7 @@ class DeviceTypeRegistry:
 
     def __init__(self) -> None:
         """Create a Device Type Registry instance."""
-        self._registry : dict[DeviceTypeId, DeviceType] = {}
+        self._registry: dict[DeviceTypeId, DeviceType] = {}
 
     def load(self, config_folder: str) -> None:
         """Load the registry from the configuration folder."""
@@ -56,32 +58,53 @@ class DeviceTypeRegistry:
             else:
                 device_type_config = config.get("device_type")
                 if device_type_config is None:
-                    LOGGER.error(f"Device type config file {filename} does not contain a device_type item.")
+                    LOGGER.error(
+                        f"Device type config file {filename} does not contain a device_type item."
+                    )
                 else:
                     manufacturer = device_type_config.get("manufacturer")
                     model = device_type_config.get("model")
                     icon = device_type_config.get("icon")
                     if model is None or manufacturer is None or icon is None:
-                        LOGGER.error(f"Manufacturer or Model or Icon not set in device type config file {filename}")
+                        LOGGER.error(
+                            f"Manufacturer or Model or Icon not set in device type config file {filename}"
+                        )
                     else:
                         device_state_config = device_type_config.get("state")
-                        state_on_threshold : float | None = None
+                        state_on_threshold: float | None = None
                         state_on_config = device_state_config.get("state_on")
                         if state_on_config is not None:
                             state_on_threshold = state_on_config.get("threshold")
 
-                        state_off_upper : float | None = None
-                        state_off_lower : float | None = None
-                        state_off_for : float | None = None
+                        state_off_upper: float | None = None
+                        state_off_lower: float | None = None
+                        state_off_for: float | None = None
                         state_off_config = device_state_config.get("state_off")
                         if state_off_config is not None:
                             state_off_upper = state_off_config.get("upper")
                             state_off_lower = state_off_config.get("lower")
                             state_off_for = state_off_config.get("for")
-                            trailing_zeros_for = state_off_config.get("trailing_zeros_for")
-                        if state_on_threshold is not None and state_off_upper is not None and state_off_lower is not None and state_off_for is not None and trailing_zeros_for is not None:
-                            device_type = DeviceType(icon = icon, state_on_threshold=state_on_threshold, state_off_upper=state_off_upper, state_off_lower=state_off_lower, state_off_for=state_off_for, trailing_zeros_for= trailing_zeros_for)
-                            self._registry[DeviceTypeId(manufacturer=manufacturer, model=model)] = device_type
+                            trailing_zeros_for = state_off_config.get(
+                                "trailing_zeros_for"
+                            )
+                        if (
+                            state_on_threshold is not None
+                            and state_off_upper is not None
+                            and state_off_lower is not None
+                            and state_off_for is not None
+                            and trailing_zeros_for is not None
+                        ):
+                            device_type = DeviceType(
+                                icon=icon,
+                                state_on_threshold=state_on_threshold,
+                                state_off_upper=state_off_upper,
+                                state_off_lower=state_off_lower,
+                                state_off_for=state_off_for,
+                                trailing_zeros_for=trailing_zeros_for,
+                            )
+                            self._registry[
+                                DeviceTypeId(manufacturer=manufacturer, model=model)
+                            ] = device_type
 
     def get_device_type(self, manufacturer: str, model: str) -> DeviceType | None:
         """Get the device type for a given manufacturer and model."""

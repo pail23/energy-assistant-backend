@@ -22,6 +22,7 @@ async def ac() -> AsyncGenerator:
     async with AsyncClient(app=app, base_url="https://test") as c:
         yield c
 
+
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db() -> Generator:
     """Set up the test database."""
@@ -63,12 +64,12 @@ async def session() -> AsyncGenerator:
             with contextlib.suppress(SQLAlchemyError):
                 yield AsyncSessionLocal
 
-
         app.dependency_overrides[get_session] = test_get_session
 
         yield async_session
         await async_session.close()
         await conn.rollback()
+
 
 @pytest.fixture
 def device_type_registry() -> DeviceTypeRegistry:

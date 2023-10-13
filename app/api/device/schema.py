@@ -16,6 +16,7 @@ class ReadAllDevicesResponse(BaseModel):
 
     devices: list[DeviceSchema]
 
+
 class ReadDeviceMeasurementsResponse(BaseModel):
     """API Response for reading home measurements."""
 

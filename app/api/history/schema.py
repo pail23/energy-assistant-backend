@@ -17,7 +17,6 @@ class DeviceMeasurementPeriodSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class HomeMeasurementPeriodSchema(BaseModel):
     """Schema class for a home measurement."""
 
@@ -31,11 +30,11 @@ class HomeMeasurementPeriodSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class ReadHomeMeasurementDifferenceResponse(HomeMeasurementPeriodSchema):
     """API Response for reading home measurements."""
 
     pass
-
 
 
 class HomeMeasurementDateSchema(HomeMeasurementPeriodSchema):
@@ -46,14 +45,13 @@ class HomeMeasurementDateSchema(HomeMeasurementPeriodSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
-
-
 class HomeMeasurementDailySchema(BaseModel):
     """Schema class for daily home measurements."""
 
     measurements: list[HomeMeasurementDateSchema]
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class HomeMeasurementDailyResponse(HomeMeasurementDailySchema):
     """Schema for the daily home measurements response."""

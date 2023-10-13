@@ -20,11 +20,14 @@ router = APIRouter(prefix="/homemeasurements")
 
 @router.get("", response_model=ReadAllHomeMeasurementResponse)
 async def read_all(
-    request: Request,
-    use_case: ReadAllHomeMeasurement = Depends(ReadAllHomeMeasurement)
+    request: Request, use_case: ReadAllHomeMeasurement = Depends(ReadAllHomeMeasurement)
 ) -> ReadAllHomeMeasurementResponse:
     """Rest end point for read all home measurements."""
-    return ReadAllHomeMeasurementResponse(home_measurements=[home_measurement async for home_measurement in use_case.execute()])
+    return ReadAllHomeMeasurementResponse(
+        home_measurements=[
+            home_measurement async for home_measurement in use_case.execute()
+        ]
+    )
 
 
 @router.get(
@@ -38,6 +41,7 @@ async def read(
 ) -> HomeMeasurementSchema:
     """REST end pont for read a home measurement."""
     return await use_case.execute(home_measurement_id)
+
 
 @router.get(
     "/by_date/{measurement_date}",
@@ -59,7 +63,9 @@ async def read_by_date(
 async def read_before_date(
     request: Request,
     measurement_date: date = Path(..., description=""),
-    use_case: ReadHomeMeasurementLastBeforeDate = Depends(ReadHomeMeasurementLastBeforeDate),
+    use_case: ReadHomeMeasurementLastBeforeDate = Depends(
+        ReadHomeMeasurementLastBeforeDate
+    ),
 ) -> HomeMeasurementSchema:
     """REST end pont for read the last home measurement before a date."""
     return await use_case.execute(measurement_date)
