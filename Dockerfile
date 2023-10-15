@@ -9,9 +9,7 @@ COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
 COPY ./alembic.ini .
 
-RUN pip install -r requirements.txt
-
-RUN mkdir /data
+RUN pip install -r requirements.txt && mkdir /data
 
 COPY ./app ./app
 COPY ./emhass ./emhass
