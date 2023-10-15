@@ -27,11 +27,16 @@ router = APIRouter(prefix="/devices")
 
 @router.get("", response_model=ReadAllDevicesResponse)
 async def read_all(
-    request: Request, use_case: ReadAllDevices = Depends(ReadAllDevices)
+    request: Request,
+    filter_with_session_log_enties: bool = False,
+    use_case: ReadAllDevices = Depends(ReadAllDevices),
 ) -> ReadAllDevicesResponse:
     """Rest end point for read all devices."""
     return ReadAllDevicesResponse(
-        devices=[device async for device in use_case.execute(request.app.home)]
+        devices=[
+            device
+            async for device in use_case.execute(request.app.home, filter_with_session_log_enties)
+        ]
     )
 
 

@@ -24,23 +24,27 @@ class ReadAllDevices:
         """Create a read all devices use case."""
         self.async_session = session
 
-    async def execute(self, home: Home) -> AsyncIterator[DeviceSchema]:
+    async def execute(
+        self, home: Home, filter_with_session_log_enties: bool
+    ) -> AsyncIterator[DeviceSchema]:
         """Execute the read all devices use case."""
         async with self.async_session() as session:
-            async for device in Device.read_all(session):
-                result = DeviceSchema.model_validate(device)
-                d = home.get_device(device.id)
-                if d is not None:
-                    result.supported_power_modes = list(d.supported_power_modes)
-                    result.power_mode = d.power_mode
-                yield result
-        yield DeviceSchema(
-            id=OTHER_DEVICE,
-            name="Andere",
-            icon="mdi-home",
-            supported_power_modes=[],
-            power_mode="",
-        )
+            async for device in Device.read_all(session, False, filter_with_session_log_enties):
+                if not filter_with_session_log_enties or len(device.session_log_entries) > 0:
+                    result = DeviceSchema.model_validate(device)
+                    d = home.get_device(device.id)
+                    if d is not None:
+                        result.supported_power_modes = list(d.supported_power_modes)
+                        result.power_mode = d.power_mode
+                    yield result
+        if not filter_with_session_log_enties:
+            yield DeviceSchema(
+                id=OTHER_DEVICE,
+                name="Andere",
+                icon="mdi-home",
+                supported_power_modes=[],
+                power_mode="",
+            )
 
 
 class ReadDevice:

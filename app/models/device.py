@@ -44,12 +44,17 @@ class Device(Base):
 
     @classmethod
     async def read_all(
-        cls, session: AsyncSession, include_device_measurements: bool = False
+        cls,
+        session: AsyncSession,
+        include_device_measurements: bool = False,
+        include_sessions: bool = False,
     ) -> AsyncIterator[Device]:
         """Read all devices."""
         stmt = select(cls)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
+        if include_sessions:
+            stmt = stmt.options(selectinload(cls.session_log_entries))
         stream = await session.stream_scalars(stmt.order_by(cls.id))
         async for row in stream:
             yield row
