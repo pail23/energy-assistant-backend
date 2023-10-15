@@ -8,13 +8,12 @@ WORKDIR /app
 COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
 COPY ./alembic.ini .
-
-RUN pip install -r requirements.txt && mkdir /data
-
 COPY ./app ./app
 COPY ./emhass ./emhass
 COPY ./migrations ./migrations
 COPY ./client ./client
+
+RUN pip install -r requirements.txt && mkdir /data
 
 # Required to persist build arg
 ARG BUILD_VERSION
