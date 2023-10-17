@@ -11,6 +11,7 @@ from . import (
     EnergyIntegrator,
     EnergySnapshot,
     PowerModes,
+    Session,
     SessionStorage,
     StatesRepository,
 )
@@ -29,7 +30,7 @@ class Device(ABC):
         self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshot: EnergySnapshot | None = None
         self.session_storage: SessionStorage = session_storage
-        self.current_session: int | None = None
+        self.current_session: Session | None = None
         self._supported_power_modes: list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
         self._power_mode: PowerModes = PowerModes.DEVICE_CONTROLLED
         self._store_sessions = False
@@ -150,7 +151,7 @@ class Device(ABC):
                 if old_state:
                     if self.current_session is not None:
                         await self.session_storage.update_session(
-                            self.current_session,
+                            self.current_session.id,
                             self.consumed_solar_energy,
                             self.consumed_energy,
                         )
@@ -162,7 +163,7 @@ class Device(ABC):
                     LOGGER.info("End Session")
                 if self.current_session is not None:
                     await self.session_storage.update_session_energy(
-                        self.current_session,
+                        self.current_session.id,
                         self.consumed_solar_energy,
                         self.consumed_energy,
                     )

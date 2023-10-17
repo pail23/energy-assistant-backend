@@ -1,7 +1,7 @@
 """The Device classes."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import tzinfo
+from datetime import datetime, tzinfo
 from enum import StrEnum, auto
 from typing import Optional
 import uuid
@@ -20,6 +20,16 @@ class DeferrableLoadInfo:
     is_constant: bool = False
 
 
+@dataclass
+class Session:
+    """Session data class."""
+
+    id: int
+    start: datetime
+    start_solar_consumed_energy: float
+    start_consumed_energy: float
+
+
 class SessionStorage(ABC):
     """Session storage base class."""
 
@@ -30,7 +40,7 @@ class SessionStorage(ABC):
         text: str,
         solar_consumed_energy: float,
         consumed_energy: float,
-    ) -> int:
+    ) -> Session:
         """Start a new session."""
         pass
 

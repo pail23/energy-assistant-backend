@@ -1,4 +1,5 @@
 """Interface to the homeassistant instance."""
+from datetime import datetime, timezone
 import logging
 
 import requests  # type: ignore
@@ -327,4 +328,14 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
     def attributes(self) -> dict[str, str]:
         """Get the attributes of the device for the UI."""
         result: dict[str, str] = {"state": self.state}
+        if self.state == "on" and self.current_session is not None:
+            result["session_time"] = str(
+                (datetime.now(timezone.utc) - self.current_session.start).total_seconds()
+            )
+            result["session_energy"] = str(
+                self.consumed_energy - self.current_session.start_consumed_energy
+            )
+            result["session_solar_energy"] = str(
+                self.consumed_solar_energy - self.current_session.start_solar_consumed_energy
+            )
         return result

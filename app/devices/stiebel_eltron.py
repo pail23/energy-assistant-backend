@@ -1,4 +1,6 @@
 """Stiebel Eltron device implementation."""
+from datetime import datetime, timezone
+
 from app import Optimizer
 
 from . import (
@@ -218,4 +220,14 @@ class StiebelEltronDevice(Device, DeviceWithState):
             "state": self.state,
             "actual_temperature": f"{self.actual_temperature} °C",
         }
+        if self.state == "on" and self.current_session is not None:
+            result["session_time"] = str(
+                (datetime.now(timezone.utc) - self.current_session.start).total_seconds()
+            )
+            result["session_energy"] = str(
+                self.consumed_energy - self.current_session.start_consumed_energy
+            )
+            result["session_solar_energy"] = str(
+                self.consumed_solar_energy - self.current_session.start_solar_consumed_energy
+            )
         return result

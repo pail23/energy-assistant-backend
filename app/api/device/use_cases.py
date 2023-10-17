@@ -40,7 +40,7 @@ class ReadAllDevices:
         if not filter_with_session_log_enties:
             yield DeviceSchema(
                 id=OTHER_DEVICE,
-                name="Andere",
+                name="Other",
                 icon="mdi-home",
                 supported_power_modes=[],
                 power_mode="",

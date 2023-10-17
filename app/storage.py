@@ -7,7 +7,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db import get_session
-from app.devices import PowerModes, SessionStorage
+from app.devices import PowerModes, Session, SessionStorage
 from app.devices.home import Home
 from app.models.device import Device as DeviceDTO, DeviceMeasurement
 from app.models.home import HomeMeasurement
@@ -156,7 +156,7 @@ class DbSessionStorage(SessionStorage):
         text: str,
         solar_consumed_energy: float,
         consumed_energy: float,
-    ) -> int:
+    ) -> Session:
         """Start a new session."""
         async_session = await get_async_session()
         async with async_session.begin() as session:
@@ -171,7 +171,7 @@ class DbSessionStorage(SessionStorage):
                 solar_consumed_energy,
                 consumed_energy,
             )
-            return entry.id
+            return Session(entry.id, entry.start, solar_consumed_energy, consumed_energy)
 
     async def update_session(
         self, id: int, solar_consumed_energy: float, consumed_energy: float
