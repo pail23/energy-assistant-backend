@@ -95,6 +95,7 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
             "energy": "energy_id",
         },
         session_storage,
+        device_type_registry,
     )
     home.add_device(device)
     db = Database()

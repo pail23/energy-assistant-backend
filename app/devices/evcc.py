@@ -13,10 +13,10 @@ from . import (
     StatesRepository,
 )
 from .config import get_config_param
-from .device import Device, DeviceWithState
+from .device import DeviceWithState
 
 
-class EvccDevice(Device, DeviceWithState):
+class EvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
     def __init__(self, config: dict, session_storage: SessionStorage):
@@ -76,7 +76,7 @@ class EvccDevice(Device, DeviceWithState):
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
-        await super().update_session(old_state, new_state, "EVCC")
+        await self.update_session(old_state, new_state, "EVCC")
 
     async def update_power_consumption(
         self,
@@ -156,7 +156,7 @@ class EvccDevice(Device, DeviceWithState):
     def attributes(self) -> dict[str, str]:
         """Get the attributes of the device for the UI."""
         result: dict[str, str] = {
-            "state": self.state,
+            **super().attributes,
             "pv_mode": self.mode,
         }
         if self._vehicle_soc is not None:

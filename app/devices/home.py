@@ -17,7 +17,7 @@ from . import (
 )
 from .config import get_config_param
 from .device import Device
-from .homeassistant import HomeassistantDevice, PowerStateDevice
+from .homeassistant import HomeassistantDevice
 from .stiebel_eltron import StiebelEltronDevice
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
@@ -65,12 +65,14 @@ class Home:
             for config_device in config_devices:
                 type = config_device.get("type")
                 if type == "homeassistant":
-                    self.devices.append(HomeassistantDevice(config_device, session_storage))
+                    self.devices.append(
+                        HomeassistantDevice(config_device, session_storage, device_type_registry)
+                    )
                 elif type == "stiebel-eltron":
                     self.devices.append(StiebelEltronDevice(config_device, session_storage))
                 elif type == "power-state-device":
                     self.devices.append(
-                        PowerStateDevice(config_device, session_storage, device_type_registry)
+                        HomeassistantDevice(config_device, session_storage, device_type_registry)
                     )
                 elif type == "evcc":
                     self.devices.append(EvccDevice(config_device, session_storage))

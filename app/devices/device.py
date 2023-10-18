@@ -1,5 +1,6 @@
 """Device base class for all devices."""
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 import logging
 import uuid
 
@@ -23,20 +24,14 @@ LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 class Device(ABC):
     """A device which tracks energy consumption."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, config: dict) -> None:
         """Create a device."""
         self._name = get_config_param(config, "name")
         self._id = uuid.UUID(get_config_param(config, "id"))
         self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshot: EnergySnapshot | None = None
-        self.session_storage: SessionStorage = session_storage
-        self.current_session: Session | None = None
         self._supported_power_modes: list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
         self._power_mode: PowerModes = PowerModes.DEVICE_CONTROLLED
-        self._store_sessions = False
-        store_sessions = config.get("store_sessions")
-        if store_sessions is not None and store_sessions:
-            self._store_sessions = True
 
     @property
     def name(self) -> str:
@@ -138,10 +133,41 @@ class Device(ABC):
         """Store the current values in the snapshot."""
         self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        return {}
+
+    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+        """Get the current deferrable load info."""
+        return None
+
+
+class DeviceWithState(Device):
+    """Device with a state."""
+
+    def __init__(self, config: dict, session_storage: SessionStorage):
+        """Create a DeviceWithState instance."""
+        super().__init__(config)
+        self.session_storage: SessionStorage = session_storage
+        self.current_session: Session | None = None
+        self._store_sessions = config.get("store_sessions", False)
+
+    @property
+    @abstractmethod
+    def state(self) -> str:
+        """The state of the device."""
+        pass
+
+    @property
+    def has_state(self) -> bool:
+        """Has this device a state."""
+        return True
+
     async def start_session(self, text: str) -> None:
         """Start a session."""
         self.current_session = await self.session_storage.start_session(
-            self._id, text, self.consumed_solar_energy, self.consumed_energy
+            self.id, text, self.consumed_solar_energy, self.consumed_energy
         )
 
     async def update_session(self, old_state: bool, new_state: bool, text: str) -> None:
@@ -171,18 +197,17 @@ class Device(ABC):
     @property
     def attributes(self) -> dict[str, str]:
         """Get the attributes of the device for the UI."""
-        return {}
-
-    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
-        """Get the current deferrable load info."""
-        return None
-
-
-class DeviceWithState(ABC):
-    """Device with a state."""
-
-    @property
-    @abstractmethod
-    def state(self) -> str:
-        """The state of the device."""
-        pass
+        result: dict[str, str] = {}
+        if self.has_state:
+            result["state"] = self.state
+        if self.state == "on" and self.current_session is not None:
+            result["session_time"] = str(
+                (datetime.now(timezone.utc) - self.current_session.start).total_seconds()
+            )
+            result["session_energy"] = str(
+                self.consumed_energy - self.current_session.start_consumed_energy
+            )
+            result["session_solar_energy"] = str(
+                self.consumed_solar_energy - self.current_session.start_solar_consumed_energy
+            )
+        return result

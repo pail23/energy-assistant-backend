@@ -1,5 +1,4 @@
 """Interface to the homeassistant instance."""
-from datetime import datetime, timezone
 import logging
 
 import requests  # type: ignore
@@ -18,7 +17,7 @@ from . import (
     assign_if_available,
 )
 from .config import get_config_param
-from .device import Device, DeviceWithState
+from .device import DeviceWithState
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 UNAVAILABLE = "unavailable"
@@ -168,20 +167,39 @@ class Homeassistant(StatesSingleRepository):
             raise Exception("Could not get location from Home Assistant.")
 
 
-class HomeassistantDevice(Device):
+class HomeassistantDevice(DeviceWithState):
     """A generic Homeassistant device."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(
+        self,
+        config: dict,
+        session_storage: SessionStorage,
+        device_type_registry: DeviceTypeRegistry,
+    ) -> None:
         """Create a generic Homeassistant device."""
         super().__init__(config, session_storage)
         self._power_entity_id: str = get_config_param(config, "power")
         self._consumed_energy_entity_id: str = get_config_param(config, "energy")
         self._power: State | None = None
         self._consumed_energy: State | None = None
-        scale = config.get("energy_scale")
-        self._energy_scale: float = float(scale) if scale is not None else 1
-        icon = config.get("icon")
-        self._icon: str | None = str(icon)
+        self._energy_scale: float = config.get("energy_scale", 1)
+        self._icon: str = str(config.get("icon", "mdi-home"))
+
+        self._power_data = DataBuffer()
+        manufacturer = config.get("manufacturer")
+        model = config.get("model")
+        self._device_type: DeviceType | None = None
+        if model is not None and manufacturer is not None:
+            self._device_type = device_type_registry.get_device_type(manufacturer, model)
+        if self._device_type is None and config.get("has_state", False):
+            self._device_type = DeviceType(
+                str(config.get("icon", "mdi:lightning-bolt")), 2, 0, 0, 0, 10
+            )
+        self._state: str
+        if self.has_state:
+            self._state = "unknown"
+        else:
+            self._state = "not supported"
 
     async def update_state(
         self, state_repository: StatesRepository, self_sufficiency: float
@@ -197,6 +215,34 @@ class HomeassistantDevice(Device):
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
+
+        if self.has_state:
+            old_state = self.state == "on"
+            if self._device_type is not None:
+                self._power_data.add_data_point(self.power)
+                if self.state != "on" and self.power > self._device_type.state_on_threshold:
+                    self._state = "on"
+                elif self.state != "off":
+                    if self.state == "on" and self.power == 0:
+                        is_between = (
+                            self._device_type.state_off_for > 0
+                            and self._power_data.is_between(
+                                self._device_type.state_off_lower,
+                                self._device_type.state_off_upper,
+                                self._device_type.state_off_for,
+                                without_trailing_zeros=True,
+                            )
+                        )
+                        max = (
+                            self._device_type.trailing_zeros_for > 0
+                            and self._power_data.get_max_for(self._device_type.trailing_zeros_for)
+                        )
+                        if is_between or max < 1:
+                            self._state = "off"
+                    elif self.state == "unknown":
+                        self._state = "off"
+            new_state = self.state == "on"
+            await super().update_session(old_state, new_state, "Power State Device")
 
     async def update_power_consumption(
         self,
@@ -216,7 +262,7 @@ class HomeassistantDevice(Device):
     @property
     def icon(self) -> str:
         """The icon of the device."""
-        return self._icon if self._icon else "mdi-home"
+        return self._icon
 
     @property
     def power(self) -> float:
@@ -240,30 +286,6 @@ class HomeassistantDevice(Device):
             self._consumed_energy_entity_id, str(consumed_energy)
         )
 
-
-class PowerStateDevice(HomeassistantDevice, DeviceWithState):
-    """A device which detects it's state by power data."""
-
-    def __init__(
-        self,
-        config: dict,
-        session_storage: SessionStorage,
-        device_type_registry: DeviceTypeRegistry,
-    ) -> None:
-        """Create a PowerStateDevie device."""
-        super().__init__(config, session_storage)
-        self._state: str = "unknown"
-        self._power_data = DataBuffer()
-        manufacturer = config.get("manufacturer")
-        model = config.get("model")
-        self._device_type: DeviceType | None = None
-        if model is not None and manufacturer is not None:
-            self._device_type = device_type_registry.get_device_type(manufacturer, model)
-        if self._device_type is None:
-            self._device_type = DeviceType(
-                str(config.get("icon", "mdi:lightning-bolt")), 2, 0, 0, 0, 10
-            )
-
         """
         self._state_on_threshold : float | None = None
         state_on_config = config.get("state_on")
@@ -281,61 +303,11 @@ class PowerStateDevice(HomeassistantDevice, DeviceWithState):
         """
 
     @property
-    def icon(self) -> str:
-        """The icon of the device."""
-        if self._device_type:
-            return self._device_type.icon
-        else:
-            return "mdi-home"
-
-    @property
     def state(self) -> str:
         """The state of the device. The state is `on` in case the device is running."""
         return self._state
 
-    async def update_state(
-        self, state_repository: StatesRepository, self_sufficiency: float
-    ) -> None:
-        """Update the own state from the states of a StatesRepository."""
-        old_state = self.state == "on"
-        await super().update_state(state_repository, self_sufficiency)
-        if self._device_type is not None:
-            self._power_data.add_data_point(self.power)
-            if self.state != "on" and self.power > self._device_type.state_on_threshold:
-                self._state = "on"
-            elif self.state != "off":
-                if self.state == "on" and self.power == 0:
-                    is_between = (
-                        self._device_type.state_off_for > 0
-                        and self._power_data.is_between(
-                            self._device_type.state_off_lower,
-                            self._device_type.state_off_upper,
-                            self._device_type.state_off_for,
-                            without_trailing_zeros=True,
-                        )
-                    )
-                    max = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(
-                        self._device_type.trailing_zeros_for
-                    )
-                    if is_between or max < 1:
-                        self._state = "off"
-                elif self.state == "unknown":
-                    self._state = "off"
-        new_state = self.state == "on"
-        await super().update_session(old_state, new_state, "Power State Device")
-
     @property
-    def attributes(self) -> dict[str, str]:
-        """Get the attributes of the device for the UI."""
-        result: dict[str, str] = {"state": self.state}
-        if self.state == "on" and self.current_session is not None:
-            result["session_time"] = str(
-                (datetime.now(timezone.utc) - self.current_session.start).total_seconds()
-            )
-            result["session_energy"] = str(
-                self.consumed_energy - self.current_session.start_consumed_energy
-            )
-            result["session_solar_energy"] = str(
-                self.consumed_solar_energy - self.current_session.start_solar_consumed_energy
-            )
-        return result
+    def has_state(self) -> bool:
+        """Has this device a state."""
+        return self._device_type is not None

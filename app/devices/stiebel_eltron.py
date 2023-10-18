@@ -1,7 +1,7 @@
 """Stiebel Eltron device implementation."""
-from datetime import datetime, timezone
 
 from app import Optimizer
+from app.devices.device import DeviceWithState
 
 from . import (
     DeferrableLoadInfo,
@@ -13,7 +13,6 @@ from . import (
 )
 from .analysis import DataBuffer
 from .config import get_config_param
-from .device import Device, DeviceWithState
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
@@ -30,7 +29,7 @@ def numeric_value(value: str | None) -> float | None:
         return None
 
 
-class StiebelEltronDevice(Device, DeviceWithState):
+class StiebelEltronDevice(DeviceWithState):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
     def __init__(self, config: dict, session_storage: SessionStorage):
@@ -89,7 +88,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
-        await super().update_session(old_state, new_state, "Water heater")
+        await self.update_session(old_state, new_state, "Water heater")
 
     async def update_power_consumption(
         self,
@@ -217,17 +216,7 @@ class StiebelEltronDevice(Device, DeviceWithState):
     def attributes(self) -> dict[str, str]:
         """Get the attributes of the device for the UI."""
         result: dict[str, str] = {
-            "state": self.state,
+            **super().attributes,
             "actual_temperature": f"{self.actual_temperature} °C",
         }
-        if self.state == "on" and self.current_session is not None:
-            result["session_time"] = str(
-                (datetime.now(timezone.utc) - self.current_session.start).total_seconds()
-            )
-            result["session_energy"] = str(
-                self.consumed_energy - self.current_session.start_consumed_energy
-            )
-            result["session_solar_energy"] = str(
-                self.consumed_solar_energy - self.current_session.start_solar_consumed_energy
-            )
         return result
