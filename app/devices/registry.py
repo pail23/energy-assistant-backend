@@ -24,6 +24,7 @@ class DeviceType:
 
     icon: str
     state_on_threshold: float
+    state_off_threshold: float
     state_off_upper: float
     state_off_lower: float
     state_off_for: float
@@ -76,11 +77,13 @@ class DeviceTypeRegistry:
                         if state_on_config is not None:
                             state_on_threshold = state_on_config.get("threshold")
 
+                        state_off_threshold: float = 0.0
                         state_off_upper: float | None = None
                         state_off_lower: float | None = None
                         state_off_for: float | None = None
                         state_off_config = device_state_config.get("state_off")
                         if state_off_config is not None:
+                            state_off_threshold = state_off_config.get("threshold", 0.0)
                             state_off_upper = state_off_config.get("upper")
                             state_off_lower = state_off_config.get("lower")
                             state_off_for = state_off_config.get("for")
@@ -95,6 +98,7 @@ class DeviceTypeRegistry:
                             device_type = DeviceType(
                                 icon=icon,
                                 state_on_threshold=state_on_threshold,
+                                state_off_threshold=state_off_threshold,
                                 state_off_upper=state_off_upper,
                                 state_off_lower=state_off_lower,
                                 state_off_for=state_off_for,

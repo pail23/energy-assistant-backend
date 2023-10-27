@@ -191,9 +191,18 @@ class HomeassistantDevice(DeviceWithState):
         self._device_type: DeviceType | None = None
         if model is not None and manufacturer is not None:
             self._device_type = device_type_registry.get_device_type(manufacturer, model)
-        if self._device_type is None and config.get("has_state", False):
+        state_detection: dict = config.get("state", {})
+        if self._device_type is None and state_detection:
+            state_on = state_detection.get("state_on", {})
+            state_off = state_detection.get("state_off", {})
             self._device_type = DeviceType(
-                str(config.get("icon", "mdi:lightning-bolt")), 2, 0, 0, 0, 10
+                str(config.get("icon", "mdi:lightning-bolt")),
+                state_on.get("threshold", 2),
+                state_off.get("threshold", 0),
+                state_off.get("upper", 0),
+                state_off.get("lower", 0),
+                state_off.get("for", 0),
+                state_off.get("trailing_zeros_for", 10),
             )
         self._state: str
         if self.has_state:
@@ -223,7 +232,7 @@ class HomeassistantDevice(DeviceWithState):
                 if self.state != "on" and self.power > self._device_type.state_on_threshold:
                     self._state = "on"
                 elif self.state != "off":
-                    if self.state == "on" and self.power == 0:
+                    if self.state == "on" and self.power <= self._device_type.state_off_threshold:
                         is_between = (
                             self._device_type.state_off_for > 0
                             and self._power_data.is_between(
@@ -237,7 +246,7 @@ class HomeassistantDevice(DeviceWithState):
                             self._device_type.trailing_zeros_for > 0
                             and self._power_data.get_max_for(self._device_type.trailing_zeros_for)
                         )
-                        if is_between or max < 1:
+                        if is_between or max <= self._device_type.state_off_threshold:
                             self._state = "off"
                     elif self.state == "unknown":
                         self._state = "off"
@@ -285,22 +294,6 @@ class HomeassistantDevice(DeviceWithState):
         self._consumed_energy = HomeassistantState(
             self._consumed_energy_entity_id, str(consumed_energy)
         )
-
-        """
-        self._state_on_threshold : float | None = None
-        state_on_config = config.get("state_on")
-        if state_on_config is not None:
-            self._state_on_threshold = get_float_param_from_list(state_on_config, "threshold")
-
-        self._state_off_upper : float | None = None
-        self._state_off_lower : float | None = None
-        self._state_off_for : float | None = None
-        state_off_config = config.get("state_off")
-        if state_off_config is not None:
-            self._state_off_upper = get_float_param_from_list(state_off_config, "upper")
-            self._state_off_lower = get_float_param_from_list(state_off_config, "lower")
-            self._state_off_for = get_float_param_from_list(state_off_config, "for")
-        """
 
     @property
     def state(self) -> str:
