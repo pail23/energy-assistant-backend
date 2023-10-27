@@ -66,9 +66,9 @@ class EvccDevice(DeviceWithState):
             self.get_device_topic_id("chargeTotalImport")
         )
         if self.consumed_energy == 0:
-            self._consumed_energy = self._utility_meter.update_energy_state(
-                state_repository.get_state(self.get_device_topic_id("chargedEnergy"))
-            )
+            state = state_repository.get_state(self.get_device_topic_id("chargedEnergy"))
+            if state is not None:
+                self._consumed_energy = self._utility_meter.update_energy_state(state)
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
         self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
