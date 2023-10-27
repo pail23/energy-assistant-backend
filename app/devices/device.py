@@ -6,6 +6,7 @@ import uuid
 
 from app import Optimizer
 from app.constants import ROOT_LOGGER_NAME
+from app.devices.utility_meter import UtilityMeter
 
 from . import (
     DeferrableLoadInfo,
@@ -32,6 +33,7 @@ class Device(ABC):
         self._energy_snapshot: EnergySnapshot | None = None
         self._supported_power_modes: list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
         self._power_mode: PowerModes = PowerModes.DEVICE_CONTROLLED
+        self._utility_meters: list[UtilityMeter] = []
 
     @property
     def name(self) -> str:
@@ -141,6 +143,12 @@ class Device(ABC):
     def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
         """Get the current deferrable load info."""
         return None
+
+    def add_utility_meter(self, id: str) -> UtilityMeter:
+        """Add a new utility meter to the device."""
+        utility_meter = UtilityMeter(id)
+        self._utility_meters.append(utility_meter)
+        return utility_meter
 
 
 class DeviceWithState(Device):

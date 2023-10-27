@@ -2,7 +2,6 @@
 import math
 
 from app import Optimizer
-from app.devices.utility_meter import UtilityMeter
 from app.mqtt import MQTT_CHANNEL
 
 from . import (
@@ -41,7 +40,7 @@ class EvccDevice(DeviceWithState):
             PowerModes.FAST,
             PowerModes.OPTIMIZED,
         ]
-        self._utility_meter = UtilityMeter()
+        self._utility_meter = self.add_utility_meter("energy")
 
     def get_device_topic_id(self, name: str) -> StateId:
         """Get the id of a topic of this load point."""
