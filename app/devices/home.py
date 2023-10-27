@@ -71,6 +71,7 @@ class Home:
                 elif type == "stiebel-eltron":
                     self.devices.append(StiebelEltronDevice(config_device, session_storage))
                 elif type == "power-state-device":
+                    # This is deprecated and will be removed.
                     self.devices.append(
                         HomeassistantDevice(config_device, session_storage, device_type_registry)
                     )

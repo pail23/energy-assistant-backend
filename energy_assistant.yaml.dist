@@ -21,7 +21,7 @@ home:
       store_sessions: true
     - name: Tumbler
       id: 75203c88-216f-4712-8a94-80513793f7e1
-      type: power-state-device
+      type: homeassistant
       power: sensor.tumbler_power
       energy: sensor.tumbler_energy
       energy_scale: 0.001
