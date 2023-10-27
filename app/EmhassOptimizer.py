@@ -28,7 +28,9 @@ from .constants import ROOT_LOGGER_NAME
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
-SENSOR_POWER_NO_VAR_LOADS = "sensor.power_load_no_var_loads"
+SENSOR_POWER_NO_VAR_LOADS = "power_load_no_var_loads"
+DEFAULT_HASS_ENTITY_PREFIX = "em"
+DEFAULT_COST_FUNC = "profit"
 
 
 class EmhassOptimizer(Optimizer):
@@ -49,8 +51,17 @@ class EmhassOptimizer(Optimizer):
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
         self._emhass_config: dict | None = config.get("emhass")
+        self._power_no_var_loads_id = (
+            f"sensor.{DEFAULT_HASS_ENTITY_PREFIX}_{SENSOR_POWER_NO_VAR_LOADS}"
+        )
         if self._emhass_config is not None:
-            self._cost_fun = self._emhass_config.get("costfun")
+            self._cost_fun = self._emhass_config.get("costfun", DEFAULT_COST_FUNC)
+            self._hass_entity_prefix = self._emhass_config.get(
+                "hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX
+            )
+            self._power_no_var_loads_id = (
+                f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
+            )
             params = json.dumps(self._emhass_config)
             retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
                 pathlib.Path(), False, params=params
@@ -59,11 +70,14 @@ class EmhassOptimizer(Optimizer):
             retrieve_hass_conf["hass_url"] = self._hass_url
             retrieve_hass_conf["long_lived_token"] = self._hass_token
             retrieve_hass_conf["var_PV"] = self._solar_power_id
-            retrieve_hass_conf["var_load"] = SENSOR_POWER_NO_VAR_LOADS
+            if "var_load" not in retrieve_hass_conf:
+                retrieve_hass_conf["var_load"] = self._power_no_var_loads_id
+            else:
+                self._power_no_var_loads_id = retrieve_hass_conf["var_load"]
             retrieve_hass_conf["var_replace_zero"] = [self._solar_power_id]
             retrieve_hass_conf["var_interp"] = [
                 self._solar_power_id,
-                SENSOR_POWER_NO_VAR_LOADS,
+                self._power_no_var_loads_id,
             ]
 
             retrieve_hass_conf["time_zone"] = self._location.get_time_zone()
@@ -107,17 +121,19 @@ class EmhassOptimizer(Optimizer):
             "device_class": "power",
         }
         state_repository.set_state(
-            StateId(id=SENSOR_POWER_NO_VAR_LOADS, channel=HOMEASSISTANT_CHANNEL),
+            StateId(id=self._power_no_var_loads_id, channel=HOMEASSISTANT_CHANNEL),
             str(power),
             attributes,
         )
         state_repository.set_state(
-            StateId(id="sensor.em_p_pv", channel=HOMEASSISTANT_CHANNEL),
+            StateId(id=f"sensor.{self._hass_entity_prefix}_p_pv", channel=HOMEASSISTANT_CHANNEL),
             str(self._get_forecast_value("P_PV")),
             attributes,
         )
         state_repository.set_state(
-            StateId(id="sensor.em_p_consumption", channel=HOMEASSISTANT_CHANNEL),
+            StateId(
+                id=f"sensor.{self._hass_entity_prefix}_p_consumption", channel=HOMEASSISTANT_CHANNEL
+            ),
             str(self._get_forecast_value("P_Load")),
             attributes,
         )
@@ -173,7 +189,7 @@ class EmhassOptimizer(Optimizer):
         )
 
         days_list = utils.get_days_list(self._retrieve_hass_conf["days_to_retrieve"])
-        var_list = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
+        var_list = [self._solar_power_id, self._power_no_var_loads_id]
         self._retrieve_hass.get_data(
             days_list, var_list, minimal_response=False, significant_changes_only=False
         )
@@ -218,7 +234,7 @@ class EmhassOptimizer(Optimizer):
             "set_def_constant": [device.is_constant for device in self._optimzed_devices],
             "days_to_retrieve": self._retrieve_hass_conf.get("days_to_retrieve", 10),
             "model_type": "load_forecast",
-            "var_model": SENSOR_POWER_NO_VAR_LOADS,
+            "var_model": self._power_no_var_loads_id,
             "sklearn_model": "KNeighborsRegressor",
             "num_lags": int(24 / freq),  # should be one day * 30 min
             "split_date_delta": "48h",
@@ -379,7 +395,7 @@ class EmhassOptimizer(Optimizer):
 
         # Retrieve data from hass
         days_list = utils.get_days_list(1)
-        var_list = [self._solar_power_id, SENSOR_POWER_NO_VAR_LOADS]
+        var_list = [self._solar_power_id, self._power_no_var_loads_id]
         self._retrieve_hass.get_data(
             days_list, var_list, minimal_response=False, significant_changes_only=False
         )
@@ -484,7 +500,7 @@ class EmhassOptimizer(Optimizer):
         days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
 
         days_list = utils.get_days_list(days_to_retrieve)
-        var_list = [SENSOR_POWER_NO_VAR_LOADS]
+        var_list = [self._power_no_var_loads_id]
         self._retrieve_hass.get_data(days_list, var_list)
         df_input_data = self._retrieve_hass.df_final.copy()
 
@@ -498,7 +514,7 @@ class EmhassOptimizer(Optimizer):
         mlf = mlforecaster(
             data,
             model_type,
-            SENSOR_POWER_NO_VAR_LOADS,
+            self._power_no_var_loads_id,
             sklearn_model,
             num_lags,
             str(self._data_folder),
@@ -558,7 +574,7 @@ class EmhassOptimizer(Optimizer):
         days_to_retrieve = params_dict["passed_data"]["days_to_retrieve"]
 
         days_list = utils.get_days_list(days_to_retrieve)
-        var_list = [SENSOR_POWER_NO_VAR_LOADS]
+        var_list = [self._power_no_var_loads_id]
         self._retrieve_hass.get_data(days_list, var_list)
         df_input_data = self._retrieve_hass.df_final.copy()
 

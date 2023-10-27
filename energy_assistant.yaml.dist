@@ -37,6 +37,8 @@ home:
       energy_scale: 0.001
 
 emhass:
+  costfun: profit
+  hass_entity_prefix: em
   retrieve_hass_conf:
     - freq: 30 # The time step to resample retrieved data from hass in minutes
     - days_to_retrieve: 8 # We will retrieve data from now and up to days_to_retrieve days
