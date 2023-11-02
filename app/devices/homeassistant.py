@@ -132,6 +132,16 @@ class Homeassistant(StatesSingleRepository):
                         )
                         if not response.ok:
                             LOGGER.error("State update in hass failed")
+                    elif id.startswith("switch"):
+                        data = {"entity_id": id}
+                        state = state.value
+                        response = requests.post(
+                            f"{self._url}/api/services/switch/turn_{state}",
+                            headers=headers,
+                            json=data,
+                        )
+                        if not response.ok:
+                            LOGGER.error("Turn switch update in hass failed")
                     elif id.startswith("sensor"):
                         sensor_data: dict = {
                             "state": state.value,
@@ -184,6 +194,8 @@ class HomeassistantDevice(DeviceWithState):
         self._power_entity_id: str = get_config_param(config, "power")
         self._consumed_energy_entity_id: str = get_config_param(config, "energy")
         self._output_id: str | None = config.get("output")
+        self._nominal_power: float | None = config.get("nominal_power")
+        self._nominal_duration: float | None = config.get("nominal_duration")
         self._power: State | None = None
         self._consumed_energy: State | None = None
         self._output_state: State | None = None
@@ -340,11 +352,15 @@ class HomeassistantDevice(DeviceWithState):
 
     def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
         """Get the current deferrable load info."""
-        if self.power_mode == PowerModes.OPTIMIZED:
+        if (
+            self.power_mode == PowerModes.OPTIMIZED
+            and self._nominal_power is not None
+            and self._nominal_duration is not None
+        ):
             return DeferrableLoadInfo(
                 device_id=self.id,
-                nominal_power=1000,
-                deferrable_hours=1,
+                nominal_power=self._nominal_power,
+                deferrable_hours=round(self._nominal_duration / 3600),
                 is_continous=False,
             )
         return None
