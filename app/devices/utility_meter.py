@@ -10,16 +10,16 @@ LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 class UtilityMeter:
     """Handle meters which can loose their energy meter value and reset to 0."""
 
-    def __init__(self, id: str) -> None:
+    def __init__(self, name: str) -> None:
         """Create a utility meter instance."""
         self._last_meter_value: float = 0
         self._energy: float = 0
-        self._id = id
+        self._name = name
 
     @property
-    def id(self) -> str:
-        """Id of the utility meter."""
-        return self._id
+    def name(self) -> str:
+        """Name of the utility meter."""
+        return self._name
 
     @property
     def energy(self) -> float:

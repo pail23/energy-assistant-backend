@@ -9,7 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.db import get_session
 from app.devices import PowerModes, Session, SessionStorage
 from app.devices.home import Home
-from app.models.device import Device as DeviceDTO, DeviceMeasurement
+from app.devices.utility_meter import UtilityMeter
+from app.models.device import (
+    Device as DeviceDTO,
+    DeviceMeasurement,
+    UtilityMeter as UtilityMeterDTO,
+)
 from app.models.home import HomeMeasurement
 from app.models.sessionlog import SessionLogEntry
 
@@ -68,8 +73,19 @@ class Database:
                                 device_measurement.solar_consumed_energy,
                                 device_measurement.consumed_energy,
                             )
+                await self.restore_utility_meters(session, home)
             except Exception as ex:
                 LOGGER.error("Error while restoring state of home", ex)
+
+    async def restore_utility_meters(self, session: AsyncSession, home: Home) -> None:
+        """Restore the utility meters."""
+        for device in home.devices:
+            for utility_meter in device._utility_meters:
+                utility_meter_dto = await UtilityMeterDTO.read_by_name(
+                    session, utility_meter.name, device.id
+                )
+                if utility_meter_dto is not None:
+                    utility_meter.restore_last_meter_value(utility_meter_dto.last_meter_value)
 
     async def store_home_state(self, home: Home, session: AsyncSession) -> None:
         """Store the state of the home including all devices."""
@@ -122,6 +138,9 @@ class Database:
                                 solar_consumed_energy=device.consumed_solar_energy,
                                 device=device_dto,
                             )
+            for device in home.devices:
+                for utility_meter in device._utility_meters:
+                    await self.create_or_update_utility_meter(session, device.id, utility_meter)
             await session.flush()
             await session.commit()
         except Exception as ex:
@@ -145,6 +164,22 @@ class Database:
 
             except Exception as ex:
                 LOGGER.error("Error while udpateing the devices of home", ex)
+
+    async def create_or_update_utility_meter(
+        self, session: AsyncSession, device_id: uuid.UUID, utility_meter: UtilityMeter
+    ) -> None:
+        """Create or update a utility meter for a given device."""
+        utility_meter_dto = await UtilityMeterDTO.read_by_name(
+            session, utility_meter.name, device_id
+        )
+        if utility_meter_dto is None:
+            await UtilityMeterDTO.create(
+                session, device_id, utility_meter.name, utility_meter.last_meter_value
+            )
+        else:
+            await utility_meter_dto.update(
+                session, device_id, utility_meter.name, utility_meter.last_meter_value
+            )
 
 
 class DbSessionStorage(SessionStorage):

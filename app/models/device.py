@@ -42,6 +42,13 @@ class Device(Base):
         cascade="save-update, merge, refresh-expire, expunge, delete, delete-orphan",
     )
 
+    utility_meters: Mapped[list[UtilityMeter]] = relationship(
+        "UtilityMeter",
+        back_populates="device",
+        order_by="UtilityMeter.id",
+        cascade="save-update, merge, refresh-expire, expunge, delete, delete-orphan",
+    )
+
     @classmethod
     async def read_all(
         cls,
@@ -214,4 +221,69 @@ class DeviceMeasurement(Base):
     async def delete(cls, session: AsyncSession, measurement: DeviceMeasurement) -> None:
         """Delete a device measurement."""
         await session.delete(measurement)
+        await session.flush()
+
+
+class UtilityMeter(Base):
+    """Data model for a utility meter."""
+
+    __tablename__ = "utility_meter"
+
+    id: Mapped[int] = mapped_column(
+        "id", autoincrement=True, nullable=False, unique=True, primary_key=True
+    )
+    name: Mapped[str]
+
+    last_meter_value: Mapped[float]
+
+    device_id: Mapped[uuid.UUID] = mapped_column(
+        "device_id", ForeignKey("devices.id"), nullable=False
+    )
+
+    device: Mapped[Device] = relationship("Device", back_populates="utility_meters")
+
+    @classmethod
+    async def read_by_id(cls, session: AsyncSession, utility_meter_id: int) -> UtilityMeter | None:
+        """Read a utility meter by id."""
+        stmt = select(cls).where(cls.id == utility_meter_id)
+        return await session.scalar(stmt.order_by(cls.id))
+
+    @classmethod
+    async def read_by_name(
+        cls, session: AsyncSession, name: str, device_id: uuid.UUID
+    ) -> UtilityMeter | None:
+        """Read a utility meter by id."""
+        stmt = select(cls).where(cls.name == name).where(cls.device_id == device_id)
+        return await session.scalar(stmt.order_by(cls.id))
+
+    @classmethod
+    async def create(
+        cls, session: AsyncSession, device_id: uuid.UUID, name: str, last_meter_value: float
+    ) -> UtilityMeter:
+        """Create a utility meter."""
+
+        utility_meter = UtilityMeter(
+            name=name,
+            last_meter_value=last_meter_value,
+            device_id=device_id,
+        )
+        session.add(utility_meter)
+        await session.flush()
+        return utility_meter
+
+    async def update(
+        self, session: AsyncSession, device_id: uuid.UUID, name: str, last_meter_value: float
+    ) -> None:
+        """Update a utility meter."""
+
+        self.name = name
+        self.last_meter_value = last_meter_value
+        self.device_id = device_id
+
+        await session.flush()
+
+    @classmethod
+    async def delete(cls, session: AsyncSession, utility_meter: UtilityMeter) -> None:
+        """Delete a utility meter."""
+        await session.delete(utility_meter)
         await session.flush()
