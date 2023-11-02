@@ -6,7 +6,7 @@ from app.devices.utility_meter import UtilityMeter
 
 def test_utility_meter() -> None:
     """Test the utility meter."""
-    meter = UtilityMeter()
+    meter = UtilityMeter("energy")
     assert meter.energy == 0
     meter.update_energy(10)
     assert meter.energy == 10
