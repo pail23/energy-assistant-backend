@@ -275,22 +275,25 @@ class HomeassistantDevice(DeviceWithState):
         grid_exported_power: float,
     ) -> None:
         """Update the device based on the current pv availablity."""
-        state: bool = self._output_state.value == "on" if self._output_state is not None else False
-        new_state = state
-        if self.power_mode == PowerModes.PV:
-            # TODO: Implement this
-            pass
-        elif self.power_mode == PowerModes.OPTIMIZED:
-            power = optimizer.get_optimized_power(self._id)
-            new_state = power > 0
-        if state != new_state:
-            state_repository.set_state(
-                StateId(
-                    id=self._output_id,
-                    channel=HOMEASSISTANT_CHANNEL,
-                ),
-                "on" if new_state else "off",
+        if self._output_id is not None:
+            state: bool = (
+                self._output_state.value == "on" if self._output_state is not None else False
             )
+            new_state = state
+            if self.power_mode == PowerModes.PV:
+                # TODO: Implement this
+                pass
+            elif self.power_mode == PowerModes.OPTIMIZED:
+                power = optimizer.get_optimized_power(self._id)
+                new_state = power > 0
+            if state != new_state:
+                state_repository.set_state(
+                    StateId(
+                        id=self._output_id,
+                        channel=HOMEASSISTANT_CHANNEL,
+                    ),
+                    "on" if new_state else "off",
+                )
 
     @property
     def consumed_energy(self) -> float:
