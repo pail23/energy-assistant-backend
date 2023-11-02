@@ -9,9 +9,12 @@ from app.devices.analysis import DataBuffer
 from app.devices.registry import DeviceType, DeviceTypeRegistry
 
 from . import (
+    DeferrableLoadInfo,
     Location,
+    PowerModes,
     SessionStorage,
     State,
+    StateId,
     StatesRepository,
     StatesSingleRepository,
     assign_if_available,
@@ -180,10 +183,16 @@ class HomeassistantDevice(DeviceWithState):
         super().__init__(config, session_storage)
         self._power_entity_id: str = get_config_param(config, "power")
         self._consumed_energy_entity_id: str = get_config_param(config, "energy")
+        self._output_id: str | None = config.get("output")
         self._power: State | None = None
         self._consumed_energy: State | None = None
+        self._output_state: State | None = None
         self._energy_scale: float = config.get("energy_scale", 1)
         self._icon: str = str(config.get("icon", "mdi-home"))
+
+        if self._output_id is not None:
+            self._supported_power_modes.append(PowerModes.PV)
+            self.supported_power_modes.append(PowerModes.OPTIMIZED)
 
         self._power_data = DataBuffer()
         manufacturer = config.get("manufacturer")
@@ -214,6 +223,12 @@ class HomeassistantDevice(DeviceWithState):
         self, state_repository: StatesRepository, self_sufficiency: float
     ) -> None:
         """Update the own state from the states of a StatesRepository."""
+        if self._output_id is not None:
+            self._output_state = assign_if_available(
+                self._output_state, state_repository.get_state(self._output_id)
+            )
+        else:
+            self._output_state = None
         self._power = assign_if_available(
             self._power, state_repository.get_state(self._power_entity_id)
         )
@@ -260,7 +275,22 @@ class HomeassistantDevice(DeviceWithState):
         grid_exported_power: float,
     ) -> None:
         """Update the device based on the current pv availablity."""
-        pass
+        state: bool = self._output_state.value == "on" if self._output_state is not None else False
+        new_state = state
+        if self.power_mode == PowerModes.PV:
+            # TODO: Implement this
+            pass
+        elif self.power_mode == PowerModes.OPTIMIZED:
+            power = optimizer.get_optimized_power(self._id)
+            new_state = power > 0
+        if state != new_state:
+            state_repository.set_state(
+                StateId(
+                    id=self._output_id,
+                    channel=HOMEASSISTANT_CHANNEL,
+                ),
+                "on" if new_state else "off",
+            )
 
     @property
     def consumed_energy(self) -> float:
@@ -304,3 +334,14 @@ class HomeassistantDevice(DeviceWithState):
     def has_state(self) -> bool:
         """Has this device a state."""
         return self._device_type is not None
+
+    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+        """Get the current deferrable load info."""
+        if self.power_mode == PowerModes.OPTIMIZED:
+            return DeferrableLoadInfo(
+                device_id=self.id,
+                nominal_power=1000,
+                deferrable_hours=1,
+                is_continous=False,
+            )
+        return None
