@@ -134,9 +134,8 @@ class Homeassistant(StatesSingleRepository):
                             LOGGER.error("State update in hass failed")
                     elif id.startswith("switch"):
                         data = {"entity_id": id}
-                        state = state.value
                         response = requests.post(
-                            f"{self._url}/api/services/switch/turn_{state}",
+                            f"{self._url}/api/services/switch/turn_{state.value}",
                             headers=headers,
                             json=data,
                         )
