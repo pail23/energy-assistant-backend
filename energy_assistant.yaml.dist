@@ -28,6 +28,10 @@ home:
       store_sessions: true
       manufacturer: v-zug
       model: Adora TS WP
+      output: switch.tumbler
+      nominal_power: 800
+      nominal_duration: 7200
+      constant: true
     - name: Server
       id: eb6b3f0a-1175-4ff3-9ebe-8c22663cba48
       type: homeassistant
