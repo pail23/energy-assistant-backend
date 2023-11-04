@@ -5,7 +5,11 @@ import os
 
 import yaml
 
-from app.constants import ROOT_LOGGER_NAME
+from app.constants import (
+    DEFAULT_NOMINAL_DURATION,
+    DEFAULT_NOMINAL_POWER,
+    ROOT_LOGGER_NAME,
+)
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -23,6 +27,9 @@ class DeviceType:
     """The device type of a device."""
 
     icon: str
+    nominal_power: float
+    nominal_duration: float
+    constant: bool
     state_on_threshold: float
     state_off_threshold: float
     state_off_upper: float
@@ -66,6 +73,11 @@ class DeviceTypeRegistry:
                     manufacturer = device_type_config.get("manufacturer")
                     model = device_type_config.get("model")
                     icon = device_type_config.get("icon")
+                    nominal_power = device_type_config.get("nominal_power", DEFAULT_NOMINAL_POWER)
+                    nominal_duration = device_type_config.get(
+                        "nominal_duration", DEFAULT_NOMINAL_DURATION
+                    )
+                    constant = device_type_config.get("constant", False)
                     if model is None or manufacturer is None or icon is None:
                         LOGGER.error(
                             f"Manufacturer or Model or Icon not set in device type config file {filename}"
@@ -97,6 +109,9 @@ class DeviceTypeRegistry:
                         ):
                             device_type = DeviceType(
                                 icon=icon,
+                                nominal_power=nominal_power,
+                                nominal_duration=nominal_duration,
+                                constant=constant,
                                 state_on_threshold=state_on_threshold,
                                 state_off_threshold=state_off_threshold,
                                 state_off_upper=state_off_upper,

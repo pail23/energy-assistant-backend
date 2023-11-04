@@ -6,6 +6,7 @@ import uuid
 
 from app import Optimizer
 from app.constants import ROOT_LOGGER_NAME
+from app.devices.analysis import DataBuffer
 from app.devices.utility_meter import UtilityMeter
 
 from . import (
@@ -105,7 +106,7 @@ class Device(ABC):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power: float,
+        grid_exported_power_data: DataBuffer,
     ) -> None:
         """Update the device based on the current pv availablity."""
         pass

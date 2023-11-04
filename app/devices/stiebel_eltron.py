@@ -35,7 +35,6 @@ class StiebelEltronDevice(DeviceWithState):
     def __init__(self, config: dict, session_storage: SessionStorage):
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
-        self.grid_exported_power_data = DataBuffer()
         self._consumed_energy_today: State | None = None
         self._consumed_energy_today_entity_id: str = get_config_param(config, "energy_today")
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
@@ -94,10 +93,9 @@ class StiebelEltronDevice(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power: float,
+        grid_exported_power_data: DataBuffer,
     ) -> None:
         """Update the device based on the current pv availablity."""
-        self.grid_exported_power_data.add_data_point(grid_exported_power)
         if (
             self._target_temperature_normal is not None
             and self._target_temperature_pv is not None
@@ -110,7 +108,7 @@ class StiebelEltronDevice(DeviceWithState):
                 target_temperature: float = current_target_temperature.numeric_value
                 if self.power_mode == PowerModes.PV:
                     if self.state == "off":
-                        avg_300 = self.grid_exported_power_data.get_average_for(300)
+                        avg_300 = grid_exported_power_data.get_average_for(300)
                         if avg_300 > self.requested_additional_power * (1 + POWER_HYSTERESIS):
                             target_temperature = self._target_temperature_pv
                         elif avg_300 < self.requested_additional_power * (1 - POWER_HYSTERESIS):

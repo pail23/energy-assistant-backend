@@ -5,6 +5,7 @@ import uuid
 
 from app import Optimizer
 from app.constants import ROOT_LOGGER_NAME
+from app.devices.analysis import DataBuffer
 from app.devices.evcc import EvccDevice
 from app.devices.registry import DeviceTypeRegistry
 
@@ -43,6 +44,7 @@ class Home:
         grid_inverted = config.get("grid_inverted")
         if grid_inverted is not None and grid_inverted:
             self._grid_inverted = True
+        self.grid_exported_power_data = DataBuffer()
 
         self._disable_device_control: bool = False
         disable_control = config.get("disable_device_control")
@@ -192,10 +194,12 @@ class Home:
         self, state_repository: StatesRepository, optimizer: Optimizer
     ) -> None:
         """Update the device based on the current pv availablity."""
+        self.grid_exported_power_data.add_data_point(self.grid_imported_power)
+
         if not self._disable_device_control:
             for device in self.devices:
                 await device.update_power_consumption(
-                    state_repository, optimizer, self.grid_imported_power
+                    state_repository, optimizer, self.grid_exported_power_data
                 )
 
     @property

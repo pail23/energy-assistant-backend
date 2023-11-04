@@ -47,7 +47,8 @@ In case you are setting the `model` and `manufaturer` or the `state`, the device
 - `model`: Model of the device
 - `output`: In case you want Energy Assistant to control the device (pv mode or optimized mode), you need to set this value to the id of the homeassistant switch entity controlling the power of the device.
 - `nominal_power`: Expected nominal power consumption (in Watts) of the device in case the device is running.
-- `nominal_duration`: Expected nominal time (in seconds) the device is running per day
+- `nominal_duration`: Expected nominal time (in seconds) the device is running per day.
+- `constant`: `True` if the power of the device should not be interrupted when the device is running. In this case, there is only one startup per 24h in the `Optimized` mode.
 
 - `state`: In case Energy Assistant has not yet a pre-configured [model](device_models.md) of your device, you can configure the state detection with this entry.
   - `state_on`:

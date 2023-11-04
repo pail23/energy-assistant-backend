@@ -4,7 +4,11 @@ import logging
 import requests  # type: ignore
 
 from app import Optimizer
-from app.constants import ROOT_LOGGER_NAME
+from app.constants import (
+    DEFAULT_NOMINAL_DURATION,
+    DEFAULT_NOMINAL_POWER,
+    ROOT_LOGGER_NAME,
+)
 from app.devices.analysis import DataBuffer
 from app.devices.registry import DeviceType, DeviceTypeRegistry
 
@@ -26,6 +30,7 @@ LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 UNAVAILABLE = "unavailable"
 
 HOMEASSISTANT_CHANNEL = "ha"
+POWER_HYSTERESIS = 0.1
 
 
 class HomeassistantState(State):
@@ -192,9 +197,12 @@ class HomeassistantDevice(DeviceWithState):
         super().__init__(config, session_storage)
         self._power_entity_id: str = get_config_param(config, "power")
         self._consumed_energy_entity_id: str = get_config_param(config, "energy")
+
         self._output_id: str | None = config.get("output")
-        self._nominal_power: float | None = config.get("nominal_power")
-        self._nominal_duration: float | None = config.get("nominal_duration")
+        self._nominal_power: float | None = None
+        self._nominal_duration: float | None = None
+        self._is_constant: bool | None = None
+
         self._power: State | None = None
         self._consumed_energy: State | None = None
         self._output_state: State | None = None
@@ -211,12 +219,32 @@ class HomeassistantDevice(DeviceWithState):
         self._device_type: DeviceType | None = None
         if model is not None and manufacturer is not None:
             self._device_type = device_type_registry.get_device_type(manufacturer, model)
+            self._nominal_power = config.get(
+                "nominal_power", self._device_type.nominal_power if self._device_type else None
+            )
+            self._nominal_duration = config.get(
+                "nominal_duration",
+                self._device_type.nominal_duration if self._device_type else None,
+            )
+            self._is_constant = config.get(
+                "constant", self._device_type.constant if self._device_type else None
+            )
+        else:
+            self._nominal_power = config.get("nominal_power")
+            self._nominal_duration = config.get("nominal_duration")
+            self._is_constant = config.get("constant")
+
         state_detection: dict = config.get("state", {})
         if self._device_type is None and state_detection:
             state_on = state_detection.get("state_on", {})
             state_off = state_detection.get("state_off", {})
             self._device_type = DeviceType(
                 str(config.get("icon", "mdi:lightning-bolt")),
+                self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER,
+                self._nominal_duration
+                if self._nominal_duration is not None
+                else DEFAULT_NOMINAL_DURATION,
+                self._is_constant if self._is_constant is not None else False,
                 state_on.get("threshold", 2),
                 state_off.get("threshold", 0),
                 state_off.get("upper", 0),
@@ -283,7 +311,7 @@ class HomeassistantDevice(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power: float,
+        grid_exported_power_data: DataBuffer,
     ) -> None:
         """Update the device based on the current pv availablity."""
         if self._output_id is not None:
@@ -292,8 +320,11 @@ class HomeassistantDevice(DeviceWithState):
             )
             new_state = state
             if self.power_mode == PowerModes.PV:
-                # TODO: Implement this
-                pass
+                avg_300 = grid_exported_power_data.get_average_for(300)
+                if avg_300 > self.nominal_power * (1 + POWER_HYSTERESIS):
+                    new_state = True
+                elif avg_300 < self.nominal_power * (1 - POWER_HYSTERESIS):
+                    new_state = False
             elif self.power_mode == PowerModes.OPTIMIZED:
                 power = optimizer.get_optimized_power(self._id)
                 new_state = power > 0
@@ -332,6 +363,11 @@ class HomeassistantDevice(DeviceWithState):
             and self._power.available
         )
 
+    @property
+    def nominal_power(self) -> float:
+        """The nominal power of the device."""
+        return self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER
+
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
@@ -361,5 +397,6 @@ class HomeassistantDevice(DeviceWithState):
                 nominal_power=self._nominal_power,
                 deferrable_hours=round(self._nominal_duration / 3600),
                 is_continous=False,
+                is_constant=self._is_constant if self._is_constant is not None else False,
             )
         return None

@@ -2,6 +2,9 @@ device_type:
   manufacturer: v-zug
   model: Adora S
   icon: mdi-dishwasher
+  nominal_power: 100
+  nominal_duration: 7200
+  constant: true
   state:
     state_on:
       threshold: 10

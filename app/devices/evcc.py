@@ -2,6 +2,7 @@
 import math
 
 from app import Optimizer
+from app.devices.analysis import DataBuffer
 from app.mqtt import MQTT_CHANNEL
 
 from . import (
@@ -87,7 +88,7 @@ class EvccDevice(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power: float,
+        grid_exported_power_data: DataBuffer,
     ) -> None:
         """Update the device based on the current pv availablity."""
         new_state = ""
