@@ -1,6 +1,7 @@
 """Stiebel Eltron device implementation."""
 
 from app import Optimizer
+from app.constants import POWER_HYSTERESIS
 from app.devices.device import DeviceWithState
 
 from . import (
@@ -16,7 +17,6 @@ from .config import get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
-POWER_HYSTERESIS = 0.1
 
 
 def numeric_value(value: str | None) -> float | None:

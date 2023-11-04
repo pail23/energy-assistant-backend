@@ -7,6 +7,7 @@ from app import Optimizer
 from app.constants import (
     DEFAULT_NOMINAL_DURATION,
     DEFAULT_NOMINAL_POWER,
+    POWER_HYSTERESIS,
     ROOT_LOGGER_NAME,
 )
 from app.devices.analysis import DataBuffer
@@ -30,7 +31,6 @@ LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 UNAVAILABLE = "unavailable"
 
 HOMEASSISTANT_CHANNEL = "ha"
-POWER_HYSTERESIS = 0.1
 
 
 class HomeassistantState(State):
