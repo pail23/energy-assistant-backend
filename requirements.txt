@@ -24,7 +24,7 @@ paho-mqtt==1.6.1
 # emhass requirements
 emhass-0.5.1-py3-none-any.whl
 numpy==1.25.2
-pandas==2.0.3
+pandas==2.1.2
 scipy==1.11.3
 pvlib==0.10.2
 skforecast==0.10.1
