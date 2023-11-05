@@ -22,7 +22,7 @@ apscheduler==3.10.4
 paho-mqtt==1.6.1
 
 # emhass requirements
-wheel
+emhass-0.5.1-py3-none-any.whl
 numpy==1.25.2
 pandas==2.0.3
 scipy==1.11.3
@@ -32,6 +32,7 @@ beautifulsoup4>=4.9.3
 pulp
 
 # local dev packages
+wheel
 ruff
 black
 mypy>=0.930
