@@ -9,6 +9,11 @@ import pickle
 from typing import Tuple
 import uuid
 
+from emhass import utils  # type: ignore
+from emhass.forecast import forecast  # type: ignore
+from emhass.machine_learning_forecaster import mlforecaster  # type: ignore
+from emhass.optimization import optimization  # type: ignore
+from emhass.retrieve_hass import retrieve_hass  # type: ignore
 import numpy as np
 import pandas as pd
 
@@ -18,11 +23,6 @@ from app.devices.analysis import DataBuffer
 from app.devices.home import Home
 from app.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from app.models.forecast import ForecastSchema, ForecastSerieSchema
-from emhass import utils
-from emhass.forecast import forecast
-from emhass.machine_learning_forecaster import mlforecaster
-from emhass.optimization import optimization
-from emhass.retrieve_hass import retrieve_hass
 
 from .constants import ROOT_LOGGER_NAME
 
@@ -337,7 +337,7 @@ class EmhassOptimizer(Optimizer):
             filename = "opt_res_dayahead_" + today.strftime("%Y_%m_%d") + ".csv"
         else:  # Just save the latest optimization results
             filename = "opt_res_latest.csv"
-        if not debug:
+        if not debug and self._day_ahead_forecast is not None:
             self._day_ahead_forecast.to_csv(self._data_folder / filename, index_label="timestamp")
 
     def naive_mpc_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
