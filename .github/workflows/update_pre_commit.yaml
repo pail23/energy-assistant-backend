@@ -26,13 +26,13 @@ jobs:
         uses: devops-infra/action-pull-request@v0.5.5
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update/pre-commit-autoupdate
+          # branch: update/pre-commit-autoupdate
           target_branch: main
           title: Auto-update pre-commit hooks
           body: |
             Update versions of tools in pre-commit 
             configs to latest version
-          labels: dependencies
+          # labels: dependencies
           reviewer: pail23
           assignee: pail23
           new_string: "** Automatic pull request**"
