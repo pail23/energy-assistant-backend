@@ -21,21 +21,16 @@ jobs:
 
       - name: Run pre-commit autoupdate
         run: pre-commit autoupdate
-
+        
       - name: Create Pull Request
-        uses: devops-infra/action-pull-request@v0.5.5
+        uses: peter-evans/create-pull-request@v5.0.2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          # branch: update/pre-commit-autoupdate
-          target_branch: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update/pre-commit-autoupdate
           title: Auto-update pre-commit hooks
+          commit-message: Auto-update pre-commit hooks
           body: |
-            Update versions of tools in pre-commit 
+            Update versions of tools in pre-commit
             configs to latest version
-          # labels: dependencies
-          reviewer: pail23
-          assignee: pail23
-          new_string: "** Automatic pull request**"
-          get_diff: true
-          ignore_users: "dependabot"
-          allow_no_diff: false          
+          labels: dependencies
+            
