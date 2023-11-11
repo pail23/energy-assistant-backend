@@ -8,6 +8,7 @@ from app.constants import ROOT_LOGGER_NAME
 from app.devices.analysis import DataBuffer
 from app.devices.evcc import EvccDevice
 from app.devices.registry import DeviceTypeRegistry
+from app.devices.state_value import StateValue
 
 from . import (
     HomeEnergySnapshot,
@@ -16,7 +17,7 @@ from . import (
     StatesRepository,
     assign_if_available,
 )
-from .config import get_config_param
+from .config import DeviceConfigException, get_config_param
 from .device import Device
 from .homeassistant import HomeassistantDevice
 from .stiebel_eltron import StiebelEltronDevice
@@ -35,30 +36,15 @@ class Home:
     ) -> None:
         """Create a home instance."""
         self._name: str = get_config_param(config, "name")
-        self._solar_power_entity_id: str = get_config_param(config, "solar_power")
-        self._grid_supply_power_entity_id: str = get_config_param(config, "grid_supply_power")
-        self._solar_energy_entity_id: str = get_config_param(config, "solar_energy")
-        self._grid_imported_energy_entity_id: str = get_config_param(config, "imported_energy")
-        self._grid_exported_energy_entity_id: str = get_config_param(config, "exported_energy")
-        self._grid_inverted: bool = False
-        grid_inverted = config.get("grid_inverted")
-        if grid_inverted is not None and grid_inverted:
-            self._grid_inverted = True
+
+        self._init_power_variables(config)
+
         self.grid_exported_power_data = DataBuffer()
 
         self._disable_device_control: bool = False
         disable_control = config.get("disable_device_control")
         if disable_control is not None and disable_control:
             self._disable_device_control = True
-
-        self._solar_production_power: State | None = None
-        self._grid_imported_power: State | None = None
-        self._consumed_energy: float = 0.0
-        self._consumed_solar_energy: float = 0.0
-
-        self._grid_exported_energy: State | None = None
-        self._grid_imported_energy: State | None = None
-        self._produced_solar_energy: State | None = None
 
         self._energy_snapshop: HomeEnergySnapshot | None = None
         self.devices = list[Device]()
@@ -81,6 +67,36 @@ class Home:
                     self.devices.append(EvccDevice(config_device, session_storage))
                 else:
                     LOGGER.error(f"Unknown device type {type} in configuration")
+
+    def _init_power_variables(self, config: dict) -> None:
+        self._solar_power_entity_id: str = get_config_param(config, "solar_power")
+
+        grid_supply_power_config = config.get("grid_supply_power")
+        if grid_supply_power_config is not None:
+            self._grid_imported_power_value = StateValue(grid_supply_power_config)
+        else:
+            raise DeviceConfigException("Parameter energy is missing in the configuration")
+
+        grid_inverted: bool | None = config.get("grid_inverted")
+        if grid_inverted is not None:
+            if grid_inverted:
+                self._grid_imported_power_value.invert_value()
+            LOGGER.warn(
+                "The home is configured with grid_inverted. This is deprecated and will no longer be supported."
+            )
+
+        self._solar_energy_entity_id: str = get_config_param(config, "solar_energy")
+        self._grid_imported_energy_entity_id: str = get_config_param(config, "imported_energy")
+        self._grid_exported_energy_entity_id: str = get_config_param(config, "exported_energy")
+
+        self._solar_production_power: State | None = None
+        self._grid_imported_power: State | None = None
+        self._consumed_energy: float = 0.0
+        self._consumed_solar_energy: float = 0.0
+
+        self._grid_exported_energy: State | None = None
+        self._grid_imported_energy: State | None = None
+        self._produced_solar_energy: State | None = None
 
     def add_device(self, device: Device) -> None:
         """Add a device to the home."""
@@ -156,8 +172,7 @@ class Home:
             state_repository.get_state(self._solar_power_entity_id),
         )
         self._grid_imported_power = assign_if_available(
-            self._grid_imported_power,
-            state_repository.get_state(self._grid_supply_power_entity_id),
+            self._grid_imported_power, self._grid_imported_power_value.evaluate(state_repository)
         )
 
         self._produced_solar_energy = assign_if_available(
@@ -215,13 +230,7 @@ class Home:
     @property
     def grid_imported_power(self) -> float:
         """Grid supply power of the home."""
-        if self._grid_inverted:
-            return (
-                self._grid_imported_power.numeric_value * -1 if self._grid_imported_power else 0.0
-            )
-
-        else:
-            return self._grid_imported_power.numeric_value if self._grid_imported_power else 0.0
+        return self._grid_imported_power.numeric_value if self._grid_imported_power else 0.0
 
     def restore_state(
         self,

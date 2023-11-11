@@ -39,6 +39,9 @@ class StateValue:
         else:
             self._value_id = config.get("value")
             self._scale = config.get("scale", 1)
+            inverted: bool | None = config.get("inverted")
+            if inverted is not None and inverted:
+                self._scale = -self._scale
             template: str | None = config.get("template")
 
             if template is not None:
@@ -64,6 +67,10 @@ class StateValue:
     def set_scale(self, scale: float) -> None:
         """Set the scale for the value. Evaluate multiplies the result with the scale."""
         self._scale = scale
+
+    def invert_value(self) -> None:
+        """Set the value to inverted. Evaluate multiples the result with -1."""
+        self._scale = -self._scale
 
     def get_template_states(self, state_repository: StatesRepository) -> dict:
         """Get the data structure for the template states."""

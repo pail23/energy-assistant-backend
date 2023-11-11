@@ -50,6 +50,9 @@ def test_state_value() -> None:
     state_value = StateValue({"value": "sensor.power"})
     assert state_value.evaluate(state_repository).numeric_value == 10.1
 
+    state_value = StateValue({"value": "sensor.power", "inverted": True})
+    assert state_value.evaluate(state_repository).numeric_value == -10.1
+
     state_value = StateValue(
         {"template": "{{sensor.energy_low + sensor.energy_high * 1000}}", "scale": 0.001}
     )
