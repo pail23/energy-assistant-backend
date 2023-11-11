@@ -252,6 +252,11 @@ class StatesRepository(ABC):
         pass
 
     @abstractmethod
+    def get_numeric_states(self) -> dict[str, float]:
+        """Get a states from the repositiory."""
+        pass
+
+    @abstractmethod
     def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
         """Set a state in the repository."""
         pass
@@ -289,6 +294,11 @@ class StatesSingleRepository(StatesRepository):
         else:
             return self._read_states.get(id.id)
 
+    def get_numeric_states(self) -> dict[str, float]:
+        """Get a states from the repositiory."""
+        result = {k: v.numeric_value for k, v in self._read_states.items()}
+        return result
+
     def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
         """Set a state in the repository."""
         self._write_states[id.id] = State(id.id, value, attributes)
@@ -320,6 +330,13 @@ class StatesMultipleRepositories(StatesRepository):
                 if result is not None:
                     return result
         return None
+
+    def get_numeric_states(self) -> dict[str, float]:
+        """Get a states from the repositiory."""
+        result: dict[str, float] = {}
+        for reposititory in self._repositories:
+            result = {**result, **reposititory.get_numeric_states()}
+        return result
 
     def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
         """Set a state in the repository."""

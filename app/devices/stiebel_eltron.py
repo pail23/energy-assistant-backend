@@ -3,6 +3,7 @@
 from app import Optimizer
 from app.constants import POWER_HYSTERESIS
 from app.devices.device import DeviceWithState
+from app.devices.state_value import StateValue
 
 from . import (
     DeferrableLoadInfo,
@@ -13,7 +14,7 @@ from . import (
     StatesRepository,
 )
 from .analysis import DataBuffer
-from .config import get_config_param
+from .config import DeviceConfigException, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
 STIEBEL_ELTRON_POWER = 5000
@@ -35,8 +36,11 @@ class StiebelEltronDevice(DeviceWithState):
     def __init__(self, config: dict, session_storage: SessionStorage):
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
-        self._consumed_energy_today: State | None = None
-        self._consumed_energy_today_entity_id: str = get_config_param(config, "energy_today")
+        energy_config = config.get("energy")
+        if energy_config is not None:
+            self._consumed_energy_value = StateValue(energy_config)
+        else:
+            raise DeviceConfigException("Parameter energy is missing in the configuration")
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -57,7 +61,6 @@ class StiebelEltronDevice(DeviceWithState):
             self.supported_power_modes.append(PowerModes.OPTIMIZED)
 
         self._state_entity_id: str = get_config_param(config, "state")
-        self._consumed_energy_entity_id: str = get_config_param(config, "energy_total")
         self._consumed_energy: State | None = None
         self._icon = "mdi-heat-pump"
 
@@ -71,13 +74,8 @@ class StiebelEltronDevice(DeviceWithState):
         )
         new_state = self.state == "on"
 
-        self._consumed_energy_today = assign_if_available(
-            self._consumed_energy_today,
-            state_repository.get_state(self._consumed_energy_today_entity_id),
-        )
         self._consumed_energy = assign_if_available(
-            self._consumed_energy,
-            state_repository.get_state(self._consumed_energy_entity_id),
+            self._consumed_energy, self._consumed_energy_value.evaluate(state_repository)
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
@@ -162,11 +160,7 @@ class StiebelEltronDevice(DeviceWithState):
     @property
     def consumed_energy(self) -> float:
         """Consumed energy in kWh."""
-        energy = self._consumed_energy.numeric_value if self._consumed_energy else 0.0
-        energy_today = (
-            self._consumed_energy_today.numeric_value if self._consumed_energy_today else 0.0
-        )
-        return energy + energy_today
+        return self._consumed_energy.numeric_value if self._consumed_energy else 0.0
 
     @property
     def state(self) -> str:
@@ -197,8 +191,6 @@ class StiebelEltronDevice(DeviceWithState):
         return (
             self._consumed_energy is not None
             and self._consumed_energy.available
-            and self._consumed_energy_today is not None
-            and self._consumed_energy_today.available
             and self._actual_temp is not None
             and self._actual_temp.available
             and self._state is not None
@@ -208,7 +200,7 @@ class StiebelEltronDevice(DeviceWithState):
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore the previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
-        self._consumed_energy = State(self._consumed_energy_entity_id, str(consumed_energy))
+        self._consumed_energy = State("", str(consumed_energy))
 
     @property
     def attributes(self) -> dict[str, str]:

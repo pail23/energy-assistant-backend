@@ -12,6 +12,7 @@ from app.constants import (
 )
 from app.devices.analysis import DataBuffer
 from app.devices.registry import DeviceType, DeviceTypeRegistry
+from app.devices.state_value import StateValue
 
 from . import (
     DeferrableLoadInfo,
@@ -24,7 +25,7 @@ from . import (
     StatesSingleRepository,
     assign_if_available,
 )
-from .config import get_config_param
+from .config import DeviceConfigException, get_config_param
 from .device import DeviceWithState
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
@@ -196,7 +197,18 @@ class HomeassistantDevice(DeviceWithState):
         """Create a generic Homeassistant device."""
         super().__init__(config, session_storage)
         self._power_entity_id: str = get_config_param(config, "power")
-        self._consumed_energy_entity_id: str = get_config_param(config, "energy")
+        energy_config = config.get("energy")
+        if energy_config is not None:
+            self._consumed_energy_value = StateValue(energy_config)
+        else:
+            raise DeviceConfigException("Parameter energy is missing in the configuration")
+
+        energy_scale: float | None = config.get("energy_scale")
+        if energy_scale is not None:
+            self._consumed_energy_value.set_scale(energy_scale)
+            LOGGER.warn(
+                f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported."
+            )
 
         self._output_id: str | None = config.get("output")
         self._nominal_power: float | None = None
@@ -206,7 +218,6 @@ class HomeassistantDevice(DeviceWithState):
         self._power: State | None = None
         self._consumed_energy: State | None = None
         self._output_state: State | None = None
-        self._energy_scale: float = config.get("energy_scale", 1)
         self._icon: str = str(config.get("icon", "mdi-home"))
 
         if self._output_id is not None:
@@ -272,8 +283,7 @@ class HomeassistantDevice(DeviceWithState):
             self._power, state_repository.get_state(self._power_entity_id)
         )
         self._consumed_energy = assign_if_available(
-            self._consumed_energy,
-            state_repository.get_state(self._consumed_energy_entity_id),
+            self._consumed_energy, self._consumed_energy_value.evaluate(state_repository)
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         if self._energy_snapshot is None:
@@ -340,8 +350,7 @@ class HomeassistantDevice(DeviceWithState):
     @property
     def consumed_energy(self) -> float:
         """The consumed energy of the device."""
-        energy = self._consumed_energy.numeric_value if self._consumed_energy else 0.0
-        return energy * self._energy_scale
+        return self._consumed_energy.numeric_value if self._consumed_energy is not None else 0.0
 
     @property
     def icon(self) -> str:
@@ -371,9 +380,7 @@ class HomeassistantDevice(DeviceWithState):
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
-        self._consumed_energy = HomeassistantState(
-            self._consumed_energy_entity_id, str(consumed_energy)
-        )
+        self._consumed_energy = HomeassistantState("", str(consumed_energy))
 
     @property
     def state(self) -> str:
