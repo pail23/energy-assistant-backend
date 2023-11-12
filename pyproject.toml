@@ -17,10 +17,11 @@ classifiers = [
 ]
 keywords = ["energy assistant", "home assistant"]
 dependencies = [
-    "SQLAlchemy",
+    "SQLAlchemy==2.0.23",
     "requests",
-    "fastapi",
+    "fastapi==0.104.1",
     "fastapi-socketio",
+    "pydantic-settings==2.0.3",
     "pyyaml >= 6.0.1",
     "alembic==1.12.1",
     "aiosqlite==0.19.0",
@@ -28,12 +29,15 @@ dependencies = [
     "uvicorn[standard]==0.23.2",
     "apscheduler==3.10.4",
     "paho-mqtt==1.6.1",
-    "jinja2==3.1.2"
+    "jinja2==3.1.2",
+    "colorlog==6.7.0",
+    "emhass-0.5.1-py3-none-any.whl"
 ]
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = [
+  "httpx==0.25.1",
   "bumpver",
   "isort",
   "pip-tools",
@@ -45,7 +49,10 @@ dev = [
   "pytest-asyncio==0.21.1",
   "pytest-aiohttp==1.0.4",
   "pytest-cov==4.1.0",
-  "pre-commit==3.3.3"
+  "pre-commit==3.3.3",
+  "types-PyYAML",
+  "types-requests",
+  "types-paho-mqtt",
 ]
 
 [project.urls]

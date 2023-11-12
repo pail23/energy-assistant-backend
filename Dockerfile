@@ -13,7 +13,7 @@ COPY ./emhass ./emhass
 COPY ./migrations ./migrations
 COPY ./client ./client
 
-RUN pip install -r requirements.txt && mkdir /data
+RUN pip install pip-tools && pip-sync && mkdir /data
 
 # Required to persist build arg
 ARG BUILD_VERSION
