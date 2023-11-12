@@ -9,7 +9,7 @@ COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
 COPY ./alembic.ini .
 COPY ./app ./app
-COPY ./emhass ./emhass
+COPY ./*.whl .
 COPY ./migrations ./migrations
 COPY ./client ./client
 
