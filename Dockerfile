@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 COPY ./requirements.txt .
-COPY ./pyproject.toml. 
+COPY ./pyproject.toml . 
 COPY ./alembic.ini .
 COPY ./app ./app
 COPY ./*.whl .
