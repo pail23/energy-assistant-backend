@@ -46,6 +46,8 @@ jobs:
 
       - name: "Install pip-tools"
         run: python3 -m pip install pip-tools
+      - name: "Root folder"
+        run: echo $GITHUB_WORKSPACE
 
       - name: "Install requirements"
         run: pip-sync
