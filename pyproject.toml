@@ -53,6 +53,7 @@ dev = [
   "types-PyYAML",
   "types-requests",
   "types-paho-mqtt",
+  "pandas-stubs"
 ]
 
 [project.urls]
