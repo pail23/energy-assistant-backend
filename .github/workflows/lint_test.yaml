@@ -22,8 +22,11 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
+      - name: "Install pip-tools"
+        run: python3 -m pip install pip-tools
+
       - name: "Install requirements"
-        run: python3 -m pip install -r requirements.txt
+        run: pip-sync
 
       - name: "Run"
         run: python3 -m ruff check .
@@ -40,11 +43,15 @@ jobs:
         uses: "actions/setup-python@v4"
         with:
           python-version: "3.11"
-      - name: Install requirements
-        run: python3 -m pip install -r requirements.txt
+
+      - name: "Install pip-tools"
+        run: python3 -m pip install pip-tools
+
+      - name: "Install requirements"
+        run: pip-sync
 
       - name: Create client folder
-        run: mkdir -p client        
+        run: mkdir -p client
 
       - name: Run tests
         run: |
@@ -57,7 +64,7 @@ jobs:
             --cov-report=xml \
             tests
         env:
-          APP_CONFIG_FILE: test 
+          APP_CONFIG_FILE: test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
