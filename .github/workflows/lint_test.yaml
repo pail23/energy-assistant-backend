@@ -25,7 +25,7 @@ jobs:
       - name: "Install pip-tools"
         run: python3 -m pip install pip-tools
       - name: "pip-compile"
-        run: pip-compile --extras dev
+        run: pip-compile --extra dev
         
       # - name: "patch requirements.txt"
       #  run: sed -i 's\workspaces/backend\home/runner/work/energy-assistant-backend/energy-assistant-backend\g' requirements.txt
