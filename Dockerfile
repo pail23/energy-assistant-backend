@@ -13,7 +13,7 @@ COPY ./*.whl .
 COPY ./migrations ./migrations
 COPY ./client ./client
 
-RUN pip install pip-tools && pip-sync && mkdir /data
+RUN pip install pip-tools && pip-compile --extra dev && pip-sync && mkdir /data
 
 # Required to persist build arg
 ARG BUILD_VERSION
