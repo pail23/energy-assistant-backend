@@ -19,8 +19,8 @@ from . import (
 )
 from .config import DeviceConfigException, get_config_param
 from .device import Device
+from .heat_pump import HeatPumpDevice
 from .homeassistant import HomeassistantDevice
-from .stiebel_eltron import StiebelEltronDevice
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -64,8 +64,8 @@ class Home:
                     self.devices.append(
                         HomeassistantDevice(config_device, session_storage, device_type_registry)
                     )
-                elif type == "stiebel-eltron":
-                    self.devices.append(StiebelEltronDevice(config_device, session_storage))
+                elif type == "heat-pump":
+                    self.devices.append(HeatPumpDevice(config_device, session_storage))
                 elif type == "power-state-device":
                     # This is deprecated and will be removed.
                     self.devices.append(

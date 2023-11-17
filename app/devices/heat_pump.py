@@ -17,7 +17,7 @@ from .analysis import DataBuffer
 from .config import DeviceConfigException, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
-STIEBEL_ELTRON_POWER = 5000
+DEFAULT_NOMINAL_POWER = 5000
 
 
 def numeric_value(value: str | None) -> float | None:
@@ -30,7 +30,7 @@ def numeric_value(value: str | None) -> float | None:
         return None
 
 
-class StiebelEltronDevice(DeviceWithState):
+class HeatPumpDevice(DeviceWithState):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
     def __init__(self, config: dict, session_storage: SessionStorage):
@@ -44,7 +44,7 @@ class StiebelEltronDevice(DeviceWithState):
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
-
+        self._nominal_power: float = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
         self._comfort_target_temperature_entity_id = config.get("comfort_target_temperature")
         self._target_temperature_normal: float | None = numeric_value(
             config.get("target_temperature_normal")
@@ -146,7 +146,7 @@ class StiebelEltronDevice(DeviceWithState):
         if self.power_mode == PowerModes.OPTIMIZED:
             return DeferrableLoadInfo(
                 device_id=self.id,
-                nominal_power=STIEBEL_ELTRON_POWER,
+                nominal_power=self._nominal_power,
                 deferrable_hours=1,
                 is_continous=False,
             )
@@ -156,7 +156,7 @@ class StiebelEltronDevice(DeviceWithState):
     def requested_additional_power(self) -> float:
         """How much power the device could consume in pv mode."""
         # TODO: Consider the actual temperature
-        return STIEBEL_ELTRON_POWER if self.state == "off" else 0.0
+        return self._nominal_power if self.state == "off" else 0.0
 
     @property
     def consumed_energy(self) -> float:
@@ -172,7 +172,7 @@ class StiebelEltronDevice(DeviceWithState):
     def power(self) -> float:
         """Current power consumption of the device."""
         if self._state is not None:
-            return STIEBEL_ELTRON_POWER if self._state.value == "on" else 0.0
+            return self._nominal_power if self._state.value == "on" else 0.0
         else:
             return 0.0
 

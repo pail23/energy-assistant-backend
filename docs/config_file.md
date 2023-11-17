@@ -114,17 +114,17 @@ In case neither `manufacturer` or `model` nor `state` is defined, the following 
 
 Energy Assistant is providing detection for the device types listed [here](device_models.md).
 
-### `stiebel-eltron` type
+### `heat-pump` type
 
 This device type is used for Stiebel Eltron heat pumps. Often, you will configure two instances: One for heating, one for water heating.
 
 - `state`: Home Assistant entity for the state of the device (`on` or `off`)
-- `energy_today`: Home Assistant entity for total energy used today
-- `energy_total`: Home Assistant entity for total energy used (before today)
+- `energy`: Home Assistant entity for total energy. This is can be configured using the state value format described above.
 - `temperature`: Home Assistant entity for the current temperature
 - `comfort_target_temperature`: Home Assistant entity for the target temperature
 - `target_temperature_normal`: Target temperature for normal operation
 - `target_temperatrure_pv`: Target temperature for the case when enough PV power is available or the timeslot for the Optimized Energy consumption is now.
+- `nominal_power`: The nominal power of the heat pump.
 
 ## Example:
 
