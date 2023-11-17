@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
 from enum import StrEnum, auto
-from typing import Optional
+from typing import Any, Optional
 import uuid
 
 import pytz  # type: ignore
@@ -257,6 +257,11 @@ class StatesRepository(ABC):
         pass
 
     @abstractmethod
+    def get_template_states(self) -> dict:
+        """Get a states from the repositiory."""
+        pass
+
+    @abstractmethod
     def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
         """Set a state in the repository."""
         pass
@@ -286,6 +291,7 @@ class StatesSingleRepository(StatesRepository):
         self._channel = channel
         self._read_states: dict[str, State] = dict[str, State]()
         self._write_states: dict[str, State] = dict[str, State]()
+        self._template_states: dict[str, dict | Any] | None = None
 
     def get_state(self, id: StateId | str) -> State | None:
         """Get a state from the repositiory."""
@@ -298,6 +304,24 @@ class StatesSingleRepository(StatesRepository):
         """Get a states from the repositiory."""
         result = {k: v.numeric_value for k, v in self._read_states.items()}
         return result
+
+    def get_template_states(self) -> dict:
+        """Get template states from the repositiory."""
+        if self._template_states is None:
+            self._template_states = {}
+            states = self.get_numeric_states().items()
+            for k, v in states:
+                parts = k.split(".")
+                if len(parts) > 1:
+                    type = parts[0]
+                    attribute = parts[1]
+                    if type in self._template_states:
+                        self._template_states[type][attribute] = v
+                    else:
+                        self._template_states[type] = {attribute: v}
+                else:
+                    self._template_states[k] = v
+        return self._template_states
 
     def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
         """Set a state in the repository."""
@@ -336,6 +360,13 @@ class StatesMultipleRepositories(StatesRepository):
         result: dict[str, float] = {}
         for reposititory in self._repositories:
             result = {**result, **reposititory.get_numeric_states()}
+        return result
+
+    def get_template_states(self) -> dict:
+        """Get template states from the repositiory."""
+        result: dict = {}
+        for reposititory in self._repositories:
+            result = {**result, **reposititory.get_template_states()}
         return result
 
     def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:

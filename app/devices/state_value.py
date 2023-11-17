@@ -1,7 +1,6 @@
 """State value supporting the different representation of the states like single value, templates."""
 
 import logging
-from typing import Any
 
 from jinja2 import Environment, UndefinedError
 
@@ -10,24 +9,6 @@ from app.devices import State, StatesRepository
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 environment = Environment()
-
-
-def get_template_states(state_repository: StatesRepository) -> dict:
-    """Get the data structure for the template states."""
-    result: dict[str, dict | Any] = {}
-    states = state_repository.get_numeric_states().items()
-    for k, v in states:
-        parts = k.split(".")
-        if len(parts) > 1:
-            type = parts[0]
-            attribute = parts[1]
-            if type in result:
-                result[type][attribute] = v
-            else:
-                result[type] = {attribute: v}
-        else:
-            result[k] = v
-    return result
 
 
 class CalculatedState(State):
@@ -65,7 +46,7 @@ class StateValue:
             if template is not None:
                 self._template = environment.from_string(template)
 
-    def evaluate(self, state_repository: StatesRepository, template_states: dict) -> State:
+    def evaluate(self, state_repository: StatesRepository) -> State:
         """Evaluate the value."""
         result: State | None = None
         if self._value_id is not None:
@@ -73,7 +54,7 @@ class StateValue:
         else:
             if self._template is not None:
                 try:
-                    value = self._template.render(template_states)
+                    value = self._template.render(state_repository.get_template_states())
                     result = CalculatedState(value)
                 except UndefinedError as error:
                     LOGGER.warning(f"undefined variable in expression: {error}")

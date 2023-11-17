@@ -30,7 +30,6 @@ from app.devices.evcc import EvccDevice
 from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.registry import DeviceTypeRegistry
-from app.devices.state_value import get_template_states
 from app.mqtt import MqttConnection
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
@@ -72,8 +71,8 @@ async def async_handle_state_update(
     """Read the values from home assistant and process the update."""
     try:
         state_repository.read_states()
-        template_states = get_template_states(state_repository)
-        await home.update_state(state_repository, template_states)
+
+        await home.update_state(state_repository)
         if optimizer is not None:
             await home.update_power_consumption(state_repository, optimizer)
             optimizer.update_repository_states(home, state_repository)
