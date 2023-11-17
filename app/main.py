@@ -1,6 +1,6 @@
 """Main module for the energy assistant application."""
 import asyncio
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from datetime import date
 import json
 import logging
@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 import os
 import sys
 import threading
-from typing import Final
+from typing import AsyncIterator, Final
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
@@ -42,7 +42,29 @@ FORMAT_DATETIME: Final = f"{FORMAT_DATE} {FORMAT_TIME}"
 MAX_LOG_FILESIZE = 1000000 * 10  # 10 MB
 
 
-app = FastAPI(title="energy-assistant")
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator:
+    """Manage the startup and showdown."""
+    await init_app()
+    sio.start_background_task(
+        background_task,
+        app.home,  # type: ignore
+        app.hass,  # type: ignore
+        app.optimizer,  # type: ignore
+        app.mqtt,  # type: ignore
+        app.db,  # type: ignore
+    )
+    sio.start_background_task(optimize, app.optimizer)  # type: ignore
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(daily_optimize, trigger="cron", hour="3", minute="0")  # time is UTC
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+    print("Shutdown app")
+
+
+app = FastAPI(title="energy-assistant", lifespan=lifespan)
 sio = SocketManager(app=app, cors_allowed_origins="*")
 
 origins = [
@@ -456,31 +478,6 @@ def daily_optimize() -> None:
             optimizer.dayahead_forecast_optim()
     except Exception:
         logging.exception("Daily optimization run failed")
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    """Statup call back to initialize the app and start the background task."""
-    await init_app()
-    sio.start_background_task(
-        background_task,
-        app.home,  # type: ignore
-        app.hass,  # type: ignore
-        app.optimizer,  # type: ignore
-        app.mqtt,  # type: ignore
-        app.db,  # type: ignore
-    )
-    sio.start_background_task(optimize, app.optimizer)  # type: ignore
-
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(daily_optimize, trigger="cron", hour="3", minute="0")  # time is UTC
-    scheduler.start()
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """Stop call back to stop the app."""
-    print("Shutdown app")
 
 
 @app.get("/check", include_in_schema=False)
