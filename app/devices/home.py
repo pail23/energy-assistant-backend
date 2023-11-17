@@ -47,6 +47,14 @@ class Home:
             self._disable_device_control = True
 
         self._energy_snapshop: HomeEnergySnapshot | None = None
+        self._init_devices(config, session_storage, device_type_registry)
+
+    def _init_devices(
+        self,
+        config: dict,
+        session_storage: SessionStorage,
+        device_type_registry: DeviceTypeRegistry,
+    ) -> None:
         self.devices = list[Device]()
         config_devices = config.get("devices")
         if config_devices is not None:
@@ -69,7 +77,11 @@ class Home:
                     LOGGER.error(f"Unknown device type {type} in configuration")
 
     def _init_power_variables(self, config: dict) -> None:
-        self._solar_power_entity_id: str = get_config_param(config, "solar_power")
+        solar_power_config = config.get("solar_power")
+        if solar_power_config is not None:
+            self._solar_power_value = StateValue(solar_power_config)
+        else:
+            raise DeviceConfigException("Parameter solar_power is missing in the configuration")
 
         grid_supply_power_config = config.get("grid_supply_power")
         if grid_supply_power_config is not None:
@@ -85,9 +97,23 @@ class Home:
                 "The home is configured with grid_inverted. This is deprecated and will no longer be supported."
             )
 
-        self._solar_energy_entity_id: str = get_config_param(config, "solar_energy")
-        self._grid_imported_energy_entity_id: str = get_config_param(config, "imported_energy")
-        self._grid_exported_energy_entity_id: str = get_config_param(config, "exported_energy")
+        solar_energy_config = config.get("solar_energy")
+        if solar_energy_config is not None:
+            self._solar_energy_value = StateValue(solar_energy_config)
+        else:
+            raise DeviceConfigException("Parameter solar_energy is missing in the configuration")
+
+        imported_energy_config = config.get("imported_energy")
+        if imported_energy_config is not None:
+            self._imported_energy_value = StateValue(imported_energy_config)
+        else:
+            raise DeviceConfigException("Parameter imported_energy is missing in the configuration")
+
+        exported_energy_config = config.get("imported_energy")
+        if exported_energy_config is not None:
+            self._exported_energy_value = StateValue(exported_energy_config)
+        else:
+            raise DeviceConfigException("Parameter exported_energy is missing in the configuration")
 
         self._solar_production_power: State | None = None
         self._grid_imported_power: State | None = None
@@ -168,24 +194,20 @@ class Home:
     async def update_state(self, state_repository: StatesRepository) -> None:
         """Update the state of the home."""
         self._solar_production_power = assign_if_available(
-            self._solar_production_power,
-            state_repository.get_state(self._solar_power_entity_id),
+            self._solar_production_power, self._solar_power_value.evaluate(state_repository)
         )
         self._grid_imported_power = assign_if_available(
             self._grid_imported_power, self._grid_imported_power_value.evaluate(state_repository)
         )
 
         self._produced_solar_energy = assign_if_available(
-            self._produced_solar_energy,
-            state_repository.get_state(self._solar_energy_entity_id),
+            self._produced_solar_energy, self._solar_energy_value.evaluate(state_repository)
         )
         self._grid_imported_energy = assign_if_available(
-            self._grid_imported_energy,
-            state_repository.get_state(self._grid_imported_energy_entity_id),
+            self._grid_imported_energy, self._imported_energy_value.evaluate(state_repository)
         )
         self._grid_exported_energy = assign_if_available(
-            self._grid_exported_energy,
-            state_repository.get_state(self._grid_exported_energy_entity_id),
+            self._grid_exported_energy, self._exported_energy_value.evaluate(state_repository)
         )
 
         self._consumed_energy = (
@@ -244,15 +266,9 @@ class Home:
         self._consumed_solar_energy = consumed_solar_energy
         self._consumed_energy = consumed_energy
 
-        self._produced_solar_energy = State(
-            self._solar_energy_entity_id, str(solar_produced_energy)
-        )
-        self._grid_imported_energy = State(
-            self._grid_imported_energy_entity_id, str(grid_imported_energy)
-        )
-        self._grid_exported_energy = State(
-            self._grid_exported_energy_entity_id, str(grid_exported_energy)
-        )
+        self._produced_solar_energy = State("", str(solar_produced_energy))
+        self._grid_imported_energy = State("", str(grid_imported_energy))
+        self._grid_exported_energy = State("", str(grid_exported_energy))
 
         self.set_snapshot(
             consumed_solar_energy,
