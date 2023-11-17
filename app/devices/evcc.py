@@ -51,7 +51,7 @@ class EvccDevice(DeviceWithState):
         )
 
     async def update_state(
-        self, state_repository: StatesRepository, self_sufficiency: float
+        self, state_repository: StatesRepository, template_states: dict, self_sufficiency: float
     ) -> None:
         """Update the state of the Stiebel Eltron device."""
         old_state = self.state == "on"

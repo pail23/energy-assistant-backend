@@ -270,7 +270,7 @@ class HomeassistantDevice(DeviceWithState):
             self._state = "not supported"
 
     async def update_state(
-        self, state_repository: StatesRepository, self_sufficiency: float
+        self, state_repository: StatesRepository, template_states: dict, self_sufficiency: float
     ) -> None:
         """Update the own state from the states of a StatesRepository."""
         if self._output_id is not None:
@@ -283,7 +283,8 @@ class HomeassistantDevice(DeviceWithState):
             self._power, state_repository.get_state(self._power_entity_id)
         )
         self._consumed_energy = assign_if_available(
-            self._consumed_energy, self._consumed_energy_value.evaluate(state_repository)
+            self._consumed_energy,
+            self._consumed_energy_value.evaluate(state_repository, template_states),
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         if self._energy_snapshot is None:

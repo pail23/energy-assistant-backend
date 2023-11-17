@@ -191,23 +191,28 @@ class Home:
         else:
             return 0
 
-    async def update_state(self, state_repository: StatesRepository) -> None:
+    async def update_state(self, state_repository: StatesRepository, template_states: dict) -> None:
         """Update the state of the home."""
         self._solar_production_power = assign_if_available(
-            self._solar_production_power, self._solar_power_value.evaluate(state_repository)
+            self._solar_production_power,
+            self._solar_power_value.evaluate(state_repository, template_states),
         )
         self._grid_imported_power = assign_if_available(
-            self._grid_imported_power, self._grid_imported_power_value.evaluate(state_repository)
+            self._grid_imported_power,
+            self._grid_imported_power_value.evaluate(state_repository, template_states),
         )
 
         self._produced_solar_energy = assign_if_available(
-            self._produced_solar_energy, self._solar_energy_value.evaluate(state_repository)
+            self._produced_solar_energy,
+            self._solar_energy_value.evaluate(state_repository, template_states),
         )
         self._grid_imported_energy = assign_if_available(
-            self._grid_imported_energy, self._imported_energy_value.evaluate(state_repository)
+            self._grid_imported_energy,
+            self._imported_energy_value.evaluate(state_repository, template_states),
         )
         self._grid_exported_energy = assign_if_available(
-            self._grid_exported_energy, self._exported_energy_value.evaluate(state_repository)
+            self._grid_exported_energy,
+            self._exported_energy_value.evaluate(state_repository, template_states),
         )
 
         self._consumed_energy = (
@@ -225,7 +230,7 @@ class Home:
             )
 
         for device in self.devices:
-            await device.update_state(state_repository, self.self_sufficiency)
+            await device.update_state(state_repository, template_states, self.self_sufficiency)
 
     async def update_power_consumption(
         self, state_repository: StatesRepository, optimizer: Optimizer

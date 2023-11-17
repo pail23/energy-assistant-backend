@@ -9,6 +9,25 @@ from app.constants import ROOT_LOGGER_NAME
 from app.devices import State, StatesRepository
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
+environment = Environment()
+
+
+def get_template_states(state_repository: StatesRepository) -> dict:
+    """Get the data structure for the template states."""
+    result: dict[str, dict | Any] = {}
+    states = state_repository.get_numeric_states().items()
+    for k, v in states:
+        parts = k.split(".")
+        if len(parts) > 1:
+            type = parts[0]
+            attribute = parts[1]
+            if type in result:
+                result[type][attribute] = v
+            else:
+                result[type] = {attribute: v}
+        else:
+            result[k] = v
+    return result
 
 
 class CalculatedState(State):
@@ -30,7 +49,6 @@ class StateValue:
 
     def __init__(self, config: dict | str) -> None:
         """Create a state value instance."""
-        environment = Environment()
         self._value_id: str | None = None
         self._template = None
         self._scale: float = 1.0
@@ -47,7 +65,7 @@ class StateValue:
             if template is not None:
                 self._template = environment.from_string(template)
 
-    def evaluate(self, state_repository: StatesRepository) -> State:
+    def evaluate(self, state_repository: StatesRepository, template_states: dict) -> State:
         """Evaluate the value."""
         result: State | None = None
         if self._value_id is not None:
@@ -55,10 +73,10 @@ class StateValue:
         else:
             if self._template is not None:
                 try:
-                    value = self._template.render(self.get_template_states(state_repository))
+                    value = self._template.render(template_states)
                     result = CalculatedState(value)
                 except UndefinedError as error:
-                    LOGGER.warn(f"undefined variable in expression: {error}")
+                    LOGGER.warning(f"undefined variable in expression: {error}")
                     return CalculatedState(None)
         if result is not None:
             return CalculatedState(result.numeric_value * self._scale)
@@ -71,20 +89,3 @@ class StateValue:
     def invert_value(self) -> None:
         """Set the value to inverted. Evaluate multiples the result with -1."""
         self._scale = -self._scale
-
-    def get_template_states(self, state_repository: StatesRepository) -> dict:
-        """Get the data structure for the template states."""
-        result: dict[str, dict | Any] = {}
-        states = state_repository.get_numeric_states().items()
-        for k, v in states:
-            parts = k.split(".")
-            if len(parts) > 1:
-                type = parts[0]
-                attribute = parts[1]
-                if type in result:
-                    result[type][attribute] = v
-                else:
-                    result[type] = {attribute: v}
-            else:
-                result[k] = v
-        return result

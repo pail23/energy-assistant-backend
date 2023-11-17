@@ -5,7 +5,8 @@ client
 *.log
 *.log.*
 *.bak
-.mypycache
+.mypy_cache
+.ruff_cache
 data/
 *.egg-info
 dist/

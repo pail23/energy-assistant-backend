@@ -168,6 +168,3 @@ markers = [
   "tmp: Temporary",
   "optional: Optional",
 ]
-env = [
-  "APP_CONFIG_FILE=test"
-]

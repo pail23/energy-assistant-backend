@@ -2,7 +2,7 @@
 
 
 from app.devices import State, StatesSingleRepository
-from app.devices.state_value import StateValue
+from app.devices.state_value import StateValue, get_template_states
 
 
 class StatesSingleRepositoryMock(StatesSingleRepository):
@@ -30,33 +30,34 @@ def test_state_value() -> None:
         "sensor.energy_high": State("sensor.energy_high", "7"),
     }
     state_repository = StatesSingleRepositoryMock(state_repository_read)
+    template_states = get_template_states(state_repository)
 
     state_value = StateValue({"template": "{{sensor.energy_low + sensor.energy_high * 1000}}"})
-    assert state_value.evaluate(state_repository).numeric_value == 7856
+    assert state_value.evaluate(state_repository, template_states).numeric_value == 7856
 
     state_value = StateValue("sensor.power")
-    assert state_value.evaluate(state_repository).numeric_value == 10.1
+    assert state_value.evaluate(state_repository, template_states).numeric_value == 10.1
 
     state_value = StateValue("sensor.power_unknown")
-    assert state_value.evaluate(state_repository).available is False
+    assert state_value.evaluate(state_repository, template_states).available is False
 
     state_value = StateValue({"template": "{{sensor.energy_unknown + sensor.energy_high * 1000}}"})
-    assert state_value.evaluate(state_repository).available is False
+    assert state_value.evaluate(state_repository, template_states).available is False
 
     state_value = StateValue("sensor.power")
     state_value.set_scale(0.001)
-    assert state_value.evaluate(state_repository).numeric_value == 0.0101
+    assert state_value.evaluate(state_repository, template_states).numeric_value == 0.0101
 
     state_value = StateValue({"value": "sensor.power"})
-    assert state_value.evaluate(state_repository).numeric_value == 10.1
+    assert state_value.evaluate(state_repository, template_states).numeric_value == 10.1
 
     state_value = StateValue({"value": "sensor.power", "inverted": True})
-    assert state_value.evaluate(state_repository).numeric_value == -10.1
+    assert state_value.evaluate(state_repository, template_states).numeric_value == -10.1
 
     state_value = StateValue(
         {"template": "{{sensor.energy_low + sensor.energy_high * 1000}}", "scale": 0.001}
     )
-    assert state_value.evaluate(state_repository).numeric_value == 7.856
+    assert state_value.evaluate(state_repository, template_states).numeric_value == 7.856
 
     state_value = StateValue({"value": "sensor.power", "scale": 0.001})
-    assert state_value.evaluate(state_repository).numeric_value == 0.0101
+    assert state_value.evaluate(state_repository, template_states).numeric_value == 0.0101

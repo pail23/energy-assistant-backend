@@ -30,6 +30,7 @@ from app.devices.evcc import EvccDevice
 from app.devices.home import Home
 from app.devices.homeassistant import Homeassistant
 from app.devices.registry import DeviceTypeRegistry
+from app.devices.state_value import get_template_states
 from app.mqtt import MqttConnection
 from app.settings import settings
 from app.storage import Database, get_async_session, session_storage
@@ -71,7 +72,8 @@ async def async_handle_state_update(
     """Read the values from home assistant and process the update."""
     try:
         state_repository.read_states()
-        await home.update_state(state_repository)
+        template_states = get_template_states(state_repository)
+        await home.update_state(state_repository, template_states)
         if optimizer is not None:
             await home.update_power_consumption(state_repository, optimizer)
             optimizer.update_repository_states(home, state_repository)
@@ -345,7 +347,8 @@ def setup_logger(log_filename: str, level: str = "DEBUG") -> logging.Logger:
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     sys.excepthook = lambda *args: logging.getLogger(None).exception(
-        "Uncaught exception", exc_info=args  # type: ignore[arg-type]
+        "Uncaught exception",
+        exc_info=args,  # type: ignore[arg-type]
     )
     threading.excepthook = lambda args: logging.getLogger(None).exception(
         "Uncaught thread exception",
@@ -461,7 +464,12 @@ async def startup() -> None:
     """Statup call back to initialize the app and start the background task."""
     await init_app()
     sio.start_background_task(
-        background_task, app.home, app.hass, app.optimizer, app.mqtt, app.db  # type: ignore
+        background_task,
+        app.home,  # type: ignore
+        app.hass,  # type: ignore
+        app.optimizer,  # type: ignore
+        app.mqtt,  # type: ignore
+        app.db,  # type: ignore
     )
     sio.start_background_task(optimize, app.optimizer)  # type: ignore
 
