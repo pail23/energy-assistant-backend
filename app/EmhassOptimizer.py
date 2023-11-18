@@ -261,7 +261,7 @@ class EmhassOptimizer(Optimizer):
         :type debug: bool, optional
 
         """
-        self._logger.info("Setting up needed data")
+        self._logger.info("Setting up needed data for a day ahead forecast")
 
         # Fall back to the naive method in case the model for the mlforecaster does not exist
         filename_path = self._data_folder / "load_forecast_mlf.pkl"
@@ -482,8 +482,8 @@ class EmhassOptimizer(Optimizer):
         return opt_res_naive_mpc
 
     def forecast_model_fit(
-        self, debug: bool = False
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, mlforecaster]:
+        self, only_if_file_does_not_exist: bool = False, debug: bool = False
+    ) -> None:
         """Perform a forecast model fit from training data retrieved from Home Assistant.
 
         :param debug: True to debug, useful for unit testing, defaults to False
@@ -491,55 +491,60 @@ class EmhassOptimizer(Optimizer):
         :return: The DataFrame containing the forecast data results without and with backtest and the `mlforecaster` object
         :rtype: Tuple[pd.DataFrame, pd.DataFrame, mlforecaster]
         """
-        self._logger.info("Setting up needed data")
 
-        # Treat runtimeparams
-        params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
-            json.dumps(self.get_ml_runtime_params()),
-            json.dumps(self._emhass_config),
-            self._retrieve_hass_conf,
-            self._optim_conf,
-            self._plant_conf,
-            "forecast-model-fit",
-            self._logger,
-        )  # type: ignore
+        filename = LOAD_FORECAST_MODEL_TYPE + "_mlf.pkl"
+        filename_path = self._data_folder / filename
 
-        params_dict: dict = json.loads(params)
-        # Retrieve data from hass
-        days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
+        if only_if_file_does_not_exist and filename_path.is_file():
+            self._logger.info("Skip model creation")
+        else:
+            self._logger.info("Setting up needed data")
 
-        days_list = utils.get_days_list(days_to_retrieve)
-        var_list = [self._power_no_var_loads_id]
-        self._retrieve_hass.get_data(days_list, var_list)
-        df_input_data = self._retrieve_hass.df_final.copy()
+            # Treat runtimeparams
+            params: str = ""
+            params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+                json.dumps(self.get_ml_runtime_params()),
+                json.dumps(self._emhass_config),
+                self._retrieve_hass_conf,
+                self._optim_conf,
+                self._plant_conf,
+                "forecast-model-fit",
+                self._logger,
+            )  # type: ignore
 
-        data = copy.deepcopy(df_input_data)
-        model_type = params_dict["passed_data"]["model_type"]
-        sklearn_model = params_dict["passed_data"]["sklearn_model"]
-        num_lags = params_dict["passed_data"]["num_lags"]
-        split_date_delta = params_dict["passed_data"]["split_date_delta"]
-        perform_backtest = params_dict["passed_data"]["perform_backtest"]
-        # The ML forecaster object
-        mlf = mlforecaster(
-            data,
-            model_type,
-            self._power_no_var_loads_id,
-            sklearn_model,
-            num_lags,
-            str(self._data_folder),
-            self._logger,
-        )
-        # Fit the ML model
-        df_pred, df_pred_backtest = mlf.fit(
-            split_date_delta=split_date_delta, perform_backtest=perform_backtest
-        )
-        # Save model
-        if not debug:
-            filename = model_type + "_mlf.pkl"
-            with open(self._data_folder / filename, "wb") as outp:
-                pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
-        return df_pred, df_pred_backtest, mlf
+            params_dict: dict = json.loads(params)
+            # Retrieve data from hass
+            days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
+
+            days_list = utils.get_days_list(days_to_retrieve)
+            var_list = [self._power_no_var_loads_id]
+            self._retrieve_hass.get_data(days_list, var_list)
+            df_input_data = self._retrieve_hass.df_final.copy()
+
+            data = copy.deepcopy(df_input_data)
+            model_type = params_dict["passed_data"]["model_type"]
+            sklearn_model = params_dict["passed_data"]["sklearn_model"]
+            num_lags = params_dict["passed_data"]["num_lags"]
+            split_date_delta = params_dict["passed_data"]["split_date_delta"]
+            perform_backtest = params_dict["passed_data"]["perform_backtest"]
+            # The ML forecaster object
+            mlf = mlforecaster(
+                data,
+                model_type,
+                self._power_no_var_loads_id,
+                sklearn_model,
+                num_lags,
+                str(self._data_folder),
+                self._logger,
+            )
+            # Fit the ML model
+            df_pred, df_pred_backtest = mlf.fit(
+                split_date_delta=split_date_delta, perform_backtest=perform_backtest
+            )
+            # Save model
+            if not debug:
+                with open(self._data_folder / filename, "wb") as outp:
+                    pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
 
     def forecast_model_tune(self) -> Tuple[pd.DataFrame, mlforecaster]:
         """Tune a forecast model hyperparameters using bayesian optimization.

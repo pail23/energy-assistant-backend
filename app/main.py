@@ -42,22 +42,27 @@ FORMAT_DATETIME: Final = f"{FORMAT_DATE} {FORMAT_TIME}"
 MAX_LOG_FILESIZE = 1000000 * 10  # 10 MB
 
 
+class EnergyAssistant:
+    """Energy Assistant Application."""
+
+    home: Home
+    hass: Homeassistant | None
+    optimizer: EmhassOptimizer
+    mqtt: MqttConnection | None
+    db: Database
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator:
     """Manage the startup and showdown."""
-    await init_app()
-    sio.start_background_task(
-        background_task,
-        app.home,  # type: ignore
-        app.hass,  # type: ignore
-        app.optimizer,  # type: ignore
-        app.mqtt,  # type: ignore
-        app.db,  # type: ignore
-    )
-    sio.start_background_task(optimize, app.optimizer)  # type: ignore
+    ea = await init_app()
+    sio.start_background_task(background_task, ea)
+    sio.start_background_task(optimize, ea.optimizer)
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(daily_optimize, trigger="cron", hour="3", minute="0")  # time is UTC
+    scheduler.add_job(
+        daily_optimize, trigger="cron", args=[ea], hour="3", minute="0"
+    )  # time is UTC
     scheduler.start()
     yield
     scheduler.shutdown()
@@ -84,53 +89,47 @@ app.include_router(api_router, prefix="/api")
 
 
 async def async_handle_state_update(
-    home: Home,
+    ea: EnergyAssistant,
     state_repository: StatesRepository,
-    optimizer: EmhassOptimizer | None,
-    db: Database,
     session: AsyncSession,
 ) -> None:
     """Read the values from home assistant and process the update."""
     try:
         state_repository.read_states()
 
-        await home.update_state(state_repository)
-        if optimizer is not None:
-            await home.update_power_consumption(state_repository, optimizer)
-            optimizer.update_repository_states(home, state_repository)
+        await ea.home.update_state(state_repository)
+        if ea.optimizer is not None:
+            await ea.home.update_power_consumption(state_repository, ea.optimizer)
+            ea.optimizer.update_repository_states(ea.home, state_repository)
         else:
             logging.error("The variable optimizer is None in async_handle_state_update")
         state_repository.write_states()
         # print("Send refresh: " + get_home_message(home))
-        if db:
-            if home:
+        if ea.db:
+            if ea.home:
                 await asyncio.gather(
-                    sio.emit("refresh", {"data": get_home_message(home)}),
-                    db.store_home_state(home, session),
+                    sio.emit("refresh", {"data": get_home_message(ea.home)}),
+                    ea.db.store_home_state(ea.home, session),
                 )
             else:
                 logging.error("The variable home is None in async_handle_state_update")
         else:
             logging.error("The variable db is None in async_handle_state_update")
-        if optimizer is not None and home is not None:
-            optimizer.update_devices(home)
+        if ea.optimizer is not None and ea.home is not None:
+            ea.optimizer.update_devices(ea.home)
     except Exception:
         logging.exception("error during sending refresh")
 
 
-async def background_task(
-    home: Home,
-    hass: Homeassistant,
-    optimizer: EmhassOptimizer | None,
-    mqtt: MqttConnection,
-    db: Database,
-) -> None:
+async def background_task(ea: EnergyAssistant) -> None:
     """Periodically read the values from home assistant and process the update."""
     last_update = date.today()
     async_session = await get_async_session()
-    repositories: list[StatesRepository] = [hass]
-    if mqtt is not None:
-        repositories.append(mqtt)
+    repositories: list[StatesRepository] = []
+    if ea.hass is not None:
+        repositories.append(ea.hass)
+    if ea.mqtt is not None:
+        repositories.append(ea.mqtt)
     state_repository = StatesMultipleRepositories(repositories)
     while True:
         await sio.sleep(30)
@@ -139,10 +138,10 @@ async def background_task(
         today = date.today()
         try:
             if today != last_update:
-                home.store_energy_snapshot()
+                ea.home.store_energy_snapshot()
             last_update = today
             async with async_session() as session:
-                await async_handle_state_update(home, state_repository, optimizer, db, session)
+                await async_handle_state_update(ea, state_repository, session)
         except Exception:
             logging.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
@@ -383,13 +382,9 @@ def setup_logger(log_filename: str, level: str = "DEBUG") -> logging.Logger:
     return logger
 
 
-async def init_app() -> None:
+async def init_app() -> EnergyAssistant:
     """Initialize the application."""
-    app.home = None  # type: ignore
-    app.hass = None  # type: ignore
-    app.mqtt = None  # type: ignore
-    app.db = None  # type: ignore
-    app.optimizer = None  # type: ignore
+    result = EnergyAssistant()
 
     hass_options_file = "/data/options.json"
     if os.path.isfile(hass_options_file):
@@ -411,7 +406,7 @@ async def init_app() -> None:
 
     async_session = await get_async_session()
     db = Database()
-    app.db = db  # type: ignore
+    result.db = db
 
     device_type_registry = DeviceTypeRegistry()
     device_type_registry.load(settings.DEVICE_TYPE_REGISTRY)
@@ -429,20 +424,21 @@ async def init_app() -> None:
                 logger.exception("Failed to parse the config file")
             else:
                 hass = create_hass_connection(config)
-                app.hass = hass  # type: ignore
+                result.hass = hass
                 if hass is not None:
                     hass.read_states()
+                    optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass)
+                    result.optimizer = optimizer
 
                 mqtt_connection: MqttConnection | None = create_mqtt_connection(config)
-                app.mqtt = mqtt_connection  # type: ignore
+                result.mqtt = mqtt_connection
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config, session_storage, device_type_registry)
-                    app.home = home  # type: ignore
+                    result.home = home
                     if mqtt_connection is not None:
                         subscribe_mqtt_topics(mqtt_connection, home)
-                    app.optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass)  # type: ignore
 
                     async with async_session() as session:
                         await db.update_devices(home, session)
@@ -453,26 +449,23 @@ async def init_app() -> None:
                 logger.info("Initialization completed")
     except Exception:
         logger.exception("Initialization of the app failed")
+    return result
 
 
 async def optimize(optimizer: EmhassOptimizer) -> None:
     """Optimize the forcast."""
     try:
-        # optimizer.perfect_forecast_optim("profit", False)
-        optimizer.forecast_model_fit()
-    # optimizer.forecast_model_predict()
-
-    # optimizer.dayahead_forecast_optim()
+        optimizer.forecast_model_fit(True)
     except Exception:
         logging.exception(
             "Optimization of the power consumption forcast model failed, probably due to missing history data in Home Assistant."
         )
 
 
-def daily_optimize() -> None:
+def daily_optimize(ea: EnergyAssistant) -> None:
     """Optimze once a day."""
     try:
-        optimizer = app.optimizer  # type: ignore
+        optimizer = ea.optimizer
         if optimizer is not None:
             logging.info("Start optimizer run")
             optimizer.dayahead_forecast_optim()
