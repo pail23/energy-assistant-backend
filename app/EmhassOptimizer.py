@@ -715,15 +715,13 @@ class EmhassOptimizer(Optimizer):
             else:
                 method = "nearest"
 
-            idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[
+            idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[  # type: ignore
                 0
-            ]  # type: ignore
+            ]
             if idx_closest == -1:
-                idx_closest = self._day_ahead_forecast.index.get_indexer(
+                idx_closest = self._day_ahead_forecast.index.get_indexer(  # type: ignore
                     [now_precise], method="nearest"
-                )[
-                    0
-                ]  # type: ignore
+                )[0]
 
             value = self._day_ahead_forecast.iloc[idx_closest][columnName]
             return float(value)
