@@ -20,8 +20,8 @@ class CreateModel:
 
     async def execute(self, optimizer: EmhassOptimizer) -> CreateModelResponse:
         """Execute the create model use case."""
-        optimizer.forecast_model_fit(False)
-        return CreateModelResponse(model="Created")
+        r2 = optimizer.forecast_model_fit(False)
+        return CreateModelResponse(r2=r2)
 
 
 class TuneModel:

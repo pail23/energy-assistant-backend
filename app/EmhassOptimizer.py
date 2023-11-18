@@ -13,9 +13,10 @@ from emhass import utils  # type: ignore
 from emhass.forecast import forecast  # type: ignore
 from emhass.machine_learning_forecaster import mlforecaster  # type: ignore
 from emhass.optimization import optimization  # type: ignore
-from emhass.retrieve_hass import retrieve_hass  # type: ignore
+from emhass.retrieve_hass import retrieve_hass
 import numpy as np
 import pandas as pd
+from sklearn.metrics import r2_score  # type: ignore
 
 from app import Optimizer
 from app.devices import Location, StateId, StatesRepository
@@ -248,7 +249,7 @@ class EmhassOptimizer(Optimizer):
             "sklearn_model": "KNeighborsRegressor",
             "num_lags": int(24 / freq),  # should be one day * 30 min
             "split_date_delta": "48h",
-            "perform_backtest": False,
+            "perform_backtest": True,
         }
         return runtimeparams
 
@@ -483,7 +484,7 @@ class EmhassOptimizer(Optimizer):
 
     def forecast_model_fit(
         self, only_if_file_does_not_exist: bool = False, debug: bool = False
-    ) -> None:
+    ) -> float:
         """Perform a forecast model fit from training data retrieved from Home Assistant.
 
         :param debug: True to debug, useful for unit testing, defaults to False
@@ -497,54 +498,60 @@ class EmhassOptimizer(Optimizer):
 
         if only_if_file_does_not_exist and filename_path.is_file():
             self._logger.info("Skip model creation")
-        else:
-            self._logger.info("Setting up needed data")
+            return 0
 
-            # Treat runtimeparams
-            params: str = ""
-            params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
-                json.dumps(self.get_ml_runtime_params()),
-                json.dumps(self._emhass_config),
-                self._retrieve_hass_conf,
-                self._optim_conf,
-                self._plant_conf,
-                "forecast-model-fit",
-                self._logger,
-            )  # type: ignore
+        self._logger.info("Setting up needed data")
 
-            params_dict: dict = json.loads(params)
-            # Retrieve data from hass
-            days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
+        # Treat runtimeparams
+        params: str = ""
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+            json.dumps(self.get_ml_runtime_params()),
+            json.dumps(self._emhass_config),
+            self._retrieve_hass_conf,
+            self._optim_conf,
+            self._plant_conf,
+            "forecast-model-fit",
+            self._logger,
+        )  # type: ignore
 
-            days_list = utils.get_days_list(days_to_retrieve)
-            var_list = [self._power_no_var_loads_id]
-            self._retrieve_hass.get_data(days_list, var_list)
-            df_input_data = self._retrieve_hass.df_final.copy()
+        params_dict: dict = json.loads(params)
+        # Retrieve data from hass
+        days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
 
-            data = copy.deepcopy(df_input_data)
-            model_type = params_dict["passed_data"]["model_type"]
-            sklearn_model = params_dict["passed_data"]["sklearn_model"]
-            num_lags = params_dict["passed_data"]["num_lags"]
-            split_date_delta = params_dict["passed_data"]["split_date_delta"]
-            perform_backtest = params_dict["passed_data"]["perform_backtest"]
-            # The ML forecaster object
-            mlf = mlforecaster(
-                data,
-                model_type,
-                self._power_no_var_loads_id,
-                sklearn_model,
-                num_lags,
-                str(self._data_folder),
-                self._logger,
-            )
-            # Fit the ML model
-            df_pred, df_pred_backtest = mlf.fit(
-                split_date_delta=split_date_delta, perform_backtest=perform_backtest
-            )
-            # Save model
-            if not debug:
-                with open(self._data_folder / filename, "wb") as outp:
-                    pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
+        days_list = utils.get_days_list(days_to_retrieve)
+        var_list = [self._power_no_var_loads_id]
+        self._retrieve_hass.get_data(days_list, var_list)
+        df_input_data = self._retrieve_hass.df_final.copy()
+
+        data = copy.deepcopy(df_input_data)
+        model_type = params_dict["passed_data"]["model_type"]
+        sklearn_model = params_dict["passed_data"]["sklearn_model"]
+        num_lags = params_dict["passed_data"]["num_lags"]
+        split_date_delta = params_dict["passed_data"]["split_date_delta"]
+        perform_backtest = params_dict["passed_data"]["perform_backtest"]
+        # The ML forecaster object
+        mlf = mlforecaster(
+            data,
+            model_type,
+            self._power_no_var_loads_id,
+            sklearn_model,
+            num_lags,
+            str(self._data_folder),
+            self._logger,
+        )
+        # Fit the ML model
+        df_pred, df_pred_backtest = mlf.fit(
+            split_date_delta=split_date_delta, perform_backtest=perform_backtest
+        )
+        predictions = df_pred["pred"].dropna()
+        test_data = df_pred["test"].dropna()
+        r2 = r2_score(test_data, predictions)
+        self._logger.info(f"R2 score = {r2}")
+        # Save model
+        if not debug:
+            with open(self._data_folder / filename, "wb") as outp:
+                pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
+        return r2
 
     def forecast_model_tune(self) -> Tuple[pd.DataFrame, mlforecaster]:
         """Tune a forecast model hyperparameters using bayesian optimization.
@@ -564,6 +571,7 @@ class EmhassOptimizer(Optimizer):
                 mlf = pickle.load(inp)
             # Tune the model
             df_pred_optim = mlf.tune(debug=False)
+
             # Save model
             with open(filename_path, "wb") as outp:
                 pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)

@@ -429,6 +429,7 @@ async def init_app() -> EnergyAssistant:
                     hass.read_states()
                     optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass)
                     result.optimizer = optimizer
+                    app.optimizer = optimizer  # type: ignore
 
                 mqtt_connection: MqttConnection | None = create_mqtt_connection(config)
                 result.mqtt = mqtt_connection
@@ -437,6 +438,7 @@ async def init_app() -> EnergyAssistant:
                 if home_config is not None and home_config.get("name") is not None:
                     home = Home(home_config, session_storage, device_type_registry)
                     result.home = home
+                    app.home = home  # type: ignore
                     if mqtt_connection is not None:
                         subscribe_mqtt_topics(mqtt_connection, home)
 
