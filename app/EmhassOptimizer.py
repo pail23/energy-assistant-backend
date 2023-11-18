@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 SENSOR_POWER_NO_VAR_LOADS = "power_load_no_var_loads"
 DEFAULT_HASS_ENTITY_PREFIX = "em"
 DEFAULT_COST_FUNC = "profit"
+LOAD_FORECAST_MODEL_TYPE = "load_forecast"
 
 
 class EmhassOptimizer(Optimizer):
@@ -94,7 +95,16 @@ class EmhassOptimizer(Optimizer):
             self._method_ts_round = retrieve_hass_conf.get("method_ts_round")
 
             # Define main objects
-            self._retrieve_hass = retrieve_hass(self._hass_url, self._hass_token, retrieve_hass_conf["freq"], self._location.get_time_zone(), params, self._data_folder, self._logger, get_data_from_file=False)  # type: ignore
+            self._retrieve_hass = retrieve_hass(
+                self._hass_url,
+                self._hass_token,
+                retrieve_hass_conf["freq"],
+                self._location.get_time_zone(),
+                params,
+                self._data_folder,
+                self._logger,
+                get_data_from_file=False,
+            )  # type: ignore
 
         if self._cost_fun is None:
             self._cost_fun = "profit"
@@ -233,7 +243,7 @@ class EmhassOptimizer(Optimizer):
             ],
             "set_def_constant": [device.is_constant for device in self._optimzed_devices],
             "days_to_retrieve": self._retrieve_hass_conf.get("days_to_retrieve", 10),
-            "model_type": "load_forecast",
+            "model_type": LOAD_FORECAST_MODEL_TYPE,
             "var_model": self._power_no_var_loads_id,
             "sklearn_model": "KNeighborsRegressor",
             "num_lags": int(24 / freq),  # should be one day * 30 min
@@ -531,6 +541,37 @@ class EmhassOptimizer(Optimizer):
                 pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
         return df_pred, df_pred_backtest, mlf
 
+    def forecast_model_tune(self) -> Tuple[pd.DataFrame, mlforecaster]:
+        """Tune a forecast model hyperparameters using bayesian optimization.
+
+        :param debug: True to debug, useful for unit testing, defaults to False
+        :type debug: bool, optional
+        :return: The DataFrame containing the forecast data results using the optimized model
+        :rtype: pd.DataFrame
+        """
+        # Load model
+        self._logger.info("Tune the forecast model")
+
+        filename = LOAD_FORECAST_MODEL_TYPE + "_mlf.pkl"
+        filename_path = self._data_folder / filename
+        if filename_path.is_file():
+            with open(filename_path, "rb") as inp:
+                mlf = pickle.load(inp)
+            # Tune the model
+            df_pred_optim = mlf.tune(debug=False)
+            # Save model
+            with open(filename_path, "wb") as outp:
+                pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
+            return df_pred_optim, mlf
+
+        else:
+            self._logger.error(
+                "The ML forecaster file was not found, please run a model fit method before this tune method"
+            )
+            raise Exception(
+                "The ML forecaster file was not found, please run a model fit method before this tune method"
+            )
+
     def forecast_model_predict(
         self,
         use_last_window: bool = True,
@@ -669,9 +710,15 @@ class EmhassOptimizer(Optimizer):
             else:
                 method = "nearest"
 
-            idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[0]  # type: ignore
+            idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[
+                0
+            ]  # type: ignore
             if idx_closest == -1:
-                idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method="nearest")[0]  # type: ignore
+                idx_closest = self._day_ahead_forecast.index.get_indexer(
+                    [now_precise], method="nearest"
+                )[
+                    0
+                ]  # type: ignore
 
             value = self._day_ahead_forecast.iloc[idx_closest][columnName]
             return float(value)

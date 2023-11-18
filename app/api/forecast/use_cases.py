@@ -29,4 +29,5 @@ class TuneModel:
 
     async def execute(self, optimizer: EmhassOptimizer) -> TuneModelResponse:
         """Execute the create model use case."""
+        optimizer.forecast_model_tune()
         return TuneModelResponse(model="Tuned")
