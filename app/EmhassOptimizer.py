@@ -13,7 +13,7 @@ from emhass import utils  # type: ignore
 from emhass.forecast import forecast  # type: ignore
 from emhass.machine_learning_forecaster import mlforecaster  # type: ignore
 from emhass.optimization import optimization  # type: ignore
-from emhass.retrieve_hass import retrieve_hass
+from emhass.retrieve_hass import retrieve_hass  # type: ignore
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score  # type: ignore
