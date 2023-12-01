@@ -128,6 +128,13 @@ class Home:
         """Add a device to the home."""
         self.devices.append(device)
 
+    def remove_device(self, device_id: uuid.UUID) -> None:
+        """Remove the device with a given id."""
+        for device in self.devices:
+            if device.id == device_id:
+                self.devices.remove(device)
+                return
+
     def get_device(self, id: uuid.UUID) -> Device | None:
         """Get device with the given id."""
         for device in self.devices:

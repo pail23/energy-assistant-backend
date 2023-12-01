@@ -88,4 +88,4 @@ async def delete(
     use_case: DeleteDevice = Depends(DeleteDevice),
 ) -> None:
     """REST end point for delete a device."""
-    await use_case.execute(device_id)
+    await use_case.execute(device_id, request.app.home)

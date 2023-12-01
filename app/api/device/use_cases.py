@@ -119,10 +119,12 @@ class DeleteDevice:
         """Create a delete a device use case."""
         self.async_session = session
 
-    async def execute(self, device_id: uuid.UUID) -> None:
+    async def execute(self, device_id: uuid.UUID, home: Home) -> None:
         """Execute the delete a device use case."""
         async with self.async_session.begin() as session:
             device = await Device.read_by_id(session, device_id)
             if not device:
                 return
             await Device.delete(session, device)
+            if home is not None:
+                home.remove_device(device_id)
