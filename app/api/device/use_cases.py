@@ -25,14 +25,14 @@ class ReadAllDevices:
         self.async_session = session
 
     async def execute(
-        self, home: Home, filter_with_session_log_enties: bool
+        self, home: Home | None, filter_with_session_log_enties: bool
     ) -> AsyncIterator[DeviceSchema]:
         """Execute the read all devices use case."""
         async with self.async_session() as session:
             async for device in Device.read_all(session, False, filter_with_session_log_enties):
                 if not filter_with_session_log_enties or len(device.session_log_entries) > 0:
                     result = DeviceSchema.model_validate(device)
-                    d = home.get_device(device.id)
+                    d = home.get_device(device.id) if home is not None else None
                     if d is not None:
                         result.supported_power_modes = list(d.supported_power_modes)
                         result.power_mode = d.power_mode
@@ -124,7 +124,7 @@ class DeleteDevice:
         """Create a delete a device use case."""
         self.async_session = session
 
-    async def execute(self, device_id: uuid.UUID, home: Home) -> None:
+    async def execute(self, device_id: uuid.UUID, home: Home | None) -> None:
         """Execute the delete a device use case."""
         async with self.async_session.begin() as session:
             device = await Device.read_by_id(session, device_id)

@@ -32,11 +32,9 @@ async def read_all(
     use_case: ReadAllDevices = Depends(ReadAllDevices),
 ) -> ReadAllDevicesResponse:
     """Rest end point for read all devices."""
+    home = request.app.home if hasattr(request.app, "home") else None
     return ReadAllDevicesResponse(
-        devices=[
-            device
-            async for device in use_case.execute(request.app.home, filter_with_session_log_enties)
-        ]
+        devices=[device async for device in use_case.execute(home, filter_with_session_log_enties)]
     )
 
 
@@ -88,4 +86,5 @@ async def delete(
     use_case: DeleteDevice = Depends(DeleteDevice),
 ) -> None:
     """REST end point for delete a device."""
-    await use_case.execute(device_id, request.app.home)
+    home = request.app.home if hasattr(request.app, "home") else None
+    await use_case.execute(device_id, home)
