@@ -25,6 +25,8 @@ class DeviceSchema(BaseModel):
     id: uuid.UUID
     name: str
     icon: str
+    type: str
+    config: str
     supported_power_modes: list[str] | None = None
     power_mode: str | None = None
 

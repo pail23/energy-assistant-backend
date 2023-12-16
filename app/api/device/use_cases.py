@@ -31,17 +31,20 @@ class ReadAllDevices:
         async with self.async_session() as session:
             async for device in Device.read_all(session, False, filter_with_session_log_enties):
                 if not filter_with_session_log_enties or len(device.session_log_entries) > 0:
-                    result = DeviceSchema.model_validate(device)
-                    d = home.get_device(device.id) if home is not None else None
-                    if d is not None:
-                        result.supported_power_modes = list(d.supported_power_modes)
-                        result.power_mode = d.power_mode
-                    yield result
+                    if device.type is not None:  # TODO: Remove this at a late point
+                        result = DeviceSchema.model_validate(device)
+                        d = home.get_device(device.id) if home is not None else None
+                        if d is not None:
+                            result.supported_power_modes = list(d.supported_power_modes)
+                            result.power_mode = d.power_mode
+                        yield result
         if not filter_with_session_log_enties:
             yield DeviceSchema(
                 id=OTHER_DEVICE,
                 name="Other",
                 icon="mdi-home",
+                type="other",
+                config="",
                 supported_power_modes=[],
                 power_mode="",
             )
