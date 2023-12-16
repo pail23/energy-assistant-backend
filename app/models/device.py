@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 from typing import TYPE_CHECKING, AsyncIterator
 import uuid
 
@@ -26,7 +27,9 @@ class Device(Base):
     id: Mapped[uuid.UUID] = mapped_column("id", nullable=False, unique=True, primary_key=True)
     name: Mapped[str]
     icon: Mapped[str]
+    type: Mapped[str | None]
     power_mode: Mapped[str]
+    config: Mapped[str | None]
 
     device_measurements: Mapped[list[DeviceMeasurement]] = relationship(
         "DeviceMeasurement",
@@ -81,20 +84,43 @@ class Device(Base):
 
     @classmethod
     async def create(
-        cls, session: AsyncSession, id: uuid.UUID, name: str, icon: str, power_mode: str
+        cls,
+        session: AsyncSession,
+        id: uuid.UUID,
+        name: str,
+        icon: str,
+        power_mode: str,
+        type: str,
+        config: dict,
     ) -> Device:
         """Create a device."""
-        device = Device(id=id, name=name, icon=icon, power_mode=power_mode)
+        device = Device(
+            id=id, name=name, icon=icon, power_mode=power_mode, type=type, config=json.dumps(config)
+        )
         session.add(device)
         await session.flush()
         return device
 
-    async def update(self, session: AsyncSession, name: str, icon: str, power_mode: str) -> None:
+    async def update(
+        self,
+        session: AsyncSession,
+        name: str,
+        icon: str,
+        power_mode: str,
+        type: str,
+        config: dict,
+    ) -> None:
         """Update a device."""
         self.name = name
         self.icon = icon
         self.power_mode = power_mode
+        self.type = type
+        self.config = json.dumps(config)
         await session.flush()
+
+    def get_config(self) -> dict:
+        """Get the config dictionary."""
+        return json.loads(self.config) if self.config is not None else {}
 
     @classmethod
     async def delete(cls, session: AsyncSession, device: Device) -> None:

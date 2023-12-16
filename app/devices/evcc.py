@@ -50,6 +50,11 @@ class EvccDevice(DeviceWithState):
             channel=MQTT_CHANNEL,
         )
 
+    @property
+    def type(self) -> str:
+        """The device type."""
+        return "evcc"
+
     async def update_state(
         self, state_repository: StatesRepository, self_sufficiency: float
     ) -> None:

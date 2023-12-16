@@ -35,11 +35,18 @@ class Device(ABC):
         self._supported_power_modes: list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
         self._power_mode: PowerModes = PowerModes.DEVICE_CONTROLLED
         self._utility_meters: list[UtilityMeter] = []
+        self._config: dict = config.copy()
 
     @property
     def name(self) -> str:
         """The name of the device."""
         return self._name
+
+    @property
+    @abstractmethod
+    def type(self) -> str:
+        """The device type."""
+        pass
 
     @property
     def supported_power_modes(self) -> list[PowerModes]:
@@ -58,6 +65,11 @@ class Device(ABC):
             len(self._supported_power_modes) == 1
             and self._supported_power_modes[0] == PowerModes.DEVICE_CONTROLLED
         )
+
+    @property
+    def config(self) -> dict:
+        """Return the config dictionary."""
+        return self._config
 
     def set_power_mode(self, power_mode: PowerModes) -> None:
         """Set the power mode of the device."""

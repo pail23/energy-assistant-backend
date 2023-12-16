@@ -60,21 +60,27 @@ class Home:
         if config_devices is not None:
             for config_device in config_devices:
                 type = config_device.get("type")
-                if type == "homeassistant":
-                    self.devices.append(
-                        HomeassistantDevice(config_device, session_storage, device_type_registry)
-                    )
-                elif type == "heat-pump":
-                    self.devices.append(HeatPumpDevice(config_device, session_storage))
-                elif type == "power-state-device":
-                    # This is deprecated and will be removed.
-                    self.devices.append(
-                        HomeassistantDevice(config_device, session_storage, device_type_registry)
-                    )
-                elif type == "evcc":
-                    self.devices.append(EvccDevice(config_device, session_storage))
-                else:
-                    LOGGER.error(f"Unknown device type {type} in configuration")
+                self.create_device(type, config_device, session_storage, device_type_registry)
+
+    def create_device(
+        self,
+        type: str,
+        config: dict,
+        session_storage: SessionStorage,
+        device_type_registry: DeviceTypeRegistry,
+    ) -> None:
+        """Create and add a new device."""
+        if type == "homeassistant":
+            self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
+        elif type == "heat-pump":
+            self.devices.append(HeatPumpDevice(config, session_storage))
+        elif type == "power-state-device":
+            # This is deprecated and will be removed.
+            self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
+        elif type == "evcc":
+            self.devices.append(EvccDevice(config, session_storage))
+        else:
+            LOGGER.error(f"Unknown device type {type} in configuration")
 
     def _init_power_variables(self, config: dict) -> None:
         solar_power_config = config.get("solar_power")

@@ -443,7 +443,9 @@ async def init_app() -> EnergyAssistant:
                         subscribe_mqtt_topics(mqtt_connection, home)
 
                     async with async_session() as session:
-                        await db.update_devices(home, session)
+                        await db.update_devices(
+                            home, session, session_storage, device_type_registry
+                        )
 
                         await db.restore_home_state(home, session)
                 else:

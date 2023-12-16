@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.db import get_session
 from app.devices import PowerModes, Session, SessionStorage
 from app.devices.home import Home
+from app.devices.registry import DeviceTypeRegistry
 from app.devices.utility_meter import UtilityMeter
 from app.models.device import (
     Device as DeviceDTO,
@@ -146,7 +147,13 @@ class Database:
         except Exception as ex:
             LOGGER.error("Error while storing state of home", ex)
 
-    async def update_devices(self, home: Home, session: AsyncSession) -> None:
+    async def update_devices(
+        self,
+        home: Home,
+        session: AsyncSession,
+        session_storage: SessionStorage,
+        device_type_registry: DeviceTypeRegistry,
+    ) -> None:
         """Update the devices table in the db based on the configuration."""
         for device in home.devices:
             try:
@@ -154,16 +161,35 @@ class Database:
                 if device_dto is not None:
                     if device_dto.power_mode is not None:
                         device.set_power_mode(PowerModes[device_dto.power_mode.upper()])
-                    await device_dto.update(session, device.name, device.icon, device.power_mode)
+                    await device_dto.update(
+                        session,
+                        device.name,
+                        device.icon,
+                        device.power_mode,
+                        device.type,
+                        device.config,
+                    )
                 else:
                     await DeviceDTO.create(
-                        session, device.id, device.name, device.icon, device.power_mode
+                        session,
+                        device.id,
+                        device.name,
+                        device.icon,
+                        device.power_mode,
+                        device.type,
+                        device.config,
                     )
                 await session.flush()
                 await session.commit()
 
             except Exception as ex:
                 LOGGER.error("Error while udpateing the devices of home", ex)
+        all_devices = DeviceDTO.read_all(session)
+        async for device_dto in all_devices:
+            if home.get_device(device_dto.id) is None and device_dto.type is not None:
+                home.create_device(
+                    device_dto.type, device_dto.get_config(), session_storage, device_type_registry
+                )
 
     async def create_or_update_utility_meter(
         self, session: AsyncSession, device_id: uuid.UUID, utility_meter: UtilityMeter

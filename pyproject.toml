@@ -116,7 +116,7 @@ ignore = [
     "E731",  # do not assign a lambda expression, use a def
     "T201",  # print found
 ]
-exclude = ["migrations", "emhass"]
+exclude = ["migrations"]
 line-length = 100
 
 
@@ -126,7 +126,7 @@ line-length = 100
 [tool.black]
 target-version = ['py311']
 line-length = 100
-exclude="migrations|emhass"
+exclude="migrations"
 
 [flake8-pytest-style]
 fixture-parentheses = false
@@ -147,10 +147,6 @@ follow_imports = "skip"
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 
-
-[[tool.mypy.overrides]]
-module = "emhass.*"
-ignore_errors = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

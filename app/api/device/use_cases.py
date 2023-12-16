@@ -101,7 +101,12 @@ class UpdateDevicePowerMode:
                 if not device:
                     raise HTTPException(status_code=404)
 
-                await device.update(session, device.name, device.icon, power_mode)
+                if device.type is None:
+                    raise HTTPException(status_code=500)
+
+                await device.update(
+                    session, device.name, device.icon, power_mode, device.type, device.get_config()
+                )
                 await session.refresh(device)
                 result = DeviceSchema.model_validate(device)
                 result.supported_power_modes = list(d.supported_power_modes)

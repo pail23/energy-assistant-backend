@@ -270,6 +270,11 @@ class HomeassistantDevice(DeviceWithState):
         else:
             self._state = "not supported"
 
+    @property
+    def type(self) -> str:
+        """The device type."""
+        return "homeassistant"
+
     async def update_state(
         self, state_repository: StatesRepository, self_sufficiency: float
     ) -> None:

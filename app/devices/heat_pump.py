@@ -64,6 +64,11 @@ class HeatPumpDevice(DeviceWithState):
         self._consumed_energy: State | None = None
         self._icon = "mdi-heat-pump"
 
+    @property
+    def type(self) -> str:
+        """The device type."""
+        return "heat-pump"
+
     async def update_state(
         self, state_repository: StatesRepository, self_sufficiency: float
     ) -> None:
