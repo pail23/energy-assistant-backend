@@ -1,5 +1,3 @@
-ARG TARGETPLATFORM="linux/amd64"
-ARG BUILD_VERSION=latest
 ARG PYTHON_VERSION="3.11"
 
 FROM python:${PYTHON_VERSION}
@@ -14,11 +12,11 @@ COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 #COPY ./migrations ./migrations
 #COPY ./client ./client
 
-RUN pip install energy-assistant && mkdir /data
+RUN pip install energy-assistant==${EASS_VERSION} \ && mkdir /data
 
 # Required to persist build arg
-ARG BUILD_VERSION
 ARG TARGETPLATFORM
+ARG EASS_VERSION
 
 # Set some labels for the Home Assistant add-on
 LABEL \
@@ -28,7 +26,7 @@ LABEL \
     org.opencontainers.image.authors="The Energy Assistant Team" \
     org.opencontainers.image.documentation="https://github.com/pail23/energy-assistant-backend/discussions" \
     org.opencontainers.image.licenses="MIT" \
-    io.hass.version=${BUILD_VERSION} \
+    io.hass.version=${EASS_VERSION} \
     io.hass.name="Energy Assistant" \
     io.hass.description="Energy Assistant" \
     io.hass.platform="${TARGETPLATFORM}" \
