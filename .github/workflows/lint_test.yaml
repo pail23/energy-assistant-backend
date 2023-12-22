@@ -32,9 +32,9 @@ jobs:
       - name: "Install requirements"
         run: pip-sync
 
-      - name: "Run"
+      - name: "Run ruff"
         run: python3 -m ruff check .
-      - name: mypy
+      - name: "run mypy"
         run: mypy energy_assistant
 
   tests:
