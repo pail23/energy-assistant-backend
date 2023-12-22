@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "energy_assistant"
-version = "1.0.0"
+version = "0.0.92"
 description = "Energy Assistant"
 readme = "Readme.md"
 authors = [{ name = "The Energy Assistant Creators", email = "pail23@users.noreply.github.com" }]
