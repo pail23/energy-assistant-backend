@@ -15,4 +15,4 @@ def main() -> None:
         "upgrade",
         "head",
     ]
-    alembic.config.main(argv=argv)
+    alembic.config.main(argv=argv)  # type: ignore
