@@ -6,14 +6,14 @@ from httpx import AsyncClient
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.devices import PowerModes
+from energy_assistant.devices import PowerModes
 
 
 async def setup_data(session: AsyncSession) -> None:
     """Set up the data in the database."""
-    from app.models.device import Device, DeviceMeasurement
-    from app.models.home import HomeMeasurement
-    from app.models.sessionlog import SessionLogEntry
+    from energy_assistant.models.device import Device, DeviceMeasurement
+    from energy_assistant.models.home import HomeMeasurement
+    from energy_assistant.models.sessionlog import SessionLogEntry
 
     device = Device(
         id=uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"),

@@ -5,18 +5,18 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.devices import EnergyIntegrator, PowerModes
-from app.devices.home import Home
-from app.devices.homeassistant import HomeassistantDevice
-from app.devices.registry import DeviceTypeRegistry
-from app.models.home import HomeMeasurement
-from app.storage import Database, session_storage
+from energy_assistant.devices import EnergyIntegrator, PowerModes
+from energy_assistant.devices.home import Home
+from energy_assistant.devices.homeassistant import HomeassistantDevice
+from energy_assistant.devices.registry import DeviceTypeRegistry
+from energy_assistant.models.home import HomeMeasurement
+from energy_assistant.storage import Database, session_storage
 
 
 async def setup_data(session: AsyncSession) -> None:
     """Set up the data in the database."""
-    from app.models.device import Device, DeviceMeasurement
-    from app.models.home import HomeMeasurement
+    from energy_assistant.models.device import Device, DeviceMeasurement
+    from energy_assistant.models.home import HomeMeasurement
 
     device1 = Device(
         id=uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"),

@@ -6,4 +6,4 @@ cd "$(dirname "$0")/.."
 
 ruff check . --fix
 black .
-mypy app --ignore-missing-imports
+mypy energy_assistant --ignore-missing-imports

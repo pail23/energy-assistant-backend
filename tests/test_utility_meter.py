@@ -1,7 +1,7 @@
 """Tests for utility meters."""
 
 
-from app.devices.utility_meter import UtilityMeter
+from energy_assistant.devices.utility_meter import UtilityMeter
 
 
 def test_utility_meter() -> None:

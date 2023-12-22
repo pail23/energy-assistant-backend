@@ -1,8 +1,8 @@
 """Tests for state value class."""
 
 
-from app.devices import State, StatesSingleRepository
-from app.devices.state_value import StateValue
+from energy_assistant.devices import State, StatesSingleRepository
+from energy_assistant.devices.state_value import StateValue
 
 
 class StatesSingleRepositoryMock(StatesSingleRepository):

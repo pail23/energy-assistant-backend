@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pytest
 
-from app.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import DataBuffer
 
 
 @pytest.fixture

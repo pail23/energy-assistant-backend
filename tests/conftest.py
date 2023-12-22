@@ -9,11 +9,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, SessionTransaction
 
-from app.db import get_session
-from app.devices.registry import DeviceTypeRegistry
-from app.main import app
-from app.models.base import Base
-from app.settings import settings
+from energy_assistant.db import get_session
+from energy_assistant.devices.registry import DeviceTypeRegistry
+from energy_assistant.main import app
+from energy_assistant.models.base import Base
+from energy_assistant.settings import settings
 
 
 @pytest.fixture
