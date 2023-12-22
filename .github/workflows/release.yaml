@@ -49,6 +49,13 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
 
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+
   build-and-push-container-image:
     name: Builds and pushes the Energy Assistant container to ghcr.io
     runs-on: "ubuntu-latest"
