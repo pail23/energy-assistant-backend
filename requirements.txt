@@ -61,13 +61,15 @@ colorlog==6.7.0
     # via
     #   energy-assistant (pyproject.toml)
     #   optuna
-coverage[toml]==7.3.3
+coverage[toml]==7.3.4
     # via
     #   coverage
     #   pytest-cov
 distlib==0.3.8
     # via virtualenv
 emhass==0.6.0
+    # via energy-assistant (pyproject.toml)
+energy-assistant-frontend==0.0.50
     # via energy-assistant (pyproject.toml)
 fastapi==0.104.1
     # via
@@ -172,7 +174,7 @@ pandas==2.0.3
     #   emhass
     #   pvlib
     #   skforecast
-pandas-stubs==2.1.1.230928
+pandas-stubs==2.1.4.231218
     # via energy-assistant (pyproject.toml)
 pathspec==0.12.1
     # via black

@@ -12,6 +12,7 @@ from typing import AsyncIterator, Final
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
+from energy_assistant_frontend import where as locate_frontend
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -484,7 +485,8 @@ async def health() -> JSONResponse:
 
 
 # This needs to be the last mount
-app.mount("/", StaticFiles(directory="client", html=True), name="frontend")
+frontend_dir = locate_frontend()
+app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
 if __name__ == "__main__":
