@@ -55,7 +55,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+    needs: build-and-publish-pypi
     steps:
+      - name: Sleep for 60 seconds (to prevent race condition with the pypi upload)
+        run: sleep 60s
+        shell: bash
       - name: "Checkout the repository"
         uses: "actions/checkout@v4"
 
