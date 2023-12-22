@@ -1,10 +1,12 @@
 ARG PYTHON_VERSION="3.11"
-# Required to persist build arg
-ARG TARGETPLATFORM
-ARG EASS_VERSION
+
 
 FROM python:${PYTHON_VERSION}
 WORKDIR /app
+
+# Required to persist build arg
+ARG TARGETPLATFORM
+ARG EASS_VERSION
 
 COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 #COPY ./requirements.txt .
@@ -15,7 +17,7 @@ COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 #COPY ./migrations ./migrations
 #COPY ./client ./client
 
-RUN pip install energy-assistant==${EASS_VERSION} \ && mkdir /data
+RUN pip install energy-assistant==0.0.99 \ && mkdir /data
 
 
 # Set some labels for the Home Assistant add-on
