@@ -11,6 +11,7 @@ import sys
 import threading
 from typing import AsyncIterator, Final
 
+import alembic.config
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
 from energy_assistant_frontend import where as locate_frontend
@@ -492,20 +493,23 @@ app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 def main() -> None:
     """Start energy assistant."""
-    import alembic.config
     import uvicorn
 
-    aleminic_config = Path(__file__).parent / "alembic.ini"
-    logging.info(f"Path: {str(aleminic_config)}")
+    try:
+        alembic_config = Path(__file__).parent / "alembic.ini"
+        print(f"Alembic.ini path: {str(alembic_config)}")
 
-    alembicArgs = [
-        "-c",
-        str(aleminic_config),
-        "--raiseerr",
-        "upgrade",
-        "head",
-    ]
-    alembic.config.main(argv=alembicArgs)  # type: ignore
+        alembicArgs = [
+            "-c",
+            str(alembic_config),
+            "--raiseerr",
+            "upgrade",
+            "head",
+        ]
+        alembic.config.main(argv=alembicArgs)  # type: ignore
+    except Exception:
+        print("Alembic Migration failed")
+        logging.exception("Alembic Migration failed")
 
     uvicorn.run(app, host="0.0.0.0", port=5000)
 

@@ -59,6 +59,7 @@ dev = [
 
 [project.scripts]
 eass = "app.main:main"
+eass_apply = "migrations.apply:main"
 
 [project.urls]
 Homepage = "https://github.com/pail23/energy-assistant-backend"
