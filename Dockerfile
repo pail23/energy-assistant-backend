@@ -17,7 +17,7 @@ COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
 #COPY ./migrations ./migrations
 #COPY ./client ./client
 
-RUN pip install energy-assistant==0.0.99 \ && mkdir /data
+RUN pip install energy-assistant==${EASS_VERSION} && mkdir /data
 
 
 # Set some labels for the Home Assistant add-on
