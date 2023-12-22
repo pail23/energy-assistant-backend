@@ -6,7 +6,6 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-from pathlib import Path
 import sys
 import threading
 from typing import AsyncIterator, Final
@@ -495,10 +494,9 @@ def main() -> None:
     import alembic.config
     import uvicorn
 
-    root = Path(__file__).parent.parent
     alembicArgs = [
         "-c",
-        os.path.join(root, "alembic.ini"),
+        "./migrations/alembic.ini",
         "--raiseerr",
         "upgrade",
         "head",
