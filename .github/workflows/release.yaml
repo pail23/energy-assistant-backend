@@ -98,7 +98,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server
+            ghcr.io/${{ github.repository_owner }}/energy-assistant-server
 
       - name: Build and push Docker image
         uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
@@ -107,11 +107,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: Dockerfile
           tags: |-
-            ghcr.io/${{ github.repository_owner }}/server:${{ steps.tags.outputs.patch }},
-            ghcr.io/${{ github.repository_owner }}/server:${{ steps.tags.outputs.minor }},
-            ghcr.io/${{ github.repository_owner }}/server:${{ steps.tags.outputs.major }},
-            ghcr.io/${{ github.repository_owner }}/server:${{ steps.tags.outputs.channel }},
-            ghcr.io/${{ github.repository_owner }}/server:latest
+            ghcr.io/${{ github.repository_owner }}/energy-assistant-server:${{ steps.tags.outputs.patch }},
+            ghcr.io/${{ github.repository_owner }}/energy-assistant-server:${{ steps.tags.outputs.minor }},
+            ghcr.io/${{ github.repository_owner }}/energy-assistant-server:${{ steps.tags.outputs.major }},
+            ghcr.io/${{ github.repository_owner }}/energy-assistant-server:${{ steps.tags.outputs.channel }},
+            ghcr.io/${{ github.repository_owner }}/energy-assistant-server:latest
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |

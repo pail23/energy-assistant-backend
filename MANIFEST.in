@@ -2,7 +2,6 @@ include *.txt
 include Readme.md
 include LICENSE
 include alembic.ini
-graft app
-graft migrations
+graft energy_assistant
 recursive-exclude * *.py[co]
 recursive-exclude * *.DS_Store
