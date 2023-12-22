@@ -92,7 +92,6 @@ jobs:
           else
             echo "channel=stable" >> $GITHUB_OUTPUT
           fi
-          echo "version: ${ needs.build-and-publish-pypi.outputs.version }"
 
       - name: Docker meta
         id: meta
