@@ -6,6 +6,7 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+from pathlib import Path
 import sys
 import threading
 from typing import AsyncIterator, Final
@@ -489,7 +490,23 @@ frontend_dir = locate_frontend()
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Start energy assistant."""
+    import alembic.config
     import uvicorn
 
+    root = Path(__file__).parent.parent
+    alembicArgs = [
+        "-c",
+        os.path.join(root, "alembic.ini"),
+        "--raiseerr",
+        "upgrade",
+        "head",
+    ]
+    alembic.config.main(argv=alembicArgs)  # type: ignore
+
     uvicorn.run(app, host="0.0.0.0", port=5000)
+
+
+if __name__ == "__main__":
+    main()

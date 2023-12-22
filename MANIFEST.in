@@ -1,0 +1,8 @@
+include *.txt
+include Readme.md
+include LICENSE
+include alembic.ini
+graft app
+graft migrations
+recursive-exclude * *.py[co]
+recursive-exclude * *.DS_Store

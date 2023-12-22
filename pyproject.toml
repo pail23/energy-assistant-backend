@@ -57,6 +57,9 @@ dev = [
   "pandas-stubs"
 ]
 
+[project.scripts]
+eass = "app.main:main"
+
 [project.urls]
 Homepage = "https://github.com/pail23/energy-assistant-backend"
 

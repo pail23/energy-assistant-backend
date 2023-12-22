@@ -6,15 +6,15 @@ FROM python:${PYTHON_VERSION}
 WORKDIR /app
 
 COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
-COPY ./requirements.txt .
-COPY ./pyproject.toml . 
-COPY ./alembic.ini .
-COPY ./app ./app
-COPY ./*.whl .
-COPY ./migrations ./migrations
-COPY ./client ./client
+#COPY ./requirements.txt .
+#COPY ./pyproject.toml .
+#COPY ./alembic.ini .
+#COPY ./app ./app
+#COPY ./*.whl .
+#COPY ./migrations ./migrations
+#COPY ./client ./client
 
-RUN pip install pip-tools && pip-compile --extra dev && pip-sync && mkdir /data
+RUN pip install energy-assistant && mkdir /data
 
 # Required to persist build arg
 ARG BUILD_VERSION
@@ -38,4 +38,4 @@ VOLUME [ "/data" ]
 
 EXPOSE 5000
 ENV APP_CONFIG_FILE=local
-CMD alembic upgrade head && uvicorn --host 0.0.0.0 --port 5000 app.main:app
+CMD eass
