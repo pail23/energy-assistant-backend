@@ -21,6 +21,7 @@ from sklearn.metrics import r2_score  # type: ignore
 from energy_assistant import Optimizer
 from energy_assistant.devices import Location, StateId, StatesRepository
 from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.config import EnergyAssistantConfig
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from energy_assistant.models.forecast import ForecastSchema, ForecastSerieSchema
@@ -38,7 +39,9 @@ LOAD_FORECAST_MODEL_TYPE = "load_forecast"
 class EmhassOptimizer(Optimizer):
     """Optimizer based on Emhass."""
 
-    def __init__(self, data_folder: str, config: dict, hass: Homeassistant) -> None:
+    def __init__(
+        self, data_folder: str, config: EnergyAssistantConfig, hass: Homeassistant
+    ) -> None:
         """Create an emhass optimizer instance."""
         self._data_folder: pathlib.Path = pathlib.Path(data_folder)
         self._logger = LOGGER
@@ -46,13 +49,13 @@ class EmhassOptimizer(Optimizer):
         if self._hass_url is not None and self._hass_url[-1] != "/":
             self._hass_url = self._hass_url + "/"
         self._hass_token: str = hass.token
-        self._location: Location = hass.get_location()
+        self._location: Location = config.location
 
-        home_config = config.get("home")
+        home_config = config.energy_assistant_config.get("home")
         self._solar_power_id: str | None = None
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
-        self._emhass_config: dict | None = config.get("emhass")
+        self._emhass_config: dict | None = config.emhass_config
         self._power_no_var_loads_id = (
             f"sensor.{DEFAULT_HASS_ENTITY_PREFIX}_{SENSOR_POWER_NO_VAR_LOADS}"
         )

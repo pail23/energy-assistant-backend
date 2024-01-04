@@ -166,8 +166,8 @@ class Homeassistant(StatesSingleRepository):
                 LOGGER.error("Exception during homeassistant update_states: ", ex)
             self._write_states.clear()
 
-    def get_location(self) -> Location:
-        """Read the location from the Homeassistant configuration."""
+    def get_config(self) -> dict:
+        """Read the Homeassistant configuration."""
         headers = {
             "Authorization": f"Bearer {self._token}",
             "content-type": "application/json",
@@ -175,15 +175,20 @@ class Homeassistant(StatesSingleRepository):
         response = requests.get(f"{self._url}/api/config", headers=headers)
 
         if response.ok:
-            config = response.json()
-            return Location(
-                latitude=config.get("latitude"),
-                longitude=config.get("longitude"),
-                elevation=config.get("elevation"),
-                time_zone=config.get("time_zone"),
-            )
+            return response.json()
         else:
             raise Exception("Could not get location from Home Assistant.")
+
+    def get_location(self) -> Location:
+        """Read the location from the Homeassistant configuration."""
+        config = self.get_config()
+
+        return Location(
+            latitude=config.get("latitude"),
+            longitude=config.get("longitude"),
+            elevation=config.get("elevation"),
+            time_zone=config.get("time_zone"),
+        )
 
 
 class HomeassistantDevice(DeviceWithState):

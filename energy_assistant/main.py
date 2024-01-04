@@ -28,6 +28,7 @@ from energy_assistant.EmhassOptimizer import EmhassOptimizer
 from energy_assistant.api.device import OTHER_DEVICE
 from energy_assistant.api.main import router as api_router
 from energy_assistant.devices import StatesMultipleRepositories, StatesRepository
+from energy_assistant.devices.config import EnergyAssistantConfig
 from energy_assistant.devices.device import Device
 from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.home import Home
@@ -53,12 +54,14 @@ class EnergyAssistant:
     optimizer: EmhassOptimizer
     mqtt: MqttConnection | None
     db: Database
+    config: EnergyAssistantConfig
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator:
     """Manage the startup and showdown."""
     ea = await init_app()
+    app.energy_assistant = ea  # type: ignore
     sio.start_background_task(background_task, ea)
     sio.start_background_task(optimize, ea.optimizer)
 
@@ -428,9 +431,12 @@ async def init_app() -> EnergyAssistant:
             else:
                 hass = create_hass_connection(config)
                 result.hass = hass
+                result.config = EnergyAssistantConfig(
+                    config, hass.get_config() if hass is not None else {}
+                )
                 if hass is not None:
                     hass.read_states()
-                    optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass)
+                    optimizer = EmhassOptimizer(settings.DATA_FOLDER, result.config, hass)
                     result.optimizer = optimizer
                     app.optimizer = optimizer  # type: ignore
 

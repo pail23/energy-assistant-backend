@@ -1,6 +1,9 @@
 """Config helper classes and funtions."""
 
 
+from energy_assistant.devices import Location
+
+
 class DeviceConfigException(Exception):
     """Device configuration exception."""
 
@@ -32,3 +35,48 @@ def get_float_param_from_list(config: list, param: str) -> float | None:
         if value is not None:
             return float(value)
     return None
+
+
+class EnergyAssistantConfig:
+    """The energy assistant config."""
+
+    def __init__(self, energy_assistant_config: dict, hass_config: dict) -> None:
+        """Create a EnergyAssistantConfig instance."""
+        self._config = {
+            "energy_assistant": energy_assistant_config.copy(),
+            "home_assistant": hass_config,
+        }
+        self._config["emhass"] = energy_assistant_config["emhass"].copy()
+        del self._config["energy_assistant"]["emhass"]
+
+    @property
+    def config(self) -> dict:
+        """Get the complete config."""
+        return self._config
+
+    @property
+    def energy_assistant_config(self) -> dict:
+        """Get the energy assistant config."""
+        return self._config["energy_assistant"]
+
+    @property
+    def home_assistant_config(self) -> dict:
+        """Get the home assistant config."""
+        return self._config["home_assistant"]
+
+    @property
+    def emhass_config(self) -> dict:
+        """Get the emhass config."""
+        return self._config["emhass"]
+
+    @property
+    def location(self) -> Location:
+        """Read the location from the Homeassistant configuration."""
+        config = self.home_assistant_config
+
+        return Location(
+            latitude=config.get("latitude"),
+            longitude=config.get("longitude"),
+            elevation=config.get("elevation"),
+            time_zone=config.get("time_zone"),
+        )
