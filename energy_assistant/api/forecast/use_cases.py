@@ -1,5 +1,7 @@
 """Use cases for devices."""
 
+from fastapi import HTTPException
+
 from energy_assistant.EmhassOptimizer import EmhassOptimizer
 from energy_assistant.models.forecast import ForecastSchema
 
@@ -22,8 +24,11 @@ class CreateModel:
         self, days_to_retrieve: int, optimizer: EmhassOptimizer
     ) -> CreateModelResponse:
         """Execute the create model use case."""
-        r2 = optimizer.forecast_model_fit(False, days_to_retrieve)
-        return CreateModelResponse(r2=r2)
+        try:
+            r2 = optimizer.forecast_model_fit(False, days_to_retrieve)
+            return CreateModelResponse(r2=r2)
+        except UnboundLocalError:
+            raise HTTPException(status_code=400, detail="Creation of the model failed.")
 
 
 class TuneModel:
