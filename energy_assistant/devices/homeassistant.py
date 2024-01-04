@@ -184,10 +184,10 @@ class Homeassistant(StatesSingleRepository):
         config = self.get_config()
 
         return Location(
-            latitude=config.get("latitude"),
-            longitude=config.get("longitude"),
-            elevation=config.get("elevation"),
-            time_zone=config.get("time_zone"),
+            latitude=config.get("latitude", ""),
+            longitude=config.get("longitude", ""),
+            elevation=config.get("elevation", ""),
+            time_zone=config.get("time_zone", ""),
         )
 
 
