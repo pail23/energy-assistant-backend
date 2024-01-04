@@ -679,12 +679,14 @@ class EmhassOptimizer(Optimizer):
             time: list[datetime] = time_series.tolist()
             pv_forecast = df["pv_forecast"].to_list()
             load = df["P_Load"].to_list()
+            cost_profit = df["cost_profit"].to_list()
 
             series = [
                 ForecastSerieSchema(name="pv_forecast", data=pv_forecast),
                 ForecastSerieSchema(name="pv", data=pv_series),
                 ForecastSerieSchema(name="consumption", data=load),
                 ForecastSerieSchema(name="no_var_loads", data=no_var_load_series),
+                ForecastSerieSchema(name="cost_profit", data=cost_profit),
             ]
             for i, d in enumerate(self._optimzed_devices):
                 device = self._day_ahead_forecast[f"P_deferrable{i}"].to_list()
