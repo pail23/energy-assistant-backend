@@ -3,7 +3,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Depends, Path, Request
 
 from energy_assistant.models.schema import DeviceSchema
 
@@ -35,13 +35,12 @@ async def read_all(
     energy_assistant = (
         request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
     )
-    if energy_assistant is None:
-        raise HTTPException(status_code=500)
     return ReadAllDevicesResponse(
         devices=[
             device
             async for device in use_case.execute(
-                energy_assistant.home, filter_with_session_log_enties
+                energy_assistant.home if energy_assistant is not None else None,
+                filter_with_session_log_enties,
             )
         ]
     )
@@ -98,6 +97,6 @@ async def delete(
     energy_assistant = (
         request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
     )
-    if energy_assistant is None:
-        raise HTTPException(status_code=500)
-    await use_case.execute(device_id, energy_assistant.home)
+    await use_case.execute(
+        device_id, energy_assistant.home if energy_assistant is not None else None
+    )
