@@ -21,10 +21,10 @@ async def read_all(
 
 @router.post("/create_model", response_model=CreateModelResponse)
 async def create_model(
-    request: Request, use_case: CreateModel = Depends(CreateModel)
+    request: Request, days_to_retrieve: int, use_case: CreateModel = Depends(CreateModel)
 ) -> CreateModelResponse:
     """Create the machine learning forecast model."""
-    return await use_case.execute(request.app.optimizer)
+    return await use_case.execute(days_to_retrieve, request.app.optimizer)
 
 
 @router.post("/tune_model", response_model=TuneModelResponse)

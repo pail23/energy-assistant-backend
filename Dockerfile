@@ -2,7 +2,7 @@ ARG PYTHON_VERSION="3.11"
 
 
 FROM python:${PYTHON_VERSION}
-WORKDIR /app
+WORKDIR /
 
 # Required to persist build arg
 ARG TARGETPLATFORM

@@ -483,15 +483,9 @@ class EmhassOptimizer(Optimizer):
         return opt_res_naive_mpc
 
     def forecast_model_fit(
-        self, only_if_file_does_not_exist: bool = False, debug: bool = False
+        self, only_if_file_does_not_exist: bool = False, days_to_retrieve: int | None = None
     ) -> float:
-        """Perform a forecast model fit from training data retrieved from Home Assistant.
-
-        :param debug: True to debug, useful for unit testing, defaults to False
-        :type debug: Optional[bool], optional
-        :return: The DataFrame containing the forecast data results without and with backtest and the `mlforecaster` object
-        :rtype: Tuple[pd.DataFrame, pd.DataFrame, mlforecaster]
-        """
+        """Perform a forecast model fit from training data retrieved from Home Assistant."""
 
         filename = LOAD_FORECAST_MODEL_TYPE + "_mlf.pkl"
         filename_path = self._data_folder / filename
@@ -516,7 +510,8 @@ class EmhassOptimizer(Optimizer):
 
         params_dict: dict = json.loads(params)
         # Retrieve data from hass
-        days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
+        if days_to_retrieve is None:
+            days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
 
         days_list = utils.get_days_list(days_to_retrieve)
         var_list = [self._power_no_var_loads_id]
@@ -548,9 +543,8 @@ class EmhassOptimizer(Optimizer):
         r2 = r2_score(test_data, predictions)
         self._logger.info(f"R2 score = {r2}")
         # Save model
-        if not debug:
-            with open(self._data_folder / filename, "wb") as outp:
-                pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
+        with open(self._data_folder / filename, "wb") as outp:
+            pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
         return r2
 
     def forecast_model_tune(self) -> Tuple[pd.DataFrame, mlforecaster]:

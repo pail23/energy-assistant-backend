@@ -497,7 +497,6 @@ def main() -> None:
 
     try:
         alembic_config = Path(__file__).parent / "alembic.ini"
-        print(f"Alembic.ini path: {str(alembic_config)}")
 
         alembicArgs = [
             "-c",

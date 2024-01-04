@@ -18,9 +18,11 @@ class ReadForecast:
 class CreateModel:
     """Create the forecast model."""
 
-    async def execute(self, optimizer: EmhassOptimizer) -> CreateModelResponse:
+    async def execute(
+        self, days_to_retrieve: int, optimizer: EmhassOptimizer
+    ) -> CreateModelResponse:
         """Execute the create model use case."""
-        r2 = optimizer.forecast_model_fit(False)
+        r2 = optimizer.forecast_model_fit(False, days_to_retrieve)
         return CreateModelResponse(r2=r2)
 
 
