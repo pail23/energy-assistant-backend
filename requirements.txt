@@ -157,7 +157,7 @@ numpy==1.26.0
     #   scipy
     #   skforecast
     #   tables
-optuna==3.4.0
+optuna==3.5.0
     # via skforecast
 packaging==23.2
     # via
