@@ -7,6 +7,7 @@ from energy_assistant.mqtt import MQTT_CHANNEL
 
 from . import (
     DeferrableLoadInfo,
+    OnOffState,
     PowerModes,
     SessionStorage,
     State,
@@ -26,7 +27,8 @@ class EvccDevice(DeviceWithState):
         self._evcc_topic: str = get_config_param(config, "evcc_topic")
         self._loadpoint_id: int = int(get_config_param(config, "load_point_id"))
         self._is_continous: bool = bool(config.get("continous", True))
-        self._state = "unknown"
+        self._nominal_power: float | None = config.get("nominal_power")
+        self._state = OnOffState.UNKNOWN
         self._power: State | None = None
         self._consumed_energy: State | None = None
         self._mode: State | None = None
@@ -59,13 +61,13 @@ class EvccDevice(DeviceWithState):
         self, state_repository: StatesRepository, self_sufficiency: float
     ) -> None:
         """Update the state of the Stiebel Eltron device."""
-        old_state = self.state == "on"
+        old_state = self.state == OnOffState.ON
         charging = state_repository.get_state(self.get_device_topic_id("charging"))
         if charging is not None:
-            self._state = "on" if charging.value == "true" else "off"
+            self._state = OnOffState.ON if charging.value == "true" else OnOffState.OFF
         else:
-            self._state = "unknown"
-        new_state = self.state == "on"
+            self._state = OnOffState.UNKNOWN
+        new_state = self.state == OnOffState.ON
 
         self._consumed_energy = state_repository.get_state(
             self.get_device_topic_id("chargeTotalImport")
@@ -181,15 +183,18 @@ class EvccDevice(DeviceWithState):
             and self._max_current is not None
             and self._is_connected.value == "true"
         ):
-            power: float = (
-                self._max_current.numeric_value * 230
-            )  # TODO: Multiply with active phases
-            remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
-            if remainingEnergy > 0:
-                return DeferrableLoadInfo(
-                    device_id=self.id,
-                    nominal_power=power,
-                    deferrable_hours=math.ceil(max(remainingEnergy / power, 1.0)),
-                    is_continous=self._is_continous,
-                )
+            if self.state == OnOffState.ON:
+                remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
+                if remainingEnergy > 0:
+                    power: float = (
+                        self._nominal_power
+                        if self._nominal_power is not None
+                        else (self._max_current.numeric_value * 230)
+                    )  # TODO: Multiply with active phases
+                    return DeferrableLoadInfo(
+                        device_id=self.id,
+                        nominal_power=power,
+                        deferrable_hours=math.ceil(max(remainingEnergy / power, 1.0)),
+                        is_continous=self._is_continous,
+                    )
         return None

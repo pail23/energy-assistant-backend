@@ -188,6 +188,14 @@ class HomeEnergySnapshot(EnergySnapshot):
         return self._grid_exported_energy
 
 
+class OnOffState(StrEnum):
+    """Representation of a on/off state."""
+
+    ON = "on"
+    OFF = "off"
+    UNKNOWN = "unknown"
+
+
 class State:
     """Base class for States."""
 
