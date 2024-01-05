@@ -691,10 +691,24 @@ class EmhassOptimizer(Optimizer):
                 ForecastSerieSchema(name="no_var_loads", data=no_var_load_series),
                 ForecastSerieSchema(name="cost_profit", data=cost_profit),
             ]
+            consumed_energy = sum(load)
             for i, d in enumerate(self._optimzed_devices):
                 device = self._day_ahead_forecast[f"P_deferrable{i}"].to_list()
                 series.append(ForecastSerieSchema(name=str(d.device_id), data=device))
-            return ForecastSchema(time=time, series=series)
+                consumed_energy = consumed_energy + sum(device)
+
+            period = freq.total_seconds() / 3600
+            solar_energy = sum(pv_forecast) * period / 1000  # kWh
+            consumed_energy = consumed_energy * period / 1000  # kWh
+            cost = sum(cost_profit)
+
+            return ForecastSchema(
+                solar_energy=solar_energy,
+                cost=cost,
+                consumed_energy=consumed_energy,
+                time=time,
+                series=series,
+            )
         else:
             raise Exception("Optimizer forecast is not initialized.")
 
