@@ -115,7 +115,7 @@ class Home:
         else:
             raise DeviceConfigException("Parameter imported_energy is missing in the configuration")
 
-        exported_energy_config = config.get("imported_energy")
+        exported_energy_config = config.get("exported_energy")
         if exported_energy_config is not None:
             self._exported_energy_value = StateValue(exported_energy_config)
         else:
