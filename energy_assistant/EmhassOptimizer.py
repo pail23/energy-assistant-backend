@@ -653,9 +653,13 @@ class EmhassOptimizer(Optimizer):
 
     def get_forecast(self) -> ForecastSchema:
         """Get the previously calculated forecast."""
+        temp_folder = self._data_folder / "temp"
+
+        if self._day_ahead_forecast is None:
+            self._day_ahead_forecast = pd.read_csv(temp_folder / "forecast.csv")
+
         if self._day_ahead_forecast is not None:
             freq = self._retrieve_hass_conf["freq"]
-            temp_folder = self._data_folder / "temp"
             temp_folder.mkdir(parents=True, exist_ok=True)
             pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), "pv", temp_folder)
             pv_df.to_csv(temp_folder / "pv_df.csv")

@@ -102,11 +102,12 @@ class DataBuffer:
         value_name: str,
         folder: pathlib.Path,
     ) -> pd.DataFrame:
-        """Get a pandas data from from the available data."""
+        """Get a pandas data frame from from the available data."""
         data = [(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
         result = pd.DataFrame.from_records(
             data, index="timestamp", columns=["timestamp", value_name]
         )
         result.to_csv(folder / f"{value_name}.csv")
-        result.index = result.index.tz_convert(time_zone)  # type: ignore
+        if not result.empty:
+            result.index = result.index.tz_convert(time_zone)  # type: ignore
         return result.resample(freq).mean()
