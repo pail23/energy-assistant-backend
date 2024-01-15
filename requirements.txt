@@ -281,7 +281,7 @@ sqlalchemy==2.0.25
     #   alembic
     #   energy_assistant (pyproject.toml)
     #   optuna
-starlette==0.32.0.post1
+starlette==0.35.1
     # via fastapi
 tables==3.9.1
     # via emhass
