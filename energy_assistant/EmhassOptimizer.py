@@ -10,10 +10,10 @@ from typing import Tuple
 import uuid
 
 from emhass import utils  # type: ignore
-from emhass.forecast import forecast  # type: ignore
-from emhass.machine_learning_forecaster import mlforecaster  # type: ignore
-from emhass.optimization import optimization  # type: ignore
-from emhass.retrieve_hass import retrieve_hass  # type: ignore
+from emhass.forecast import Forecast  # type: ignore
+from emhass.machine_learning_forecaster import MLForecaster
+from emhass.optimization import Optimization  # type: ignore
+from emhass.retrieve_hass import RetrieveHass  # type: ignore
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score  # type: ignore
@@ -68,41 +68,41 @@ class EmhassOptimizer(Optimizer):
                 f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
             )
             params = json.dumps(self._emhass_config)
-            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
+            RetrieveHass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
                 pathlib.Path(), False, params=params
             )
             # Patch variables with Energy Assistant Config
-            retrieve_hass_conf["hass_url"] = self._hass_url
-            retrieve_hass_conf["long_lived_token"] = self._hass_token
-            retrieve_hass_conf["var_PV"] = self._solar_power_id
-            if "var_load" not in retrieve_hass_conf:
-                retrieve_hass_conf["var_load"] = self._power_no_var_loads_id
+            RetrieveHass_conf["hass_url"] = self._hass_url
+            RetrieveHass_conf["long_lived_token"] = self._hass_token
+            RetrieveHass_conf["var_PV"] = self._solar_power_id
+            if "var_load" not in RetrieveHass_conf:
+                RetrieveHass_conf["var_load"] = self._power_no_var_loads_id
             else:
-                self._power_no_var_loads_id = retrieve_hass_conf["var_load"]
-            retrieve_hass_conf["var_replace_zero"] = [self._solar_power_id]
-            retrieve_hass_conf["var_interp"] = [
+                self._power_no_var_loads_id = RetrieveHass_conf["var_load"]
+            RetrieveHass_conf["var_replace_zero"] = [self._solar_power_id]
+            RetrieveHass_conf["var_interp"] = [
                 self._solar_power_id,
                 self._power_no_var_loads_id,
             ]
 
-            retrieve_hass_conf["time_zone"] = self._location.get_time_zone()
-            retrieve_hass_conf["lat"] = self._location.latitude
-            retrieve_hass_conf["lon"] = self._location.longitude
-            retrieve_hass_conf["alt"] = self._location.elevation
+            RetrieveHass_conf["time_zone"] = self._location.get_time_zone()
+            RetrieveHass_conf["lat"] = self._location.latitude
+            RetrieveHass_conf["lon"] = self._location.longitude
+            RetrieveHass_conf["alt"] = self._location.elevation
 
             optim_conf["num_def_loads"] = 0
 
-            self._retrieve_hass_conf = retrieve_hass_conf
+            self._RetrieveHass_conf = RetrieveHass_conf
             self._optim_conf = optim_conf
             self._plant_conf = plant_conf
 
-            self._method_ts_round = retrieve_hass_conf.get("method_ts_round")
+            self._method_ts_round = RetrieveHass_conf.get("method_ts_round")
 
             # Define main objects
-            self._retrieve_hass = retrieve_hass(
+            self._RetrieveHass = RetrieveHass(
                 self._hass_url,
                 self._hass_token,
-                retrieve_hass_conf["freq"],
+                RetrieveHass_conf["freq"],
                 self._location.get_time_zone(),
                 params,
                 self._data_folder,
@@ -173,17 +173,17 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             None,
             json.dumps(self._emhass_config),
-            self._retrieve_hass_conf,
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             "perfect-optim",
             self._logger,
         )  # type: ignore
-        fcst = forecast(
-            self._retrieve_hass_conf,
+        fcst = Forecast(
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             params,
@@ -191,8 +191,8 @@ class EmhassOptimizer(Optimizer):
             self._logger,
             get_data_from_file=False,
         )
-        opt = optimization(
-            self._retrieve_hass_conf,
+        opt = Optimization(
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             fcst.var_load_cost,
@@ -202,19 +202,19 @@ class EmhassOptimizer(Optimizer):
             self._logger,
         )
 
-        days_list = utils.get_days_list(self._retrieve_hass_conf["days_to_retrieve"])
+        days_list = utils.get_days_list(self._RetrieveHass_conf["days_to_retrieve"])
         var_list = [self._solar_power_id, self._power_no_var_loads_id]
-        self._retrieve_hass.get_data(
+        self._RetrieveHass.get_data(
             days_list, var_list, minimal_response=False, significant_changes_only=False
         )
-        self._retrieve_hass.prepare_data(
-            self._retrieve_hass_conf["var_load"],
-            load_negative=self._retrieve_hass_conf["load_negative"],
-            set_zero_min=self._retrieve_hass_conf["set_zero_min"],
-            var_replace_zero=self._retrieve_hass_conf["var_replace_zero"],
-            var_interp=self._retrieve_hass_conf["var_interp"],
+        self._RetrieveHass.prepare_data(
+            self._RetrieveHass_conf["var_load"],
+            load_negative=self._RetrieveHass_conf["load_negative"],
+            set_zero_min=self._RetrieveHass_conf["set_zero_min"],
+            var_replace_zero=self._RetrieveHass_conf["var_replace_zero"],
+            var_interp=self._RetrieveHass_conf["var_interp"],
         )
-        df_input_data = self._retrieve_hass.df_final.copy()
+        df_input_data = self._RetrieveHass.df_final.copy()
 
         self._logger.info("Performing perfect forecast optimization")
         # Load cost and prod price forecast
@@ -236,17 +236,19 @@ class EmhassOptimizer(Optimizer):
 
     def get_ml_runtime_params(self) -> dict:
         """Get the emhass runtime params for the machine learning load prediction."""
-        freq = self._retrieve_hass_conf["freq"].total_seconds() / 3600
+        freq = self._RetrieveHass_conf["freq"].total_seconds() / 3600
 
         runtimeparams: dict = {
             "num_def_loads": len(self._optimzed_devices),
             "P_deferrable_nom": [device.nominal_power for device in self._optimzed_devices],
             "def_total_hours": [device.deferrable_hours for device in self._optimzed_devices],
+            "def_start_timestep": [0 for device in self._optimzed_devices],
+            "def_end_timestep": [0 for device in self._optimzed_devices],
             "treat_def_as_semi_cont": [
                 not device.is_continous for device in self._optimzed_devices
             ],
             "set_def_constant": [device.is_constant for device in self._optimzed_devices],
-            "days_to_retrieve": self._retrieve_hass_conf.get("days_to_retrieve", 10),
+            "days_to_retrieve": self._RetrieveHass_conf.get("days_to_retrieve", 10),
             "model_type": LOAD_FORECAST_MODEL_TYPE,
             "var_model": self._power_no_var_loads_id,
             "sklearn_model": "KNeighborsRegressor",
@@ -275,17 +277,17 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(self.get_ml_runtime_params()),
             json.dumps(self._emhass_config),
-            self._retrieve_hass_conf,
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             "dayahead-optim",
             self._logger,
         )  # type: ignore
-        fcst = forecast(
-            self._retrieve_hass_conf,
+        fcst = Forecast(
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             params,
@@ -293,8 +295,8 @@ class EmhassOptimizer(Optimizer):
             self._logger,
             get_data_from_file=False,
         )
-        opt = optimization(
-            self._retrieve_hass_conf,
+        opt = Optimization(
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             fcst.var_load_cost,
@@ -378,17 +380,17 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(runtimeparams),
             json.dumps(self._emhass_config),
-            self._retrieve_hass_conf,
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             "naive-mpc-optim",
             self._logger,
         )  # type: ignore
-        fcst = forecast(
-            self._retrieve_hass_conf,
+        fcst = Forecast(
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             params,
@@ -396,8 +398,8 @@ class EmhassOptimizer(Optimizer):
             self._logger,
             get_data_from_file=False,
         )
-        opt = optimization(
-            self._retrieve_hass_conf,
+        opt = Optimization(
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             fcst.var_load_cost,
@@ -410,17 +412,17 @@ class EmhassOptimizer(Optimizer):
         # Retrieve data from hass
         days_list = utils.get_days_list(1)
         var_list = [self._solar_power_id, self._power_no_var_loads_id]
-        self._retrieve_hass.get_data(
+        self._RetrieveHass.get_data(
             days_list, var_list, minimal_response=False, significant_changes_only=False
         )
-        self._retrieve_hass.prepare_data(
-            self._retrieve_hass_conf["var_load"],
-            load_negative=self._retrieve_hass_conf["load_negative"],
-            set_zero_min=self._retrieve_hass_conf["set_zero_min"],
-            var_replace_zero=self._retrieve_hass_conf["var_replace_zero"],
-            var_interp=self._retrieve_hass_conf["var_interp"],
+        self._RetrieveHass.prepare_data(
+            self._RetrieveHass_conf["var_load"],
+            load_negative=self._RetrieveHass_conf["load_negative"],
+            set_zero_min=self._RetrieveHass_conf["set_zero_min"],
+            var_replace_zero=self._RetrieveHass_conf["var_replace_zero"],
+            var_interp=self._RetrieveHass_conf["var_interp"],
         )
-        df_input_data = self._retrieve_hass.df_final.copy()
+        df_input_data = self._RetrieveHass.df_final.copy()
 
         # Get PV and load forecasts
         df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
@@ -501,10 +503,10 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(self.get_ml_runtime_params()),
             json.dumps(self._emhass_config),
-            self._retrieve_hass_conf,
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             "forecast-model-fit",
@@ -514,12 +516,12 @@ class EmhassOptimizer(Optimizer):
         params_dict: dict = json.loads(params)
         # Retrieve data from hass
         if days_to_retrieve is None:
-            days_to_retrieve = self._retrieve_hass_conf.get("days_to_retrieve", 10)
+            days_to_retrieve = self._RetrieveHass_conf.get("days_to_retrieve", 10)
 
         days_list = utils.get_days_list(days_to_retrieve)
         var_list = [self._power_no_var_loads_id]
-        self._retrieve_hass.get_data(days_list, var_list)
-        df_input_data = self._retrieve_hass.df_final.copy()
+        self._RetrieveHass.get_data(days_list, var_list)
+        df_input_data = self._RetrieveHass.df_final.copy()
 
         data = copy.deepcopy(df_input_data)
         model_type = params_dict["passed_data"]["model_type"]
@@ -528,7 +530,7 @@ class EmhassOptimizer(Optimizer):
         split_date_delta = params_dict["passed_data"]["split_date_delta"]
         perform_backtest = params_dict["passed_data"]["perform_backtest"]
         # The ML forecaster object
-        mlf = mlforecaster(
+        mlf = MLForecaster(
             data,
             model_type,
             self._power_no_var_loads_id,
@@ -550,7 +552,7 @@ class EmhassOptimizer(Optimizer):
             pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
         return r2
 
-    def forecast_model_tune(self) -> Tuple[pd.DataFrame, mlforecaster]:
+    def forecast_model_tune(self) -> Tuple[pd.DataFrame, MLForecaster]:
         """Tune a forecast model hyperparameters using bayesian optimization.
 
         :param debug: True to debug, useful for unit testing, defaults to False
@@ -586,7 +588,7 @@ class EmhassOptimizer(Optimizer):
         self,
         use_last_window: bool = True,
         debug: bool = False,
-        mlf: mlforecaster | None = None,
+        mlf: MLForecaster | None = None,
     ) -> pd.Series | None:
         """Perform a forecast model predict using a previously trained skforecast model.
 
@@ -610,10 +612,10 @@ class EmhassOptimizer(Optimizer):
         """
         # Treat runtimeparams
         params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(self.get_ml_runtime_params()),
             json.dumps(self._emhass_config),
-            self._retrieve_hass_conf,
+            self._RetrieveHass_conf,
             self._optim_conf,
             self._plant_conf,
             "forecast-model-fit",
@@ -626,8 +628,8 @@ class EmhassOptimizer(Optimizer):
 
         days_list = utils.get_days_list(days_to_retrieve)
         var_list = [self._power_no_var_loads_id]
-        self._retrieve_hass.get_data(days_list, var_list)
-        df_input_data = self._retrieve_hass.df_final.copy()
+        self._RetrieveHass.get_data(days_list, var_list)
+        df_input_data = self._RetrieveHass.df_final.copy()
 
         # Load model
         model_type = "load_forecast"
@@ -659,7 +661,7 @@ class EmhassOptimizer(Optimizer):
             self._day_ahead_forecast = pd.read_csv(temp_folder / "forecast.csv")
 
         if self._day_ahead_forecast is not None:
-            freq = self._retrieve_hass_conf["freq"]
+            freq = self._RetrieveHass_conf["freq"]
             temp_folder.mkdir(parents=True, exist_ok=True)
             pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), "pv", temp_folder)
             pv_df.to_csv(temp_folder / "pv_df.csv")
