@@ -18,6 +18,8 @@ class DeferrableLoadInfo:
     deferrable_hours: float
     is_continous: bool
     is_constant: bool = False
+    start_timestep: int = 0
+    end_timestep: int = 0
 
 
 @dataclass

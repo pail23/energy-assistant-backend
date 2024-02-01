@@ -11,7 +11,7 @@ import uuid
 
 from emhass import utils  # type: ignore
 from emhass.forecast import Forecast  # type: ignore
-from emhass.machine_learning_forecaster import MLForecaster
+from emhass.machine_learning_forecaster import MLForecaster  # type: ignore
 from emhass.optimization import Optimization  # type: ignore
 from emhass.retrieve_hass import RetrieveHass  # type: ignore
 import numpy as np
@@ -242,8 +242,8 @@ class EmhassOptimizer(Optimizer):
             "num_def_loads": len(self._optimzed_devices),
             "P_deferrable_nom": [device.nominal_power for device in self._optimzed_devices],
             "def_total_hours": [device.deferrable_hours for device in self._optimzed_devices],
-            "def_start_timestep": [0 for device in self._optimzed_devices],
-            "def_end_timestep": [0 for device in self._optimzed_devices],
+            "def_start_timestep": [device.start_timestep for device in self._optimzed_devices],
+            "def_end_timestep": [device.end_timestep for device in self._optimzed_devices],
             "treat_def_as_semi_cont": [
                 not device.is_continous for device in self._optimzed_devices
             ],
@@ -315,7 +315,7 @@ class EmhassOptimizer(Optimizer):
             P_load_forecast_values = np.array(P_load_forecast.values)
         except Exception:
             self._logger.warning(
-                "Forcasting the load failed, probably due to missing history data in Home Assistant."
+                "Forcasting the load failed, probably due to missing history data in Home Assistant. "
             )
             avg_non_var_power = self._no_var_loads.average()
             P_load_forecast = pd.Series(
