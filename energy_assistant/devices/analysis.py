@@ -111,3 +111,16 @@ class DataBuffer:
         if not result.empty:
             result.index = result.index.tz_convert(time_zone)  # type: ignore
         return result.resample(freq).mean()
+
+
+def create_timeseries_from_const(
+    value: float, duration: pd.Timedelta, freq: pd.Timedelta, start: pd.Timestamp | None = None
+) -> pd.Series:
+    """Create a time series with constant values."""
+    if start is None:
+        start = pd.Timestamp.utcnow()
+    data = [value, value]
+    index = [start, start + duration]
+    result = pd.Series(data=data, index=index)
+    upsampled = result.resample(freq).bfill()
+    return upsampled  # .interpolate(method="linear")

@@ -1,9 +1,10 @@
 """Tests for the data analysis classes."""
 from datetime import datetime
 
+import pandas as pd
 import pytest
 
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import DataBuffer, create_timeseries_from_const
 
 
 @pytest.fixture
@@ -57,3 +58,14 @@ def test_is_between_without_trailing_zeros(power_data_with_trailing_zeros: DataB
         15, 19, 8, datetime(2023, 1, 10, 10, 10, 23), True
     )
     assert data
+
+
+def test_create_timeseries_from_const():
+    """Test creation of a constant time series."""
+    data = create_timeseries_from_const(
+        15, pd.Timedelta(60, "m"), pd.Timedelta(30, "s"), pd.Timestamp(2024, 1, 1, 12, 30, 15)
+    )
+    assert data.size == 121
+    assert not data.hasnans
+    assert data.min() == 15
+    assert data.max() == 15
