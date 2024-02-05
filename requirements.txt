@@ -246,7 +246,7 @@ python-dotenv==1.0.0
     #   energy_assistant (pyproject.toml)
     #   pydantic-settings
     #   uvicorn
-python-engineio==4.8.0
+python-engineio==4.9.0
     # via python-socketio
 python-socketio==5.10.0
     # via fastapi-socketio
