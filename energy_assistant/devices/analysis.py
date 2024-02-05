@@ -123,4 +123,4 @@ def create_timeseries_from_const(
     index = [start, start + duration]
     result = pd.Series(data=data, index=index)
     upsampled = result.resample(freq).bfill()
-    return upsampled  # .interpolate(method="linear")
+    return upsampled
