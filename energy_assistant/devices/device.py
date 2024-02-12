@@ -1,4 +1,5 @@
 """Device base class for all devices."""
+
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 import logging
@@ -10,9 +11,9 @@ from energy_assistant.devices.analysis import DataBuffer
 from energy_assistant.devices.utility_meter import UtilityMeter
 
 from . import (
-    DeferrableLoadInfo,
     EnergyIntegrator,
     EnergySnapshot,
+    LoadInfo,
     PowerModes,
     Session,
     SessionStorage,
@@ -153,7 +154,7 @@ class Device(ABC):
         """Get the attributes of the device for the UI."""
         return {}
 
-    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+    def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
         return None
 

@@ -5,14 +5,7 @@ from energy_assistant.constants import POWER_HYSTERESIS
 from energy_assistant.devices.device import DeviceWithState
 from energy_assistant.devices.state_value import StateValue
 
-from . import (
-    DeferrableLoadInfo,
-    PowerModes,
-    SessionStorage,
-    State,
-    StateId,
-    StatesRepository,
-)
+from . import LoadInfo, PowerModes, SessionStorage, State, StateId, StatesRepository
 from .analysis import DataBuffer
 from .config import DeviceConfigException, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
@@ -146,14 +139,15 @@ class HeatPumpDevice(DeviceWithState):
         else:
             return current_target_temperature
 
-    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+    def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
         if self.power_mode == PowerModes.OPTIMIZED:
-            return DeferrableLoadInfo(
+            return LoadInfo(
                 device_id=self.id,
                 nominal_power=self._nominal_power,
-                deferrable_hours=1,
+                duration=1,
                 is_continous=False,
+                is_deferrable=True,
             )
         return None
 

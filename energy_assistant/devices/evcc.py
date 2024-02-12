@@ -1,4 +1,5 @@
 """EVCC Devices."""
+
 import math
 
 from energy_assistant import Optimizer
@@ -6,7 +7,7 @@ from energy_assistant.devices.analysis import DataBuffer
 from energy_assistant.mqtt import MQTT_CHANNEL
 
 from . import (
-    DeferrableLoadInfo,
+    LoadInfo,
     OnOffState,
     PowerModes,
     SessionStorage,
@@ -176,7 +177,7 @@ class EvccDevice(DeviceWithState):
             result["vehicle_soc"] = f"{round(self.vehicle_soc)} %"
         return result
 
-    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+    def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
         if (
             self._is_connected is not None
@@ -191,10 +192,11 @@ class EvccDevice(DeviceWithState):
                         if self._nominal_power is not None
                         else (self._max_current.numeric_value * 230)
                     )  # TODO: Multiply with active phases
-                    return DeferrableLoadInfo(
+                    return LoadInfo(
                         device_id=self.id,
                         nominal_power=power,
-                        deferrable_hours=math.ceil(max(remainingEnergy / power, 1.0)),
+                        duration=math.ceil(max(remainingEnergy / power, 1.0)),
                         is_continous=self._is_continous,
+                        is_deferrable=self.power_mode == PowerModes.OPTIMIZED,
                     )
         return None

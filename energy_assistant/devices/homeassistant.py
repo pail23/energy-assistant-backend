@@ -1,4 +1,5 @@
 """Interface to the homeassistant instance."""
+
 import logging
 
 import requests  # type: ignore
@@ -15,7 +16,7 @@ from energy_assistant.devices.registry import DeviceType, DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
 
 from . import (
-    DeferrableLoadInfo,
+    LoadInfo,
     Location,
     PowerModes,
     SessionStorage,
@@ -258,9 +259,11 @@ class HomeassistantDevice(DeviceWithState):
             self._device_type = DeviceType(
                 str(config.get("icon", "mdi:lightning-bolt")),
                 self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER,
-                self._nominal_duration
-                if self._nominal_duration is not None
-                else DEFAULT_NOMINAL_DURATION,
+                (
+                    self._nominal_duration
+                    if self._nominal_duration is not None
+                    else DEFAULT_NOMINAL_DURATION
+                ),
                 self._is_constant if self._is_constant is not None else False,
                 state_on.get("threshold", 2),
                 state_off.get("threshold", 0),
@@ -404,18 +407,29 @@ class HomeassistantDevice(DeviceWithState):
         """Has this device a state."""
         return self._device_type is not None
 
-    def get_deferrable_load_info(self) -> DeferrableLoadInfo | None:
+    def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
         if (
             self.power_mode == PowerModes.OPTIMIZED
             and self._nominal_power is not None
             and self._nominal_duration is not None
         ):
-            return DeferrableLoadInfo(
+            return LoadInfo(
                 device_id=self.id,
                 nominal_power=self._nominal_power,
-                deferrable_hours=round(self._nominal_duration / 3600),
+                duration=round(self._nominal_duration / 3600),
                 is_continous=False,
                 is_constant=self._is_constant if self._is_constant is not None else False,
             )
+
+        if self._nominal_power is not None and self._nominal_duration is not None:
+            return LoadInfo(
+                device_id=self.id,
+                nominal_power=self._nominal_power,
+                duration=round(self._nominal_duration / 3600),
+                is_continous=False,
+                is_constant=self._is_constant if self._is_constant is not None else False,
+                is_deferrable=False,
+            )
+
         return None

@@ -19,8 +19,8 @@ import pandas as pd
 from sklearn.metrics import r2_score  # type: ignore
 
 from energy_assistant import Optimizer
-from energy_assistant.devices import Location, StateId, StatesRepository
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices import LoadInfo, Location, StateId, StatesRepository
+from energy_assistant.devices.analysis import DataBuffer, create_timeseries_from_const
 from energy_assistant.devices.config import EnergyAssistantConfig
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
@@ -117,6 +117,7 @@ class EmhassOptimizer(Optimizer):
 
         self._day_ahead_forecast: pd.DataFrame | None = None
         self._optimzed_devices: list = []
+        self._projected_load_devices: list[LoadInfo] = []
         self._pv: DataBuffer = DataBuffer()
         self._no_var_loads: DataBuffer = DataBuffer()
 
@@ -241,7 +242,7 @@ class EmhassOptimizer(Optimizer):
         runtimeparams: dict = {
             "num_def_loads": len(self._optimzed_devices),
             "P_deferrable_nom": [device.nominal_power for device in self._optimzed_devices],
-            "def_total_hours": [device.deferrable_hours for device in self._optimzed_devices],
+            "def_total_hours": [device.duration for device in self._optimzed_devices],
             "def_start_timestep": [device.start_timestep for device in self._optimzed_devices],
             "def_end_timestep": [device.end_timestep for device in self._optimzed_devices],
             "treat_def_as_semi_cont": [
@@ -324,11 +325,42 @@ class EmhassOptimizer(Optimizer):
             )
             P_load_forecast_values = np.array([avg_non_var_power for x in P_PV_forecast.values])
 
+        freq = self._RetrieveHass_conf["freq"]
+
+        projected_load = None
+        for load_info in self._projected_load_devices:
+            if not load_info.is_deferrable:
+                series = create_timeseries_from_const(
+                    load_info.nominal_power, pd.Timedelta(load_info.duration, "h"), freq
+                )
+                if projected_load is None:
+                    projected_load = series
+                else:
+                    projected_load = projected_load + series
+
+        #  if projected_load is not None:
+        #      P_load_forecast_values = P_load_forecast_values + projected_load
+
         df_input_data_dayahead = pd.DataFrame(
             np.transpose(np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])),
             index=P_PV_forecast.index,
-            columns=["P_PV_forecast", "P_load_forecast"],
+            columns=["P_PV_forecast", "P_non_deferrable_load_forecast"],
         )
+        if projected_load is not None:
+            projected_load = projected_load.tz_convert(self._location.get_time_zone())
+            df_input_data_dayahead["projected_load"] = projected_load
+            df_input_data_dayahead["projected_load"] = df_input_data_dayahead[
+                "projected_load"
+            ].fillna(0)
+            df_input_data_dayahead["P_load_forecast"] = (
+                df_input_data_dayahead["projected_load"]
+                + df_input_data_dayahead["P_non_deferrable_load_forecast"]
+            )
+        else:
+            df_input_data_dayahead["P_load_forecast"] = df_input_data_dayahead[
+                "P_non_deferrable_load_forecast"
+            ].copy()
+        P_load_forecast = df_input_data_dayahead["P_load_forecast"]
         df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
 
         # params_dayahead: dict = json.loads(params)
@@ -765,12 +797,18 @@ class EmhassOptimizer(Optimizer):
         new_optimizhed_devices = []
         needs_update = False
         self._pv.add_data_point(home.solar_production_power)
+        self._projected_load_devices.clear()
         for device in home.devices:
-            deferrable_load_info = device.get_deferrable_load_info()
-            if deferrable_load_info is not None:
-                if not self._has_deferrable_load(device.id):
+            load_info = device.get_load_info()
+            if load_info is not None:
+                if load_info.is_deferrable:
+                    if not self._has_deferrable_load(device.id):
+                        needs_update = True
+                    new_optimizhed_devices.append(load_info)
+                else:
+                    self._projected_load_devices.append(load_info)
+                    # TODO: Only if not already there
                     needs_update = True
-                new_optimizhed_devices.append(deferrable_load_info)
             else:
                 if self._has_deferrable_load(device.id):
                     needs_update = True

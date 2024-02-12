@@ -1,4 +1,5 @@
 """The Device classes."""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
@@ -10,16 +11,17 @@ import pytz  # type: ignore
 
 
 @dataclass
-class DeferrableLoadInfo:
+class LoadInfo:
     """Information about a deferrable load."""
 
     device_id: uuid.UUID
     nominal_power: float
-    deferrable_hours: float
+    duration: float
     is_continous: bool
     is_constant: bool = False
     start_timestep: int = 0
     end_timestep: int = 0
+    is_deferrable: bool = True
 
 
 @dataclass
