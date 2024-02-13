@@ -16,7 +16,7 @@ import alembic.config
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
 from energy_assistant_frontend import where as locate_frontend
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -35,7 +35,7 @@ from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
 from energy_assistant.storage import Database, get_async_session, session_storage
-from energy_assistant.websocket import get_home_message, ws_manager
+from energy_assistant.websocket import get_home_message, ws_manager, ws_router
 
 from .constants import ROOT_LOGGER_NAME
 
@@ -80,22 +80,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
 app = FastAPI(title="energy-assistant", lifespan=lifespan)
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket) -> None:
-    """Web Socket end point for broad casts."""
-    await ws_manager.connect(websocket)
-    try:
-        if hasattr(app, "energy_assistant"):
-            ea = app.energy_assistant  # type: ignore
-            await ws_manager.broadcast(get_home_message(ea.home))
-
-        while True:
-            data = await websocket.receive_text()
-            logging.error(f"received unexpected data from frontend: {data}")
-    except WebSocketDisconnect:
-        ws_manager.disconnect(websocket)
-
-
 origins = [
     "http://localhost",
     "http://localhost:5000",
@@ -110,6 +94,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api")
+app.include_router(ws_router)
 
 
 async def async_handle_state_update(

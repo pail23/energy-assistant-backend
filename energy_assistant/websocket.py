@@ -1,12 +1,19 @@
 """Helper classes for web socket."""
 
 import json
+import logging
 
-from fastapi import WebSocket
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from energy_assistant.api.device import OTHER_DEVICE
 from energy_assistant.devices.device import Device
 from energy_assistant.devices.home import Home
+
+from .constants import ROOT_LOGGER_NAME
+
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
+
+ws_router = APIRouter()
 
 
 class WebSocketConnectionManager:
@@ -130,3 +137,19 @@ def get_home_message(home: Home) -> str:
         "devices": devices_messages,
     }
     return json.dumps(home_message)
+
+
+@ws_router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket) -> None:
+    """Web Socket end point for broad casts."""
+    await ws_manager.connect(websocket)
+    try:
+        if hasattr(websocket.app, "energy_assistant"):
+            ea = websocket.app.energy_assistant  # type: ignore
+            await ws_manager.broadcast(get_home_message(ea.home))
+
+        while True:
+            data = await websocket.receive_text()
+            LOGGER.error(f"received unexpected data from frontend: {data}")
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
