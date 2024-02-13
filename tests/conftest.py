@@ -1,4 +1,5 @@
 """Conf test for Energy Assistant."""
+
 import contextlib
 from typing import AsyncGenerator, Generator
 

@@ -1,6 +1,5 @@
 """Views for home measurement API."""
 
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from .schema import ConfigModel, ReadConfigResponse

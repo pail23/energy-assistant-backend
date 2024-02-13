@@ -1,4 +1,5 @@
 """Use cases for home measurements."""
+
 from datetime import date
 from typing import AsyncIterator
 

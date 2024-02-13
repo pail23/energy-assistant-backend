@@ -1,6 +1,5 @@
 """Views for home measurement API."""
 
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from energy_assistant.models.forecast import ForecastSchema

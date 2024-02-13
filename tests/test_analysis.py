@@ -1,4 +1,5 @@
 """Tests for the data analysis classes."""
+
 from datetime import datetime
 
 import pandas as pd

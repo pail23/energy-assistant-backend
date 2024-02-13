@@ -1,6 +1,5 @@
 """Tests for utility meters."""
 
-
 from energy_assistant.devices.utility_meter import UtilityMeter
 
 

@@ -1,6 +1,5 @@
 """Tests for state value class."""
 
-
 from energy_assistant.devices import State, StatesSingleRepository
 from energy_assistant.devices.state_value import StateValue
 

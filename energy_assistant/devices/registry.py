@@ -1,4 +1,5 @@
 """Device type registry for device data."""
+
 from dataclasses import dataclass
 import logging
 import os
@@ -119,9 +120,9 @@ class DeviceTypeRegistry:
                                 state_off_for=state_off_for,
                                 trailing_zeros_for=trailing_zeros_for,
                             )
-                            self._registry[
-                                DeviceTypeId(manufacturer=manufacturer, model=model)
-                            ] = device_type
+                            self._registry[DeviceTypeId(manufacturer=manufacturer, model=model)] = (
+                                device_type
+                            )
 
     def get_device_type(self, manufacturer: str, model: str) -> DeviceType | None:
         """Get the device type for a given manufacturer and model."""

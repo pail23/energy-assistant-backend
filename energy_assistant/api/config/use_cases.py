@@ -1,4 +1,5 @@
 """Use cases for devices."""
+
 import logging
 
 from energy_assistant.api.config.schema import ConfigModel

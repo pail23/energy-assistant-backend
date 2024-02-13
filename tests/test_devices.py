@@ -1,4 +1,5 @@
 """Tests for the devices."""
+
 from datetime import date
 import uuid
 

@@ -1,4 +1,5 @@
 """Use cases for devices."""
+
 from typing import AsyncIterator
 import uuid
 

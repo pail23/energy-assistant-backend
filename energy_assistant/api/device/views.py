@@ -1,6 +1,5 @@
 """Views for home measurement API."""
 
-
 import uuid
 
 from fastapi import APIRouter, Depends, Path, Request

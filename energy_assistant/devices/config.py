@@ -1,6 +1,5 @@
 """Config helper classes and funtions."""
 
-
 from energy_assistant.devices import Location
 
 
