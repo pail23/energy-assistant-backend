@@ -71,7 +71,7 @@ distlib==0.3.8
     # via virtualenv
 emhass==0.7.7
     # via energy_assistant (pyproject.toml)
-energy-assistant-frontend==0.0.52
+energy-assistant-frontend==0.0.53
     # via energy_assistant (pyproject.toml)
 fastapi==0.108.0
     # via
