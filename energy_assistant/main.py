@@ -16,11 +16,10 @@ import alembic.config
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
 from energy_assistant_frontend import where as locate_frontend
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_socketio import SocketManager  # type: ignore
 import requests  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
@@ -56,6 +55,36 @@ class EnergyAssistant:
     mqtt: MqttConnection | None
     db: Database
     config: EnergyAssistantConfig
+    should_stop = False
+
+
+class ConnectionManager:
+    """Web Socket connection manager."""
+
+    def __init__(self) -> None:
+        """Initialize the web socket connection manager instance."""
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket) -> None:
+        """Connect handler."""
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket) -> None:
+        """Disconnect handler."""
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket) -> None:
+        """Send a message to one web socket."""
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str) -> None:
+        """Broadcast a message."""
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
+manager = ConnectionManager()
 
 
 @asynccontextmanager
@@ -63,21 +92,39 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     """Manage the startup and showdown."""
     ea = await init_app()
     app.energy_assistant = ea  # type: ignore
-    sio.start_background_task(background_task, ea)
-    sio.start_background_task(optimize, ea.optimizer)
-
+    bt = asyncio.create_task(background_task(ea))
+    optimizer_task = asyncio.create_task(optimize(ea.optimizer))
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         daily_optimize, trigger="cron", args=[ea], hour="3", minute="0"
     )  # time is UTC
     scheduler.start()
     yield
+    ea.should_stop = True
+    await optimizer_task
+    await bt
     scheduler.shutdown()
     print("Shutdown app")
 
 
 app = FastAPI(title="energy-assistant", lifespan=lifespan)
-sio = SocketManager(app=app, cors_allowed_origins="*")
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket) -> None:
+    """Web Socket end point for broad casts."""
+    await manager.connect(websocket)
+    try:
+        if hasattr(app, "energy_assistant"):
+            ea = app.energy_assistant  # type: ignore
+            await manager.broadcast(get_home_message(ea.home))
+
+        while True:
+            data = await websocket.receive_text()
+            logging.error(f"received unexpected data from frontend: {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 
 origins = [
     "http://localhost",
@@ -111,11 +158,10 @@ async def async_handle_state_update(
         else:
             logging.error("The variable optimizer is None in async_handle_state_update")
         state_repository.write_states()
-        # print("Send refresh: " + get_home_message(home))
         if ea.db:
             if ea.home:
                 await asyncio.gather(
-                    sio.emit("refresh", {"data": get_home_message(ea.home)}),
+                    manager.broadcast(get_home_message(ea.home)),
                     ea.db.store_home_state(ea.home, session),
                 )
             else:
@@ -138,8 +184,8 @@ async def background_task(ea: EnergyAssistant) -> None:
     if ea.mqtt is not None:
         repositories.append(ea.mqtt)
     state_repository = StatesMultipleRepositories(repositories)
-    while True:
-        await sio.sleep(30)
+    while not ea.should_stop:
+        await asyncio.sleep(30)
         # delta_t = datetime.now().timestamp()
         # print("Start refresh from home assistant")
         today = date.today()
@@ -248,17 +294,13 @@ def get_home_message(home: Home) -> str:
     return json.dumps(home_message)
 
 
+"""
 @app.sio.event  # type: ignore
 async def connect(sid, environ):
-    """Handle the connect of a client via socket.io to the server."""
+    ""Handle the connect of a client via socket.io to the server.""
     logging.info(f"connect {sid}")
     await sio.emit("refresh", {"data": get_home_message(app.home)}, room=sid)
-
-
-@app.sio.event  # type: ignore
-def disconnect(sid):
-    """Handle the disconnect of a client via socket.io to the server."""
-    logging.info(f"Client disconnected {sid}")
+"""
 
 
 def create_mqtt_connection(config: dict) -> MqttConnection | None:
