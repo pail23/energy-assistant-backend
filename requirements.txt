@@ -27,8 +27,6 @@ attrs==23.2.0
     # via aiohttp
 beautifulsoup4==4.12.2
     # via emhass
-bidict==0.22.1
-    # via python-socketio
 black==23.12.1
     # via energy_assistant (pyproject.toml)
 blinker==1.7.0
@@ -74,10 +72,6 @@ emhass==0.7.7
 energy-assistant-frontend==0.0.53
     # via energy_assistant (pyproject.toml)
 fastapi==0.108.0
-    # via
-    #   energy_assistant (pyproject.toml)
-    #   fastapi-socketio
-fastapi-socketio==0.0.10
     # via energy_assistant (pyproject.toml)
 filelock==3.13.1
     # via virtualenv
@@ -93,7 +87,6 @@ h11==0.14.0
     # via
     #   httpcore
     #   uvicorn
-    #   wsproto
 h5py==3.10.0
     # via
     #   emhass
@@ -246,10 +239,6 @@ python-dotenv==1.0.0
     #   energy_assistant (pyproject.toml)
     #   pydantic-settings
     #   uvicorn
-python-engineio==4.8.0
-    # via python-socketio
-python-socketio==5.10.0
-    # via fastapi-socketio
 pytz==2023.3.post1
     # via
     #   apscheduler
@@ -277,8 +266,6 @@ scipy==1.11.3
     #   emhass
     #   pvlib
     #   scikit-learn
-simple-websocket==1.0.0
-    # via python-engineio
 six==1.16.0
     # via
     #   apscheduler
@@ -354,8 +341,6 @@ wheel==0.42.0
     # via
     #   emhass
     #   pip-tools
-wsproto==1.2.0
-    # via simple-websocket
 yarl==1.9.4
     # via aiohttp
 

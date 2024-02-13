@@ -58,7 +58,7 @@ class EnergyAssistant:
     should_stop = False
 
 
-class ConnectionManager:
+class WebSocketConnectionManager:
     """Web Socket connection manager."""
 
     def __init__(self) -> None:
@@ -84,7 +84,7 @@ class ConnectionManager:
             await connection.send_text(message)
 
 
-manager = ConnectionManager()
+ws_manager = WebSocketConnectionManager()
 
 
 @asynccontextmanager
@@ -113,17 +113,17 @@ app = FastAPI(title="energy-assistant", lifespan=lifespan)
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     """Web Socket end point for broad casts."""
-    await manager.connect(websocket)
+    await ws_manager.connect(websocket)
     try:
         if hasattr(app, "energy_assistant"):
             ea = app.energy_assistant  # type: ignore
-            await manager.broadcast(get_home_message(ea.home))
+            await ws_manager.broadcast(get_home_message(ea.home))
 
         while True:
             data = await websocket.receive_text()
             logging.error(f"received unexpected data from frontend: {data}")
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        ws_manager.disconnect(websocket)
 
 
 origins = [
@@ -161,7 +161,7 @@ async def async_handle_state_update(
         if ea.db:
             if ea.home:
                 await asyncio.gather(
-                    manager.broadcast(get_home_message(ea.home)),
+                    ws_manager.broadcast(get_home_message(ea.home)),
                     ea.db.store_home_state(ea.home, session),
                 )
             else:
@@ -292,15 +292,6 @@ def get_home_message(home: Home) -> str:
         "devices": devices_messages,
     }
     return json.dumps(home_message)
-
-
-"""
-@app.sio.event  # type: ignore
-async def connect(sid, environ):
-    ""Handle the connect of a client via socket.io to the server.""
-    logging.info(f"connect {sid}")
-    await sio.emit("refresh", {"data": get_home_message(app.home)}, room=sid)
-"""
 
 
 def create_mqtt_connection(config: dict) -> MqttConnection | None:
