@@ -242,7 +242,9 @@ class EmhassOptimizer(Optimizer):
         runtimeparams: dict = {
             "num_def_loads": len(self._optimzed_devices),
             "P_deferrable_nom": [device.nominal_power for device in self._optimzed_devices],
-            "def_total_hours": [device.duration for device in self._optimzed_devices],
+            "def_total_hours": [
+                max(round(device.duration / 3600), 1) for device in self._optimzed_devices
+            ],
             "def_start_timestep": [device.start_timestep for device in self._optimzed_devices],
             "def_end_timestep": [device.end_timestep for device in self._optimzed_devices],
             "treat_def_as_semi_cont": [
@@ -327,39 +329,36 @@ class EmhassOptimizer(Optimizer):
 
         freq = self._RetrieveHass_conf["freq"]
 
+        df_input_data_dayahead = pd.DataFrame(
+            np.transpose(np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])),
+            index=P_PV_forecast.index,
+            columns=["P_PV_forecast", "P_non_deferrable_load_forecast"],
+        )
+
         projected_load = None
         for load_info in self._projected_load_devices:
             if not load_info.is_deferrable:
                 series = create_timeseries_from_const(
-                    load_info.nominal_power, pd.Timedelta(load_info.duration, "h"), freq
+                    load_info.nominal_power, pd.Timedelta(load_info.duration, "s"), freq
                 )
                 if projected_load is None:
                     projected_load = series
                 else:
                     projected_load = projected_load + series
 
-        #  if projected_load is not None:
-        #      P_load_forecast_values = P_load_forecast_values + projected_load
-
-        df_input_data_dayahead = pd.DataFrame(
-            np.transpose(np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])),
-            index=P_PV_forecast.index,
-            columns=["P_PV_forecast", "P_non_deferrable_load_forecast"],
-        )
         if projected_load is not None:
             projected_load = projected_load.tz_convert(self._location.get_time_zone())
-            df_input_data_dayahead["projected_load"] = projected_load
-            df_input_data_dayahead["projected_load"] = df_input_data_dayahead[
-                "projected_load"
+            df_input_data_dayahead["P_projected_load"] = projected_load
+            df_input_data_dayahead["P_projected_load"] = df_input_data_dayahead[
+                "P_projected_load"
             ].fillna(0)
-            df_input_data_dayahead["P_load_forecast"] = (
-                df_input_data_dayahead["projected_load"]
-                + df_input_data_dayahead["P_non_deferrable_load_forecast"]
-            )
         else:
-            df_input_data_dayahead["P_load_forecast"] = df_input_data_dayahead[
-                "P_non_deferrable_load_forecast"
-            ].copy()
+            df_input_data_dayahead["P_projected_load"] = 0
+
+        df_input_data_dayahead["P_load_forecast"] = (
+            df_input_data_dayahead["P_projected_load"]
+            + df_input_data_dayahead["P_non_deferrable_load_forecast"]
+        )
         P_load_forecast = df_input_data_dayahead["P_load_forecast"]
         df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
 
@@ -379,13 +378,20 @@ class EmhassOptimizer(Optimizer):
         self._day_ahead_forecast = opt.perform_dayahead_forecast_optim(
             df_input_data_dayahead, P_PV_forecast, P_load_forecast
         )
-        # Save CSV file for publish_data
-        if save_data_to_file:
-            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-            filename = "opt_res_dayahead_" + today.strftime("%Y_%m_%d") + ".csv"
-        else:  # Just save the latest optimization results
-            filename = "opt_res_latest.csv"
+        if self._day_ahead_forecast is not None:
+            self._day_ahead_forecast["P_projected_load"] = df_input_data_dayahead[
+                "P_projected_load"
+            ].copy()
+
         if not debug and self._day_ahead_forecast is not None:
+            # Save CSV file for publish_data
+            if save_data_to_file:
+                today = datetime.now(timezone.utc).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+                filename = "opt_res_dayahead_" + today.strftime("%Y_%m_%d") + ".csv"
+            else:  # Just save the latest optimization results
+                filename = "opt_res_latest.csv"
             self._day_ahead_forecast.to_csv(self._data_folder / filename, index_label="timestamp")
 
     def naive_mpc_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:

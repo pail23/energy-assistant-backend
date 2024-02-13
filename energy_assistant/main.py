@@ -1,4 +1,5 @@
 """Main module for the energy assistant application."""
+
 import asyncio
 from contextlib import asynccontextmanager, suppress
 from datetime import date
@@ -414,8 +415,12 @@ async def init_app() -> EnergyAssistant:
     db = Database()
     result.db = db
 
+    device_registry_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "config/deviceregistry"
+    )
+
     device_type_registry = DeviceTypeRegistry()
-    device_type_registry.load(settings.DEVICE_TYPE_REGISTRY)
+    device_type_registry.load(device_registry_path)
 
     logger.info(f"Loading config file {config_file}")
     try:

@@ -145,7 +145,7 @@ class HeatPumpDevice(DeviceWithState):
             return LoadInfo(
                 device_id=self.id,
                 nominal_power=self._nominal_power,
-                duration=1,
+                duration=1800,  # 0.5h -> TODO: make this configurable
                 is_continous=False,
                 is_deferrable=True,
             )

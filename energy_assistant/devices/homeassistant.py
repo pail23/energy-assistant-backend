@@ -18,6 +18,7 @@ from energy_assistant.devices.state_value import StateValue
 from . import (
     LoadInfo,
     Location,
+    OnOffState,
     PowerModes,
     SessionStorage,
     State,
@@ -274,7 +275,7 @@ class HomeassistantDevice(DeviceWithState):
             )
         self._state: str
         if self.has_state:
-            self._state = "unknown"
+            self._state = OnOffState.UNKNOWN
         else:
             self._state = "not supported"
 
@@ -305,13 +306,19 @@ class HomeassistantDevice(DeviceWithState):
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
         if self.has_state:
-            old_state = self.state == "on"
+            old_state = self.state == OnOffState.ON
             if self._device_type is not None:
                 self._power_data.add_data_point(self.power)
-                if self.state != "on" and self.power > self._device_type.state_on_threshold:
-                    self._state = "on"
-                elif self.state != "off":
-                    if self.state == "on" and self.power <= self._device_type.state_off_threshold:
+                if (
+                    self.state != OnOffState.ON
+                    and self.power > self._device_type.state_on_threshold
+                ):
+                    self._state = OnOffState.ON
+                elif self.state != OnOffState.OFF:
+                    if (
+                        self.state == OnOffState.ON
+                        and self.power <= self._device_type.state_off_threshold
+                    ):
                         is_between = (
                             self._device_type.state_off_for > 0
                             and self._power_data.is_between(
@@ -326,10 +333,10 @@ class HomeassistantDevice(DeviceWithState):
                             and self._power_data.get_max_for(self._device_type.trailing_zeros_for)
                         )
                         if is_between or max <= self._device_type.state_off_threshold:
-                            self._state = "off"
-                    elif self.state == "unknown":
-                        self._state = "off"
-            new_state = self.state == "on"
+                            self._state = OnOffState.OFF
+                    elif self.state == OnOffState.UNKNOWN:
+                        self._state = OnOffState.OFF
+            new_state = self.state == OnOffState.ON
             await super().update_session(old_state, new_state, "Power State Device")
 
     async def update_power_consumption(
@@ -409,27 +416,25 @@ class HomeassistantDevice(DeviceWithState):
 
     def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
-        if (
-            self.power_mode == PowerModes.OPTIMIZED
-            and self._nominal_power is not None
-            and self._nominal_duration is not None
-        ):
-            return LoadInfo(
-                device_id=self.id,
-                nominal_power=self._nominal_power,
-                duration=round(self._nominal_duration / 3600),
-                is_continous=False,
-                is_constant=self._is_constant if self._is_constant is not None else False,
-            )
-
         if self._nominal_power is not None and self._nominal_duration is not None:
-            return LoadInfo(
-                device_id=self.id,
-                nominal_power=self._nominal_power,
-                duration=round(self._nominal_duration / 3600),
-                is_continous=False,
-                is_constant=self._is_constant if self._is_constant is not None else False,
-                is_deferrable=False,
-            )
+            if self.power_mode == PowerModes.OPTIMIZED:
+                return LoadInfo(
+                    device_id=self.id,
+                    nominal_power=self._nominal_power,
+                    duration=self._nominal_duration,
+                    is_continous=False,
+                    is_constant=self._is_constant if self._is_constant is not None else False,
+                    is_deferrable=True,
+                )
+
+            if self.state == OnOffState.ON:
+                return LoadInfo(
+                    device_id=self.id,
+                    nominal_power=self._nominal_power,
+                    duration=self._nominal_duration - self.session_duration,
+                    is_continous=False,
+                    is_constant=self._is_constant if self._is_constant is not None else False,
+                    is_deferrable=False,
+                )
 
         return None

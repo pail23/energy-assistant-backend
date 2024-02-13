@@ -1,4 +1,5 @@
 """The settings for the Energy Assistant-."""
+
 import os
 from pathlib import Path
 
@@ -11,7 +12,6 @@ class Settings(BaseSettings):
     DB_URI: str
     ECHO_SQL: bool
     CONFIG_FILE: str
-    DEVICE_TYPE_REGISTRY: str
     LOG_FILE: str
     DATA_FOLDER: str
 

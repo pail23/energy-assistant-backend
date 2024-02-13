@@ -1,7 +1,5 @@
 """EVCC Devices."""
 
-import math
-
 from energy_assistant import Optimizer
 from energy_assistant.devices.analysis import DataBuffer
 from energy_assistant.mqtt import MQTT_CHANNEL
@@ -195,7 +193,7 @@ class EvccDevice(DeviceWithState):
                     return LoadInfo(
                         device_id=self.id,
                         nominal_power=power,
-                        duration=math.ceil(max(remainingEnergy / power, 1.0)),
+                        duration=remainingEnergy / power * 3600,
                         is_continous=self._is_continous,
                         is_deferrable=self.power_mode == PowerModes.OPTIMIZED,
                     )

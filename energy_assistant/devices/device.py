@@ -186,6 +186,14 @@ class DeviceWithState(Device):
         """Has this device a state."""
         return True
 
+    @property
+    def session_duration(self) -> float:
+        """Return the duration of the current session."""
+        if self.current_session is not None:
+            result = datetime.now(timezone.utc) - self.current_session.start
+            return result.total_seconds()
+        return 0.0
+
     async def start_session(self, text: str) -> None:
         """Start a session."""
         self.current_session = await self.session_storage.start_session(
