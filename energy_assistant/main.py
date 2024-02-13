@@ -25,11 +25,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
 
 from energy_assistant.EmhassOptimizer import EmhassOptimizer
-from energy_assistant.api.device import OTHER_DEVICE
 from energy_assistant.api.main import router as api_router
 from energy_assistant.devices import StatesMultipleRepositories, StatesRepository
 from energy_assistant.devices.config import EnergyAssistantConfig
-from energy_assistant.devices.device import Device
 from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
@@ -37,6 +35,7 @@ from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
 from energy_assistant.storage import Database, get_async_session, session_storage
+from energy_assistant.websocket import get_home_message, ws_manager
 
 from .constants import ROOT_LOGGER_NAME
 
@@ -56,35 +55,6 @@ class EnergyAssistant:
     db: Database
     config: EnergyAssistantConfig
     should_stop = False
-
-
-class WebSocketConnectionManager:
-    """Web Socket connection manager."""
-
-    def __init__(self) -> None:
-        """Initialize the web socket connection manager instance."""
-        self.active_connections: list[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket) -> None:
-        """Connect handler."""
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket) -> None:
-        """Disconnect handler."""
-        self.active_connections.remove(websocket)
-
-    async def send_personal_message(self, message: str, websocket: WebSocket) -> None:
-        """Send a message to one web socket."""
-        await websocket.send_text(message)
-
-    async def broadcast(self, message: str) -> None:
-        """Broadcast a message."""
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-
-ws_manager = WebSocketConnectionManager()
 
 
 @asynccontextmanager
@@ -198,100 +168,6 @@ async def background_task(ea: EnergyAssistant) -> None:
         except Exception:
             logging.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
-
-
-def get_self_sufficiency(consumed_solar_energy: float, consumed_energy: float) -> float:
-    """Calulate the self sufficiency value."""
-    return min(
-        round(consumed_solar_energy / consumed_energy * 100) if consumed_energy > 0 else 0.0, 100
-    )
-
-
-def get_device_message(device: Device) -> dict:
-    """Generate the update data message for a device."""
-    if device.energy_snapshot is not None:
-        consumed_energy_today = device.consumed_energy - device.energy_snapshot.consumed_energy
-        consumed_solar_energy_today = (
-            device.consumed_solar_energy - device.energy_snapshot.consumed_solar_energy
-        )
-    else:
-        consumed_energy_today = 0
-        consumed_solar_energy_today = 0
-    result = {
-        "device_id": str(device.id),
-        "type": device.__class__.__name__,
-        "power": device.power,
-        "available": device.available,
-        "today": {
-            "consumed_solar_energy": consumed_solar_energy_today,
-            "consumed_energy": consumed_energy_today,
-            "self_sufficiency": get_self_sufficiency(
-                consumed_solar_energy_today, consumed_energy_today
-            ),
-        },
-    }
-    result["attributes"] = device.attributes
-    return result
-
-
-def get_home_message(home: Home) -> str:
-    """Generate the update data message for a home."""
-    devices_messages = []
-    if home.energy_snapshop is not None:
-        consumed_energy_today = home.consumed_energy - home.energy_snapshop.consumed_energy
-        consumed_solar_energy_today = (
-            home.consumed_solar_energy - home.energy_snapshop.consumed_solar_energy
-        )
-    else:
-        consumed_energy_today = 0
-        consumed_solar_energy_today = 0
-
-    other_power = home.home_consumption_power
-    other_consumed_energy = consumed_energy_today
-    other_consumed_solar_energy = consumed_solar_energy_today
-    for device in home.devices:
-        device_message = get_device_message(device)
-        devices_messages.append(device_message)
-        other_power = other_power - device.power
-        other_consumed_energy = other_consumed_energy - device_message["today"]["consumed_energy"]
-        other_consumed_solar_energy = (
-            other_consumed_solar_energy - device_message["today"]["consumed_solar_energy"]
-        )
-
-    other_device = {
-        "device_id": str(OTHER_DEVICE),
-        "type": "other_device",
-        "power": other_power,
-        "available": True,
-        "today": {
-            "consumed_solar_energy": other_consumed_solar_energy,
-            "consumed_energy": other_consumed_energy,
-            "self_sufficiency": get_self_sufficiency(
-                other_consumed_solar_energy, other_consumed_energy
-            ),
-        },
-    }
-    devices_messages.append(other_device)
-
-    home_message = {
-        "name": home.name,
-        "power": {
-            "solar_production": home.solar_production_power,
-            "grid_supply": home.grid_imported_power,
-            "solar_self_consumption": home.solar_self_consumption_power,
-            "home_consumption": home.home_consumption_power,
-            "self_sufficiency": round(home.self_sufficiency * 100),
-        },
-        "today": {
-            "consumed_solar_energy": consumed_solar_energy_today,
-            "consumed_energy": consumed_energy_today,
-            "self_sufficiency": get_self_sufficiency(
-                consumed_solar_energy_today, consumed_energy_today
-            ),
-        },
-        "devices": devices_messages,
-    }
-    return json.dumps(home_message)
 
 
 def create_mqtt_connection(config: dict) -> MqttConnection | None:
