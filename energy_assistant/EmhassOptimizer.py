@@ -339,7 +339,7 @@ class EmhassOptimizer(Optimizer):
         for load_info in self._projected_load_devices:
             if not load_info.is_deferrable:
                 series = create_timeseries_from_const(
-                    load_info.nominal_power, pd.Timedelta(load_info.duration, "s"), freq
+                    load_info.nominal_power, pd.Timedelta(int(load_info.duration), "s"), freq
                 )
                 if projected_load is None:
                     projected_load = series
