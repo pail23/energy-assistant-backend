@@ -694,9 +694,16 @@ class EmhassOptimizer(Optimizer):
     def get_forecast(self) -> ForecastSchema:
         """Get the previously calculated forecast."""
         temp_folder = self._data_folder / "temp"
+        forecast_filename = "forecast.csv"
 
         if self._day_ahead_forecast is None:
-            self._day_ahead_forecast = pd.read_csv(temp_folder / "forecast.csv")
+            try:
+                self._day_ahead_forecast = pd.read_csv(temp_folder / forecast_filename)
+            except Exception:
+                self._logger.exception(
+                    f"{forecast_filename} is not available. Creating forecast..."
+                )
+                self.dayahead_forecast_optim()
 
         if self._day_ahead_forecast is not None:
             freq = self._RetrieveHass_conf["freq"]
@@ -712,7 +719,7 @@ class EmhassOptimizer(Optimizer):
             df = df.merge(no_var_load_df, how="left", left_index=True, right_index=True)
 
             df.rename(columns={"P_PV": "pv_forecast"}, inplace=True)
-            df.to_csv(temp_folder / "forecast.csv", index_label="time_stamp")
+            df.to_csv(temp_folder / forecast_filename, index_label="time_stamp")
 
             while not pd.notnull(df["pv_forecast"][0]) and len(df.index) > 0:
                 df.drop(df.index[0], inplace=True)
@@ -819,5 +826,5 @@ class EmhassOptimizer(Optimizer):
                 if self._has_deferrable_load(device.id):
                     needs_update = True
         self._optimzed_devices = new_optimizhed_devices
-        if needs_update:
+        if needs_update or self._day_ahead_forecast is None:
             self.dayahead_forecast_optim()
