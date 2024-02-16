@@ -9,6 +9,7 @@ device_type:
     state_on:
       threshold: 10
     state_off:
+      threshold: 1
       upper: 0
       lower: 0
       for: 0
