@@ -52,6 +52,14 @@ def get_self_sufficiency(consumed_solar_energy: float, consumed_energy: float) -
     )
 
 
+def get_self_consumption(produced_solar_energy: float, consumed_energy: float) -> float:
+    """Calulate the self sufficiency value."""
+    return min(
+        round(consumed_energy / produced_solar_energy * 100) if produced_solar_energy > 0 else 0.0,
+        100,
+    )
+
+
 def get_device_message(device: Device) -> dict:
     """Generate the update data message for a device."""
     if device.energy_snapshot is not None:
@@ -87,9 +95,13 @@ def get_home_message(home: Home) -> str:
         consumed_solar_energy_today = (
             home.consumed_solar_energy - home.energy_snapshop.consumed_solar_energy
         )
+        produced_solar_energy_today = (
+            home.produced_solar_energy - home.energy_snapshop.produced_solar_energy
+        )
     else:
         consumed_energy_today = 0
         consumed_solar_energy_today = 0
+        produced_solar_energy_today = 0
 
     other_power = home.home_consumption_power
     other_consumed_energy = consumed_energy_today
@@ -97,10 +109,12 @@ def get_home_message(home: Home) -> str:
     for device in home.devices:
         device_message = get_device_message(device)
         devices_messages.append(device_message)
-        other_power = other_power - device.power
-        other_consumed_energy = other_consumed_energy - device_message["today"]["consumed_energy"]
-        other_consumed_solar_energy = (
-            other_consumed_solar_energy - device_message["today"]["consumed_solar_energy"]
+        other_power = max(other_power - device.power, 0.0)
+        other_consumed_energy = max(
+            other_consumed_energy - device_message["today"]["consumed_energy"], 0.0
+        )
+        other_consumed_solar_energy = max(
+            other_consumed_solar_energy - device_message["today"]["consumed_solar_energy"], 0.0
         )
 
     other_device = {
@@ -126,12 +140,16 @@ def get_home_message(home: Home) -> str:
             "solar_self_consumption": home.solar_self_consumption_power,
             "home_consumption": home.home_consumption_power,
             "self_sufficiency": round(home.self_sufficiency * 100),
+            "self_consumption": round(home.self_consumption * 100),
         },
         "today": {
             "consumed_solar_energy": consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
             "self_sufficiency": get_self_sufficiency(
                 consumed_solar_energy_today, consumed_energy_today
+            ),
+            "self_consumption": get_self_consumption(
+                produced_solar_energy_today, consumed_energy_today
             ),
         },
         "devices": devices_messages,
