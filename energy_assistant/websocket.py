@@ -145,6 +145,7 @@ def get_home_message(home: Home) -> str:
         "today": {
             "consumed_solar_energy": consumed_solar_energy_today,
             "consumed_energy": consumed_energy_today,
+            "produced_solar_energy": produced_solar_energy_today,
             "self_sufficiency": get_self_sufficiency(
                 consumed_solar_energy_today, consumed_energy_today
             ),
