@@ -4,6 +4,7 @@ import logging
 import random
 
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
 
 from energy_assistant.devices import State, StatesSingleRepository
 
@@ -15,13 +16,13 @@ def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> None
     userdata.on_message_received(message.topic, str(message.payload.decode("utf-8")))
 
 
-def on_connect(client: mqtt.Client, userdata, flags, rc) -> None:  # type: ignore
+def on_connect(client: mqtt.Client, userdata, flags, rc, properties) -> None:  # type: ignore
     """Handle connecting to the mqtt server."""
     logging.info("Connected to mqtt with result code " + str(rc))
     userdata.subscribe_topics()
 
 
-def on_disconnect(client: mqtt.Client, userdata, rc) -> None:  # type: ignore
+def on_disconnect(client: mqtt.Client, userdata, rc, properties) -> None:  # type: ignore
     """Handle disconnect from the mqtt server."""
     logging.info("Disconnected to mqtt with result code " + str(rc))
     # TODO: Handle reconnect
@@ -44,7 +45,9 @@ class MqttConnection(StatesSingleRepository):
         """Connect to the mqtt server."""
         try:
             self._client = mqtt.Client(
-                "energy_assistant" + str(random.randrange(1024)), userdata=self
+                CallbackAPIVersion.VERSION2,
+                "energy_assistant" + str(random.randrange(1024)),
+                userdata=self,
             )
             self._client.username_pw_set(self._username, self._password)
             self._client.will_set(f"{self._topic}/status", payload="offline", qos=0, retain=True)
