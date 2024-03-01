@@ -297,8 +297,6 @@ tqdm==4.66.1
     # via
     #   optuna
     #   skforecast
-types-paho-mqtt==1.6.0.7
-    # via energy_assistant (pyproject.toml)
 types-pytz==2023.3.1.1
     # via pandas-stubs
 types-pyyaml==6.0.12.12

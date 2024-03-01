@@ -53,7 +53,6 @@ dev = [
   "pre-commit==3.6.0",
   "types-PyYAML",
   "types-requests",
-  "types-paho-mqtt",
   "pandas-stubs"
 ]
 
