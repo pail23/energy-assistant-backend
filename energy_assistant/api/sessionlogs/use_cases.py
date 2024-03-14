@@ -1,7 +1,7 @@
 """Use cases for devices."""
 
-from typing import AsyncIterator
 import uuid
+from typing import AsyncIterator
 
 from energy_assistant.db import AsyncSession
 from energy_assistant.models.sessionlog import SessionLogEntry

@@ -1,11 +1,11 @@
 """The Device classes."""
 
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
 from enum import StrEnum, auto
 from typing import Any, Optional
-import uuid
 
 import pytz  # type: ignore
 

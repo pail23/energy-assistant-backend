@@ -1,7 +1,7 @@
 """Tests for the devices."""
 
-from datetime import date
 import uuid
+from datetime import date
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession

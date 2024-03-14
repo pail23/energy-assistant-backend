@@ -1,9 +1,9 @@
 """Device base class for all devices."""
 
-from abc import ABC, abstractmethod
-from datetime import datetime, timezone
 import logging
 import uuid
+from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME

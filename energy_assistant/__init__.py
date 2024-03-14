@@ -1,7 +1,7 @@
 """The applicaton."""
 
-from abc import ABC, abstractmethod
 import uuid
+from abc import ABC, abstractmethod
 
 
 class Optimizer(ABC):

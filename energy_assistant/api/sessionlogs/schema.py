@@ -1,7 +1,7 @@
 """Schemas for session logs api."""
 
-from datetime import datetime
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 

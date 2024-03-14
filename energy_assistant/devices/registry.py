@@ -1,8 +1,8 @@
 """Device type registry for device data."""
 
-from dataclasses import dataclass
 import logging
 import os
+from dataclasses import dataclass
 
 import yaml
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import datetime
 import json
-from typing import TYPE_CHECKING, AsyncIterator
 import uuid
+from typing import TYPE_CHECKING, AsyncIterator
 
 from sqlalchemy import ForeignKey, select, text
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -1,18 +1,20 @@
 """Main module for the energy assistant application."""
 
 import asyncio
-from contextlib import asynccontextmanager, suppress
-from datetime import date
 import json
 import logging
-from logging.handlers import RotatingFileHandler
 import os
-from pathlib import Path
 import sys
 import threading
+from contextlib import asynccontextmanager, suppress
+from datetime import date
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import AsyncIterator, Final
 
 import alembic.config
+import requests  # type: ignore
+import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
 from energy_assistant_frontend import where as locate_frontend
@@ -20,11 +22,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-import requests  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession
-import yaml
 
-from energy_assistant.EmhassOptimizer import EmhassOptimizer
 from energy_assistant.api.main import router as api_router
 from energy_assistant.devices import StatesMultipleRepositories, StatesRepository
 from energy_assistant.devices.config import EnergyAssistantConfig
@@ -32,6 +31,7 @@ from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.devices.registry import DeviceTypeRegistry
+from energy_assistant.EmhassOptimizer import EmhassOptimizer
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
 from energy_assistant.storage import Database, get_async_session, session_storage
