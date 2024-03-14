@@ -85,16 +85,21 @@ combine_as_imports = true
 
 target-version = "py311"
 
-select = [
+lint.select = [
     "B007", # Loop control variable {name} not used within loop body
     "B014", # Exception handler with duplicate exception
     "C",  # complexity
     "D",  # docstrings
     "E",  # pycodestyle
     "F",  # pyflakes/autoflake
+    "I", # isort
     "ICN001", # import concentions; {name} should be imported as {asname}
+    "PERF",
     "PGH004",  # Use specific rule codes when using noqa
     "PLC0414", # Useless import alias. Import alias does not rename original package.
+    "PLC", # pylint
+    "PLE", # pylint
+    "PLW", # pylint
     "SIM105", # Use contextlib.suppress({exception}) instead of try-except-pass
     "SIM117", # Merge with-statements that use the same scope
     "SIM118", # Use {key} in {dict} instead of {key} in {dict}.keys()
@@ -108,7 +113,7 @@ select = [
     "W",  # pycodestyle
 ]
 
-ignore = [
+lint.ignore = [
     "D202",  # No blank lines allowed after function docstring
     "D203",  # 1 blank line required before class docstring
     "D213",  # Multi-line docstring summary should start at the second line
@@ -124,7 +129,7 @@ exclude = ["migrations"]
 line-length = 100
 
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "energy_assistant/models/__init__.py" = ["F401"]
 
 [tool.black]

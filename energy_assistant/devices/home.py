@@ -99,7 +99,7 @@ class Home:
         if grid_inverted is not None:
             if grid_inverted:
                 self._grid_imported_power_value.invert_value()
-            LOGGER.warn(
+            LOGGER.warning(
                 "The home is configured with grid_inverted. This is deprecated and will no longer be supported."
             )
 

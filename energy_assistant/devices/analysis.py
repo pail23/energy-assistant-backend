@@ -1,9 +1,9 @@
 """Helper classes for data analysis."""
 
+import pathlib
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone, tzinfo
-import pathlib
 from statistics import mean
 
 import pandas as pd
@@ -41,11 +41,10 @@ class DataBuffer:
         """Extract data for the last timespan seconds."""
         if now is None:
             now = datetime.now(timezone.utc)
-        result = []
         threshold = now - timedelta(seconds=timespan)
-        for data_point in self.data:
-            if data_point.time_stamp >= threshold:
-                result.append(data_point.value)
+        result = [
+            data_point.value for data_point in self.data if data_point.time_stamp >= threshold
+        ]
         if without_trailing_zeros:
             while result[-1] == 0.0:
                 result.pop()

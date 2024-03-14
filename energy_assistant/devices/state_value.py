@@ -51,14 +51,13 @@ class StateValue:
         result: State | None = None
         if self._value_id is not None:
             result = state_repository.get_state(self._value_id)
-        else:
-            if self._template is not None:
-                try:
-                    value = self._template.render(state_repository.get_template_states())
-                    result = CalculatedState(value)
-                except UndefinedError as error:
-                    LOGGER.warning(f"undefined variable in expression: {error}")
-                    return CalculatedState(None)
+        elif self._template is not None:
+            try:
+                value = self._template.render(state_repository.get_template_states())
+                result = CalculatedState(value)
+            except UndefinedError as error:
+                LOGGER.warning(f"undefined variable in expression: {error}")
+                return CalculatedState(None)
         if result is not None:
             return CalculatedState(result.numeric_value * self._scale)
         return CalculatedState(result)

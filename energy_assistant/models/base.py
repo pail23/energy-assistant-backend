@@ -1,7 +1,7 @@
 """Base class for Energy Assistant data models."""
 
-from typing import Mapping
 import uuid
+from typing import Mapping
 
 from sqlalchemy import MetaData
 from sqlalchemy.dialects.postgresql import UUID
@@ -42,12 +42,11 @@ class GUID(TypeDecorator):
             return value
         elif dialect.name == "postgresql":
             return str(value)
+        elif not isinstance(value, uuid.UUID):
+            return "%.32x" % uuid.UUID(value).int
         else:
-            if not isinstance(value, uuid.UUID):
-                return "%.32x" % uuid.UUID(value).int
-            else:
-                # hexstring
-                return "%.32x" % value.int
+            # hexstring
+            return "%.32x" % value.int
 
     def process_result_value(self, value, dialect):  # type:ignore
         """Process the result value."""

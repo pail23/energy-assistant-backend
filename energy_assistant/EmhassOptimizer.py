@@ -1,21 +1,21 @@
 """Mqtt connection for energy assistant."""
 
 import copy
-from datetime import datetime, timezone
 import json
 import logging
 import pathlib
 import pickle
-from typing import Tuple
 import uuid
+from datetime import datetime, timezone
+from typing import Tuple
 
+import numpy as np
+import pandas as pd
 from emhass import utils  # type: ignore
 from emhass.forecast import Forecast  # type: ignore
 from emhass.machine_learning_forecaster import MLForecaster  # type: ignore
 from emhass.optimization import Optimization  # type: ignore
 from emhass.retrieve_hass import RetrieveHass  # type: ignore
-import numpy as np
-import pandas as pd
 from sklearn.metrics import r2_score  # type: ignore
 
 from energy_assistant import Optimizer
@@ -822,9 +822,8 @@ class EmhassOptimizer(Optimizer):
                     self._projected_load_devices.append(load_info)
                     # TODO: Only if not already there
                     needs_update = True
-            else:
-                if self._has_deferrable_load(device.id):
-                    needs_update = True
+            elif self._has_deferrable_load(device.id):
+                needs_update = True
         self._optimzed_devices = new_optimizhed_devices
         if needs_update or self._day_ahead_forecast is None:
             self.dayahead_forecast_optim()

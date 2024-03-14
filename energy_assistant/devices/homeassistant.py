@@ -164,8 +164,8 @@ class Homeassistant(StatesSingleRepository):
                             LOGGER.error(f"State update for {id} in hass failed")
                     else:
                         LOGGER.error(f"Writing to id {id} is not yet implemented.")
-            except Exception as ex:
-                LOGGER.error("Exception during homeassistant update_states: ", ex)
+            except Exception:
+                LOGGER.exception("Exception during homeassistant update_states.")
             self._write_states.clear()
 
     def get_config(self) -> dict:
@@ -214,7 +214,7 @@ class HomeassistantDevice(DeviceWithState):
         energy_scale: float | None = config.get("energy_scale")
         if energy_scale is not None:
             self._consumed_energy_value.set_scale(energy_scale)
-            LOGGER.warn(
+            LOGGER.warning(
                 f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported."
             )
 

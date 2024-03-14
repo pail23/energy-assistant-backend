@@ -1,8 +1,8 @@
 """Storage of the Home state including the connected devices."""
 
-from datetime import date, datetime, timezone
 import logging
 import uuid
+from datetime import date, datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -13,7 +13,11 @@ from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.utility_meter import UtilityMeter
 from energy_assistant.models.device import (
     Device as DeviceDTO,
+)
+from energy_assistant.models.device import (
     DeviceMeasurement,
+)
+from energy_assistant.models.device import (
     UtilityMeter as UtilityMeterDTO,
 )
 from energy_assistant.models.home import HomeMeasurement
@@ -75,8 +79,8 @@ class Database:
                                 device_measurement.consumed_energy,
                             )
                 await self.restore_utility_meters(session, home)
-            except Exception as ex:
-                LOGGER.error("Error while restoring state of home", ex)
+            except Exception:
+                LOGGER.exception("Error while restoring state of home")
 
     async def restore_utility_meters(self, session: AsyncSession, home: Home) -> None:
         """Restore the utility meters."""
@@ -144,8 +148,8 @@ class Database:
                     await self.create_or_update_utility_meter(session, device.id, utility_meter)
             await session.flush()
             await session.commit()
-        except Exception as ex:
-            LOGGER.error("Error while storing state of home", ex)
+        except Exception:
+            LOGGER.exception("Error while storing state of home")
 
     async def update_devices(
         self,
@@ -182,8 +186,8 @@ class Database:
                 await session.flush()
                 await session.commit()
 
-            except Exception as ex:
-                LOGGER.error("Error while udpateing the devices of home", ex)
+            except Exception:
+                LOGGER.exception("Error while udpateing the devices of home")
         all_devices = DeviceDTO.read_all(session)
         async for device_dto in all_devices:
             if home.get_device(device_dto.id) is None and device_dto.type is not None:
