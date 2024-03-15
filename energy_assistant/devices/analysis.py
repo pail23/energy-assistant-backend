@@ -109,7 +109,9 @@ class DataBuffer:
         result.to_csv(folder / f"{value_name}.csv")
         if not result.empty:
             result.index = result.index.tz_convert(time_zone)  # type: ignore
-        return result.resample(freq).mean()
+            return result.resample(freq).mean()
+        else:
+            return result
 
 
 def create_timeseries_from_const(
