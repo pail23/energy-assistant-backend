@@ -82,7 +82,7 @@ combine_as_imports = true
 
 [tool.codespell]
 ignore-words-list = "hass"
-
+count=true
 
 [tool.ruff]
 
