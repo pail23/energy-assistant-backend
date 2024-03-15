@@ -1,4 +1,4 @@
-"""Config helper classes and funtions."""
+"""Config helper classes and functions."""
 
 from energy_assistant.devices import Location
 
@@ -10,7 +10,7 @@ class DeviceConfigException(Exception):
 
 
 def get_config_param(config: dict, param: str) -> str:
-    """Get a config paramter as string or raise an exception if the parameter is not available."""
+    """Get a config parameter as string or raise an exception if the parameter is not available."""
     result = config.get(param)
     if result is None:
         raise DeviceConfigException(f"Parameter {param} is missing in the configuration")

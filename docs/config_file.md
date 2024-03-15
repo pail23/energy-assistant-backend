@@ -56,7 +56,7 @@ grid_supply_power:
   scale: 0.001
 ```
 
-## Paramters for Home
+## Parameters for Home
 
 The following values need to be set (not optional):
 
@@ -88,10 +88,10 @@ This is a device (e.g. a charger) managed by Evcc. You need to configure a MQTT 
 
 This is a device managed by Home Assistant. Energy Assistant will display the current power consumption and provides different statistics on energy consumption like self sufficiency.
 
-In case you are setting the `model` and `manufaturer` or the `state`, the device will detect it's state (`on` or `off`) based on the power consumption. This state information can then be used to log the sessions of the device (in case `store_sessions` is set to `True`). Example: You have a dish washer connected through a smart plug. This device type the detects if the dishwasher is running or not.
+In case you are setting the `model` and `manufacturer` or the `state`, the device will detect it's state (`on` or `off`) based on the power consumption. This state information can then be used to log the sessions of the device (in case `store_sessions` is set to `True`). Example: You have a dish washer connected through a smart plug. This device type the detects if the dishwasher is running or not.
 
 - `icon`: mdi icon shown in the UI
-- `power`: Home Assistant entity for the current power consumtion of the device (in Watt)
+- `power`: Home Assistant entity for the current power consumption of the device (in Watt)
 - `energy`: Home Assistant entity for the total energy meter of the device (in kWh). In case the device does not provide this entity, you can setup a integration helper in Home Assistant. This is can be configured using the state value format described above.
 - `manufacturer`: Manufacturer of the device.
 - `model`: Model of the device

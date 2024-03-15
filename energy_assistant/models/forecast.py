@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class ForecastSerieSchema(BaseModel):
-    """Schema for a forcast data serie."""
+    """Schema for a forecast data series."""
 
     name: str
     data: list[float]

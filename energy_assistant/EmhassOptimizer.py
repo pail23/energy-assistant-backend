@@ -122,7 +122,7 @@ class EmhassOptimizer(Optimizer):
         self._no_var_loads: DataBuffer = DataBuffer()
 
     def update_repository_states(self, home: Home, state_repository: StatesRepository) -> None:
-        """Calculate the power of the non varibale/non controllable loads."""
+        """Calculate the power of the non variable/non controllable loads."""
         power = home.home_consumption_power
         for device in home.devices:
             if device.power_controllable:
@@ -158,7 +158,7 @@ class EmhassOptimizer(Optimizer):
     ) -> pd.DataFrame:
         """Perform a call to the perfect forecast optimization routine.
 
-        :param input_data_dict:  A dictionnary with multiple data used by the action functions
+        :param input_data_dict:  A dictionary with multiple data used by the action functions
         :type input_data_dict: dict
         :param logger: The passed logger object
         :type logger: logging object
@@ -318,7 +318,7 @@ class EmhassOptimizer(Optimizer):
             P_load_forecast_values = np.array(P_load_forecast.values)
         except Exception:
             self._logger.warning(
-                "Forcasting the load failed, probably due to missing history data in Home Assistant. "
+                "Forecasting the load failed, probably due to missing history data in Home Assistant. "
             )
             avg_non_var_power = self._no_var_loads.average()
             P_load_forecast = pd.Series(
@@ -397,7 +397,7 @@ class EmhassOptimizer(Optimizer):
     def naive_mpc_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the naive Model Predictive Controller optimization routine.
 
-        :param input_data_dict:  A dictionnary with multiple data used by the action functions
+        :param input_data_dict:  A dictionary with multiple data used by the action functions
         :type input_data_dict: dict
         :param logger: The passed logger object
         :type logger: logging object
@@ -630,7 +630,7 @@ class EmhassOptimizer(Optimizer):
     ) -> pd.Series | None:
         """Perform a forecast model predict using a previously trained skforecast model.
 
-        :param input_data_dict: A dictionnary with multiple data used by the action functions
+        :param input_data_dict: A dictionary with multiple data used by the action functions
         :type input_data_dict: dict
         :param logger: The passed logger object
         :type logger: logging.Logger
@@ -773,7 +773,7 @@ class EmhassOptimizer(Optimizer):
         return -1
 
     def _get_forecast_value(self, columnName: str) -> float:
-        """Get a forcasted value."""
+        """Get a forecasted value."""
         if self._day_ahead_forecast is not None:
             now_precise = datetime.now(self._location.get_time_zone()).replace(
                 second=0, microsecond=0

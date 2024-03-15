@@ -25,7 +25,7 @@ class EvccDevice(DeviceWithState):
         super().__init__(config, session_storage)
         self._evcc_topic: str = get_config_param(config, "evcc_topic")
         self._loadpoint_id: int = int(get_config_param(config, "load_point_id"))
-        self._is_continous: bool = bool(config.get("continous", True))
+        self._is_continous: bool = bool(config.get("continuous", True))
         self._nominal_power: float | None = config.get("nominal_power")
         self._state = OnOffState.UNKNOWN
         self._power: State | None = None
@@ -96,7 +96,7 @@ class EvccDevice(DeviceWithState):
         optimizer: Optimizer,
         grid_exported_power_data: DataBuffer,
     ) -> None:
-        """Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availability."""
         new_state = ""
         if self.power_mode == PowerModes.OFF:
             new_state = "off"

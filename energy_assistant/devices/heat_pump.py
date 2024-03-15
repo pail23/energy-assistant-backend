@@ -92,7 +92,7 @@ class HeatPumpDevice(DeviceWithState):
         optimizer: Optimizer,
         grid_exported_power_data: DataBuffer,
     ) -> None:
-        """Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availability."""
         if (
             self._target_temperature_normal is not None
             and self._target_temperature_pv is not None

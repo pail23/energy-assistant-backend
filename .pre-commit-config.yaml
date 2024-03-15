@@ -42,3 +42,8 @@ repos:
     hooks:
       - id: pip-compile
         args: [--extra, dev]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.4
+    hooks:
+      - id: codespell

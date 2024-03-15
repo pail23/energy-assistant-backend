@@ -46,7 +46,7 @@ emhass:
   retrieve_hass_conf:
     freq: 30 # The time step to resample retrieved data from hass in minutes
     days_to_retrieve: 8 # We will retrieve data from now and up to days_to_retrieve days
-    load_negative: False # Set to True if the retrived load variable is negative by convention
+    load_negative: False # Set to True if the retrieved load variable is negative by convention
     set_zero_min: True # A special treatment for a minimum value saturation to zero. Values below zero are replaced by nans
     method_ts_round: "nearest" # Set the method for timestamp rounding, options are: first, last and nearest
 
@@ -54,7 +54,7 @@ emhass:
     set_use_battery: False # consider a battery storage
     delta_forecast: 1 # days
     weather_forecast_method: 'scrapper' # options are 'scrapper', 'csv', 'list', 'solcast' and 'solar.forecast'
-    load_forecast_method: 'naive' # options are 'csv' to load a custom load forecast from a CSV file or 'naive' for a persistance model
+    load_forecast_method: 'naive' # options are 'csv' to load a custom load forecast from a CSV file or 'naive' for a persistence model
     load_cost_forecast_method: 'hp_hc_periods' # options are 'hp_hc_periods' for peak and non-peak hours contracts and 'csv' to load custom cost from CSV file
     list_hp_periods: # list of different tariff periods (only needed if load_cost_forecast_method='hp_hc_periods')
     - period_hp_1:
@@ -97,6 +97,6 @@ emhass:
     eta_disch: 0.95 # If your system has a battery (set_use_battery=True), the discharge efficiency
     eta_ch: 0.95 # If your system has a battery (set_use_battery=True), the charge efficiency
     Enom: 5000 # If your system has a battery (set_use_battery=True), the total capacity of the battery stack in Wh
-    SOCmin: 0.3 # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
-    SOCmax: 0.9 # If your system has a battery (set_use_battery=True), the minimun allowable battery state of charge
+    SOCmin: 0.3 # If your system has a battery (set_use_battery=True), the minimum allowable battery state of charge
+    SOCmax: 0.9 # If your system has a battery (set_use_battery=True), the minimum allowable battery state of charge
     SOCtarget: 0.6 # If your system has a battery (set_use_battery=True), the desired battery state of charge at the end of each optimization cycle

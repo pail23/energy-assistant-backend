@@ -1,4 +1,4 @@
-"""The applicaton."""
+"""The application."""
 
 import uuid
 from abc import ABC, abstractmethod

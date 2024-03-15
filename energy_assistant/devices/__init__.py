@@ -260,17 +260,17 @@ class StatesRepository(ABC):
 
     @abstractmethod
     def get_state(self, id: StateId | str) -> State | None:
-        """Get a state from the repositiory."""
+        """Get a state from the repository."""
         pass
 
     @abstractmethod
     def get_numeric_states(self) -> dict[str, float]:
-        """Get a states from the repositiory."""
+        """Get a states from the repository."""
         pass
 
     @abstractmethod
     def get_template_states(self) -> dict:
-        """Get a states from the repositiory."""
+        """Get a states from the repository."""
         pass
 
     @abstractmethod
@@ -306,19 +306,19 @@ class StatesSingleRepository(StatesRepository):
         self._template_states: dict[str, dict | Any] | None = None
 
     def get_state(self, id: StateId | str) -> State | None:
-        """Get a state from the repositiory."""
+        """Get a state from the repository."""
         if isinstance(id, str):
             return self._read_states.get(id)
         else:
             return self._read_states.get(id.id)
 
     def get_numeric_states(self) -> dict[str, float]:
-        """Get a states from the repositiory."""
+        """Get a states from the repository."""
         result = {k: v.numeric_value for k, v in self._read_states.items()}
         return result
 
     def get_template_states(self) -> dict:
-        """Get template states from the repositiory."""
+        """Get template states from the repository."""
         if self._template_states is None:
             self._template_states = {}
             states = self.get_numeric_states().items()
@@ -353,7 +353,7 @@ class StatesMultipleRepositories(StatesRepository):
         self._repositories = repositories
 
     def get_state(self, id: StateId | str) -> State | None:
-        """Get a state from the repositiory."""
+        """Get a state from the repository."""
         if isinstance(id, StateId):
             for repository in self._repositories:
                 if repository.channel == id.channel:
@@ -368,14 +368,14 @@ class StatesMultipleRepositories(StatesRepository):
         return None
 
     def get_numeric_states(self) -> dict[str, float]:
-        """Get a states from the repositiory."""
+        """Get a states from the repository."""
         result: dict[str, float] = {}
         for reposititory in self._repositories:
             result = {**result, **reposititory.get_numeric_states()}
         return result
 
     def get_template_states(self) -> dict:
-        """Get template states from the repositiory."""
+        """Get template states from the repository."""
         result: dict = {}
         for reposititory in self._repositories:
             result = {**result, **reposititory.get_template_states()}

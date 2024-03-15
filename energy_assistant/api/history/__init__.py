@@ -1,1 +1,1 @@
-"""API for histroy data."""
+"""API for history data."""

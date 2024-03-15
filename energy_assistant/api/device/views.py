@@ -54,7 +54,7 @@ async def read(
     device_id: uuid.UUID = Path(..., description=""),
     use_case: ReadDevice = Depends(ReadDevice),
 ) -> DeviceSchema:
-    """REST end pont for read a device."""
+    """REST end point for read a device."""
     return await use_case.execute(device_id, request.app.home)
 
 
@@ -64,7 +64,7 @@ async def read_measurements(
     device_id: uuid.UUID = Path(..., description=""),
     use_case: ReadDeviceMeasurements = Depends(ReadDeviceMeasurements),
 ) -> ReadDeviceMeasurementsResponse:
-    """REST end pont for read a device."""
+    """REST end point for read a device."""
     return ReadDeviceMeasurementsResponse(
         device_measurements=[
             device_measurement async for device_measurement in use_case.execute(device_id)

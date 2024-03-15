@@ -206,7 +206,7 @@ class Home:
 
     @property
     def self_consumption(self) -> float:
-        """Self consumtion ratio of the home."""
+        """Self consumption ratio of the home."""
         solar_power = self.solar_production_power
         if solar_power > 0:
             return min(self.home_consumption_power / solar_power, 1.0)
@@ -257,7 +257,7 @@ class Home:
     async def update_power_consumption(
         self, state_repository: StatesRepository, optimizer: Optimizer
     ) -> None:
-        """Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availability."""
         self.grid_exported_power_data.add_data_point(self.grid_imported_power)
 
         if not self._disable_device_control:

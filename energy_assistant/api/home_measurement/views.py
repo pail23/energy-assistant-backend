@@ -37,7 +37,7 @@ async def read(
     home_measurement_id: int = Path(..., description=""),
     use_case: ReadHomeMeasurement = Depends(ReadHomeMeasurement),
 ) -> HomeMeasurementSchema:
-    """REST end pont for read a home measurement."""
+    """REST end point for read a home measurement."""
     return await use_case.execute(home_measurement_id)
 
 
@@ -50,7 +50,7 @@ async def read_by_date(
     measurement_date: date = Path(..., description=""),
     use_case: ReadHomeMeasurementByDate = Depends(ReadHomeMeasurementByDate),
 ) -> HomeMeasurementSchema:
-    """REST end pont for read a home measurement by date."""
+    """REST end point for read a home measurement by date."""
     return await use_case.execute(measurement_date)
 
 
@@ -63,7 +63,7 @@ async def read_before_date(
     measurement_date: date = Path(..., description=""),
     use_case: ReadHomeMeasurementLastBeforeDate = Depends(ReadHomeMeasurementLastBeforeDate),
 ) -> HomeMeasurementSchema:
-    """REST end pont for read the last home measurement before a date."""
+    """REST end point for read the last home measurement before a date."""
     return await use_case.execute(measurement_date)
 
 

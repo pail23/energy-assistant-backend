@@ -194,7 +194,7 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
             }
             response = requests.get(f"{url}/api/states", headers=headers)
             logging.info(
-                f"pinging homeassistant api succeeeded. Status code = {response.status_code}"
+                f"pinging homeassistant api succeeded. Status code = {response.status_code}"
             )
             if response.ok:
                 logging.info(f"Using {url} to connect")
@@ -365,17 +365,17 @@ async def init_app() -> EnergyAssistant:
 
 
 async def optimize(optimizer: EmhassOptimizer) -> None:
-    """Optimize the forcast."""
+    """Optimize the forecast."""
     try:
         optimizer.forecast_model_fit(True)
     except Exception:
         logging.exception(
-            "Optimization of the power consumption forcast model failed, probably due to missing history data in Home Assistant."
+            "Optimization of the power consumption forecast model failed, probably due to missing history data in Home Assistant."
         )
 
 
 def daily_optimize(ea: EnergyAssistant) -> None:
-    """Optimze once a day."""
+    """Optimize once a day."""
     try:
         optimizer = ea.optimizer
         if optimizer is not None:

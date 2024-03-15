@@ -12,7 +12,7 @@ environment = Environment()
 
 
 class CalculatedState(State):
-    """A numeric, calcuated state."""
+    """A numeric, calculated state."""
 
     def __init__(self, value: float | str | None) -> None:
         """Create a calculated state instance."""

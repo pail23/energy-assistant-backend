@@ -105,7 +105,7 @@ class Device(ABC):
     @property
     @abstractmethod
     def available(self) -> float:
-        """Is the device availabe?."""
+        """Is the device available?."""
         pass
 
     @property
@@ -121,7 +121,7 @@ class Device(ABC):
         optimizer: Optimizer,
         grid_exported_power_data: DataBuffer,
     ) -> None:
-        """Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availability."""
         pass
 
     @abstractmethod

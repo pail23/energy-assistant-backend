@@ -1,4 +1,4 @@
-"""Handle meters which can loose their energy meter value and reset to 0. This is useful for example for meters which are reseting to 0 in case of power loss."""
+"""Handle meters which can loose their energy meter value and reset to 0. This is useful for example for meters which are resetting to 0 in case of power loss."""
 
 import logging
 

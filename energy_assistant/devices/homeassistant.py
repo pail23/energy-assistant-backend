@@ -345,7 +345,7 @@ class HomeassistantDevice(DeviceWithState):
         optimizer: Optimizer,
         grid_exported_power_data: DataBuffer,
     ) -> None:
-        """Update the device based on the current pv availablity."""
+        """Update the device based on the current pv availability."""
         if self._output_id is not None:
             state: bool = (
                 self._output_state.value == "on" if self._output_state is not None else False
