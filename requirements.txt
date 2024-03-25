@@ -172,7 +172,7 @@ packaging==23.2
     #   tables
 paho-mqtt==2.0.0
     # via energy_assistant (pyproject.toml)
-pandas==2.0.3
+pandas==2.2.1
     # via
     #   emhass
     #   pvlib
