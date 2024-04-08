@@ -31,7 +31,7 @@ black==24.3.0
     # via energy_assistant (pyproject.toml)
 blinker==1.7.0
     # via flask
-blosc2==2.3.2
+blosc2==2.6.2
     # via tables
 build==1.0.3
     # via pip-tools
