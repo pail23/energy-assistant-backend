@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Tuple
 
-import emhass
+import emhass  # type: ignore
 import numpy as np
 import pandas as pd
 from emhass import utils  # type: ignore
