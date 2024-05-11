@@ -5,10 +5,12 @@ import json
 import logging
 import pathlib
 import pickle
+import shutil
 import uuid
 from datetime import datetime, timezone
 from typing import Tuple
 
+import emhass
 import numpy as np
 import pandas as pd
 from emhass import utils  # type: ignore
@@ -56,6 +58,21 @@ class EmhassOptimizer(Optimizer):
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
         self._emhass_config: dict | None = config.emhass_config
+
+        cec_path = self._data_folder / "src/emhass/data"
+
+        if not cec_path.exists():
+            cec_path.mkdir(parents=True, exist_ok=True)
+
+        cec_src_path = pathlib.Path(emhass.__file__).parent / "data"
+        shutil.copy(str(cec_src_path / "cec_inverters.pbz2"), str(cec_path))
+        shutil.copy(str(cec_src_path / "cec_modules.pbz2"), str(cec_path))
+
+        self._emhass_path_conf = {}
+        self._emhass_path_conf["config_path"] = pathlib.Path("./energy_assistant.yaml")
+        self._emhass_path_conf["data_path"] = self._data_folder
+        self._emhass_path_conf["root_path"] = self._data_folder
+
         self._power_no_var_loads_id = (
             f"sensor.{DEFAULT_HASS_ENTITY_PREFIX}_{SENSOR_POWER_NO_VAR_LOADS}"
         )
@@ -294,7 +311,7 @@ class EmhassOptimizer(Optimizer):
             self._optim_conf,
             self._plant_conf,
             params,
-            str(self._data_folder),
+            self._emhass_path_conf,
             self._logger,
             get_data_from_file=False,
         )
