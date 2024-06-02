@@ -151,8 +151,6 @@ async def background_task(ea: EnergyAssistant) -> None:
                 ea.home.store_energy_snapshot()
             last_update = today
 
-            # await ea.hass.async_read_states()
-
             async with async_session() as session:
                 await async_handle_state_update(ea, state_repository, session)
         except Exception:
