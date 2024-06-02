@@ -8,8 +8,8 @@ from enum import StrEnum
 
 import requests  # type: ignore
 from aiohttp import ClientSession, TCPConnector
-from hass_client import HomeAssistantClient
-from hass_client.utils import get_websocket_url
+from hass_client import HomeAssistantClient  # type: ignore
+from hass_client.utils import get_websocket_url  # type: ignore
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import (
