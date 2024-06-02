@@ -76,6 +76,10 @@ class MqttConnection(StatesSingleRepository):
         """Handle a received mqtt message."""
         self._read_states[id] = State(id, value)
 
+    async def async_read_states(self) -> None:
+        """Read the states from the channel asynchronously."""
+        pass
+
     def read_states(self) -> None:
         """Read the states from the channel."""
         pass

@@ -30,8 +30,9 @@ dependencies = [
     "paho-mqtt==2.1.0",
     "jinja2==3.1.4",
     "colorlog==6.8.0",
-    "emhass==0.9.0",
-    "energy_assistant_frontend==0.0.56"
+    "emhass==0.9.1",
+    "energy_assistant_frontend==0.0.56",
+    "hass-client==1.0.1"
 ]
 requires-python = ">=3.11"
 
@@ -53,6 +54,7 @@ dev = [
   "pre-commit==3.7.1",
   "types-PyYAML",
   "types-requests",
+  "types-pytz",
   "pandas-stubs"
 ]
 

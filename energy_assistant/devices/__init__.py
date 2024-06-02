@@ -285,6 +285,11 @@ class StatesRepository(ABC):
         pass
 
     @abstractmethod
+    async def async_read_states(self) -> None:
+        """Read the states from the channel asynchronously."""
+        pass
+
+    @abstractmethod
     def read_states(self) -> None:
         """Read the states from the channel."""
         pass
@@ -391,6 +396,11 @@ class StatesMultipleRepositories(StatesRepository):
     def channel(self) -> str:
         """Get the channel of the State Repository."""
         return "multiple"
+
+    async def async_read_states(self) -> None:
+        """Read the states from the channel asynchronously."""
+        for repository in self._repositories:
+            await repository.async_read_states()
 
     def read_states(self) -> None:
         """Read the states from the channel."""

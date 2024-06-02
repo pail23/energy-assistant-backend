@@ -1,8 +1,15 @@
 """Interface to the homeassistant instance."""
 
+import asyncio
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from enum import StrEnum
 
 import requests  # type: ignore
+from aiohttp import ClientSession, TCPConnector
+from hass_client import HomeAssistantClient
+from hass_client.utils import get_websocket_url
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import (
@@ -63,6 +70,48 @@ class HomeassistantState(State):
         return ""
 
 
+@dataclass
+class HistoryState:
+    """Represents a history of a state."""
+
+    time_stamp: datetime
+    state: float
+
+
+def convert_statistics(value: dict) -> dict:
+    """Convert the times in a Home Assistant dict to date time values."""
+    result = value.copy()
+    result["start"] = datetime.fromtimestamp(value["start"] / 1000, timezone.utc)
+    result["end"] = datetime.fromtimestamp(value["end"] / 1000, timezone.utc)
+    return result
+
+
+def convert_history(value: dict) -> HistoryState:
+    """Convert a history state to a HistoryState instance."""
+    return HistoryState(
+        time_stamp=datetime.fromtimestamp(value["lu"], timezone.utc), state=float(value["s"])
+    )
+
+
+class StatisticsType(StrEnum):
+    """The type of statistics which can be requested from Home Assistant."""
+
+    MAX = "max"
+    MEAN = "mean"
+    MIN = "min"
+    CHANGE = "change"
+
+
+class StatisticsPeriod(StrEnum):
+    """The statistics period which can be requested from Home Assistant."""
+
+    FiveMin = "5minute"
+    DAY = "day"
+    HOUR = "hour"
+    WEEK = "week"
+    MONTH = "month"
+
+
 class Homeassistant(StatesSingleRepository):
     """Home assistant proxy."""
 
@@ -73,6 +122,28 @@ class Homeassistant(StatesSingleRepository):
         self._token = token
         self._demo_mode = demo_mode is not None and demo_mode
 
+    async def connect(self) -> None:
+        """Connect to the homeassistant instance."""
+        loop = asyncio.get_running_loop()
+        self.session = ClientSession(
+            loop=loop,
+            connector=TCPConnector(
+                ssl=False,
+                enable_cleanup_closed=True,
+                limit=4096,
+                limit_per_host=100,
+            ),
+        )
+        url = get_websocket_url(self._url)
+
+        self.hass = HomeAssistantClient(url, self._token, self.session)
+        await self.hass.connect()
+        LOGGER.info("Connected to Homeassistant version %s", self.hass.version)
+
+    async def disconnect(self) -> None:
+        """Disconnects from home assistant."""
+        await self.hass.disconnect()
+
     @property
     def url(self) -> str:
         """URL of the home assistant instance."""
@@ -82,6 +153,107 @@ class Homeassistant(StatesSingleRepository):
     def token(self) -> str:
         """Token of the home assistant instance."""
         return self._token
+
+    async def get_statistics(
+        self,
+        entity_id: str,
+        start_time: datetime | None = None,
+        types: list[StatisticsType] = [],
+        period: StatisticsPeriod = StatisticsPeriod.HOUR,
+    ) -> list[dict]:
+        """Read the statistics for an entity."""
+        if start_time is None:
+            start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        statistics = await self.hass.send_command(
+            "recorder/statistics_during_period",
+            period=period,
+            start_time=start_time.isoformat(),
+            statistic_ids=[entity_id],
+            types=types,
+        )
+        if entity_id in statistics:
+            result = [convert_statistics(value) for value in statistics[entity_id]]
+            return result
+        else:
+            return []
+
+    async def get_history(
+        self, entity_id: str, start_time: datetime | None = None, end_time: datetime | None = None
+    ) -> list[HistoryState]:
+        """Get the history of a state from Home Assistant."""
+        if start_time is None:
+            start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        if end_time is None:
+            end_time = datetime.now()
+        history = await self.hass.send_command(
+            "history/history_during_period",
+            start_time=start_time.isoformat(),
+            end_time=end_time.isoformat(),
+            entity_ids=[entity_id],
+            no_attributes=True,
+            minimal_response=True,
+        )
+        if entity_id in history:
+            result = [convert_history(value) for value in history[entity_id]]
+            return result
+        else:
+            return []
+
+    async def async_read_states(self) -> None:
+        """Read the states from the homeassistant instance asynchronously."""
+
+        try:
+            states = await self.hass.get_states()
+            self._read_states.clear()
+            for state in states:
+                entity_id = state.get("entity_id")
+                self._read_states[entity_id] = HomeassistantState(
+                    entity_id, state.get("state"), state.get("attributes")
+                )
+            self._template_states = None
+        except Exception:
+            LOGGER.exception("Exception during homeassistant update_states: ")
+
+    async def async_write_states(self) -> None:
+        """Send the changed states to hass."""
+        if not self._demo_mode:
+            try:
+                for id, state in self._write_states.items():
+                    if id.startswith("number"):
+                        data = {"value": state.value}
+                        await self.hass.call_service(
+                            "number",
+                            service="set_value",
+                            service_data=data,
+                            target={"entity_id": id},
+                        )
+
+                    elif id.startswith("switch"):
+                        await self.hass.call_service(
+                            "switch", service=f"turn_{state.value}", target={"entity_id": id}
+                        )
+
+                    elif id.startswith("sensor"):
+                        headers = {
+                            "Authorization": f"Bearer {self._token}",
+                            "content-type": "application/json",
+                        }
+                        sensor_data: dict = {
+                            "state": state.value,
+                            "attributes": state.attributes,
+                        }
+                        response = requests.post(
+                            f"{self._url}/api/states/{id}",
+                            headers=headers,
+                            json=sensor_data,
+                        )
+                        if not response.ok:
+                            LOGGER.error(f"State update for {id} in hass failed")
+                    else:
+                        LOGGER.error(f"Writing to id {id} is not yet implemented.")
+            except Exception:
+                LOGGER.exception("Exception during homeassistant update_states.")
+            self._write_states.clear()
 
     def read_states(self) -> None:
         """Read the states from the homeassistant instance."""

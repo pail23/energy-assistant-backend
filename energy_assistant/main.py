@@ -74,6 +74,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     await optimizer_task
     await bt
     scheduler.shutdown()
+    if ea.hass:
+        await ea.hass.disconnect()
     print("Shutdown app")
 
 
@@ -104,7 +106,7 @@ async def async_handle_state_update(
 ) -> None:
     """Read the values from home assistant and process the update."""
     try:
-        state_repository.read_states()
+        await state_repository.async_read_states()
 
         await ea.home.update_state(state_repository)
         if ea.optimizer is not None:
@@ -148,6 +150,9 @@ async def background_task(ea: EnergyAssistant) -> None:
             if today != last_update:
                 ea.home.store_energy_snapshot()
             last_update = today
+
+            # await ea.hass.async_read_states()
+
             async with async_session() as session:
                 await async_handle_state_update(ea, state_repository, session)
         except Exception:
@@ -178,7 +183,7 @@ def subscribe_mqtt_topics(mqtt_connection: MqttConnection, home: Home) -> None:
             mqtt_connection.add_subscription_topic(device.evcc_mqtt_subscription_topic)
 
 
-def create_hass_connection(config: dict) -> Homeassistant | None:
+async def open_hass_connection(config: dict) -> Homeassistant | None:
     """Create a connection to home assistant."""
     token: str | None = None
     url: str | None = None
@@ -199,6 +204,7 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
             if response.ok:
                 logging.info(f"Using {url} to connect")
                 hass = Homeassistant(url, token, False)
+                await hass.connect()
                 return hass
     except Exception:
         logging.exception("Error while trying to connect to the homeassistant supervisor api")
@@ -212,7 +218,9 @@ def create_hass_connection(config: dict) -> Homeassistant | None:
         url = hass_config.get("url")
         token = hass_config.get("token")
         if url is not None and token is not None:
-            return Homeassistant(url, token, demo_mode)
+            hass = Homeassistant(url, token, demo_mode)
+            await hass.connect()
+            return hass
     return None
 
 
@@ -328,7 +336,7 @@ async def init_app() -> EnergyAssistant:
             except Exception:
                 logger.exception("Failed to parse the config file")
             else:
-                hass = create_hass_connection(config)
+                hass = await open_hass_connection(config)
                 result.hass = hass
                 result.config = EnergyAssistantConfig(
                     config, hass.get_config() if hass is not None else {}
