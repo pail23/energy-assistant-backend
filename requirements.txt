@@ -56,7 +56,7 @@ click==8.1.7
     #   pip-tools
     #   typer
     #   uvicorn
-codespell==2.2.6
+codespell==2.3.0
     # via energy_assistant (pyproject.toml)
 colorama==0.4.6
     # via bumpver
@@ -238,7 +238,7 @@ pygments==2.18.0
     # via rich
 pyproject-hooks==1.0.0
     # via build
-pytest==8.2.0
+pytest==8.2.1
     # via
     #   energy_assistant (pyproject.toml)
     #   pytest-aiohttp
@@ -284,7 +284,7 @@ requests==2.31.0
     #   pvlib
 rich==13.7.1
     # via typer
-ruff==0.4.4
+ruff==0.4.7
     # via energy_assistant (pyproject.toml)
 scikit-learn==1.3.2
     # via skforecast
