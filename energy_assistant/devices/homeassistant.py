@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import StrEnum
 
+import pandas as pd
 import requests  # type: ignore
 from aiohttp import ClientSession, TCPConnector
 from hass_client import HomeAssistantClient  # type: ignore
@@ -105,11 +106,27 @@ class StatisticsType(StrEnum):
 class StatisticsPeriod(StrEnum):
     """The statistics period which can be requested from Home Assistant."""
 
-    FiveMin = "5minute"
+    FIVE_Min = "5minute"
     DAY = "day"
     HOUR = "hour"
     WEEK = "week"
     MONTH = "month"
+
+
+class SourceType(StrEnum):
+    """The type of the energy source."""
+
+    GRID = "grid"
+    SOLAR = "solar"
+
+
+@dataclass
+class EnergySource:
+    """An energy source with the corresponding energy sensors."""
+
+    source_type: SourceType
+    flow_from: str
+    flow_to: str | None
 
 
 class Homeassistant(StatesSingleRepository):
@@ -198,6 +215,52 @@ class Homeassistant(StatesSingleRepository):
             return result
         else:
             return []
+
+    async def get_energy_info(self) -> dict:
+        """Get the energy info from Home Assistant."""
+        info = await self.hass.send_command("energy/info")
+        return info
+
+    async def get_energy_prefs(self) -> list[EnergySource]:
+        """Get the energy configuration from Home Assistant."""
+        prefs = await self.hass.send_command("energy/get_prefs")
+        sources = prefs.get("energy_sources")
+        result: list[EnergySource] = []
+        if sources is not None:
+            for source in sources:
+                flow_from = source.get("flow_from")
+                flow_to = source.get("flow_to")
+                if flow_from is not None and flow_to is not None:
+                    energy_source = EnergySource(
+                        source_type=source.get("type"),
+                        flow_from=flow_from[0].get("stat_energy_from"),
+                        flow_to=flow_to[0].get("stat_energy_to") if flow_to is not None else None,
+                    )
+                    result.append(energy_source)
+                else:
+                    energy_from = source.get("stat_energy_from")
+                    if energy_from is not None:
+                        energy_source = EnergySource(
+                            source_type=source.get("type"),
+                            flow_from=energy_from,
+                            flow_to=None,
+                        )
+                        result.append(energy_source)
+
+        return result
+
+    async def get_solar_forecast(self) -> pd.DataFrame:
+        """Get the solar forecast from Home Assistant."""
+        forecast = await self.hass.send_command("energy/solar_forecast")
+        df = pd.DataFrame()
+
+        for fcst, series in forecast.items():
+            df[fcst] = pd.Series(series.get("wh_hours"))
+        df.index = pd.to_datetime(df.index)
+        df["sum"] = df.sum(axis=1)
+        freq = pd.Timedelta("30min")
+        result = df.resample(freq).mean().interpolate()
+        return result
 
     async def async_read_states(self) -> None:
         """Read the states from the homeassistant instance asynchronously."""

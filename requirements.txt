@@ -72,7 +72,7 @@ dnspython==2.6.1
     # via email-validator
 email-validator==2.1.1
     # via fastapi
-emhass==0.9.1
+emhass==0.10.0
     # via energy_assistant (pyproject.toml)
 energy-assistant-frontend==0.0.56
     # via energy_assistant (pyproject.toml)

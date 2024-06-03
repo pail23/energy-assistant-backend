@@ -218,6 +218,12 @@ async def open_hass_connection(config: dict) -> Homeassistant | None:
         if url is not None and token is not None:
             hass = Homeassistant(url, token, demo_mode)
             await hass.connect()
+            # info = await hass.get_energy_info()
+            # print(info)
+            # prefs = await hass.get_energy_prefs()
+            # print(prefs)
+            forecast = await hass.get_solar_forecast()
+            print(forecast)
             return hass
     return None
 
