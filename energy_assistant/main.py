@@ -65,9 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     bt = asyncio.create_task(background_task(ea))
     optimizer_task = asyncio.create_task(optimize(ea.optimizer))
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        daily_optimize, trigger="cron", args=[ea], hour="3", minute="0"
-    )  # time is UTC
+    scheduler.add_job(async_daily_optimize, trigger="cron", args=[ea], hour="3", minute="0")  # time is UTC
     scheduler.start()
     yield
     ea.should_stop = True
@@ -126,7 +124,7 @@ async def async_handle_state_update(
         else:
             logging.error("The variable db is None in async_handle_state_update")
         if ea.optimizer is not None and ea.home is not None:
-            ea.optimizer.update_devices(ea.home)
+            await ea.optimizer.async_update_devices(ea.home)
     except Exception:
         logging.exception("error during sending refresh")
 
@@ -196,9 +194,7 @@ async def open_hass_connection(config: dict) -> Homeassistant | None:
                 "content-type": "application/json",
             }
             response = requests.get(f"{url}/api/states", headers=headers)
-            logging.info(
-                f"pinging homeassistant api succeeded. Status code = {response.status_code}"
-            )
+            logging.info(f"pinging homeassistant api succeeded. Status code = {response.status_code}")
             if response.ok:
                 logging.info(f"Using {url} to connect")
                 hass = Homeassistant(url, token, False)
@@ -222,8 +218,8 @@ async def open_hass_connection(config: dict) -> Homeassistant | None:
             # print(info)
             # prefs = await hass.get_energy_prefs()
             # print(prefs)
-            forecast = await hass.get_solar_forecast()
-            print(forecast)
+            # forecast = await hass.get_solar_forecast()
+            # print(forecast)
             return hass
     return None
 
@@ -321,9 +317,7 @@ async def init_app() -> EnergyAssistant:
     db = Database()
     result.db = db
 
-    device_registry_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "config/deviceregistry"
-    )
+    device_registry_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config/deviceregistry")
 
     device_type_registry = DeviceTypeRegistry()
     device_type_registry.load(device_registry_path)
@@ -342,9 +336,7 @@ async def init_app() -> EnergyAssistant:
             else:
                 hass = await open_hass_connection(config)
                 result.hass = hass
-                result.config = EnergyAssistantConfig(
-                    config, hass.get_config() if hass is not None else {}
-                )
+                result.config = EnergyAssistantConfig(config, hass.get_config() if hass is not None else {})
                 if hass is not None:
                     hass.read_states()
                     optimizer = EmhassOptimizer(settings.DATA_FOLDER, result.config, hass)
@@ -363,9 +355,7 @@ async def init_app() -> EnergyAssistant:
                         subscribe_mqtt_topics(mqtt_connection, home)
 
                     async with async_session() as session:
-                        await db.update_devices(
-                            home, session, session_storage, device_type_registry
-                        )
+                        await db.update_devices(home, session, session_storage, device_type_registry)
 
                         await db.restore_home_state(home, session)
                 else:
@@ -386,13 +376,13 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
         )
 
 
-def daily_optimize(ea: EnergyAssistant) -> None:
+async def async_daily_optimize(ea: EnergyAssistant) -> None:
     """Optimize once a day."""
     try:
         optimizer = ea.optimizer
         if optimizer is not None:
             logging.info("Start optimizer run")
-            optimizer.dayahead_forecast_optim()
+            await optimizer.async_dayahead_forecast_optim()
     except Exception:
         logging.exception("Daily optimization run failed")
 

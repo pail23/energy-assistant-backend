@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Tuple
 
+import emhass
 import numpy as np
 import pandas as pd
 from emhass import utils  # type: ignore
@@ -39,12 +40,11 @@ LOAD_FORECAST_MODEL_TYPE = "load_forecast"
 class EmhassOptimizer(Optimizer):
     """Optimizer based on Emhass."""
 
-    def __init__(
-        self, data_folder: str, config: EnergyAssistantConfig, hass: Homeassistant
-    ) -> None:
+    def __init__(self, data_folder: str, config: EnergyAssistantConfig, hass: Homeassistant) -> None:
         """Create an emhass optimizer instance."""
         self._data_folder: pathlib.Path = pathlib.Path(data_folder)
         self._logger = LOGGER
+        self._hass = hass
         self._hass_url: str = hass.url
         if self._hass_url is not None and self._hass_url[-1] != "/":
             self._hass_url = self._hass_url + "/"
@@ -60,23 +60,15 @@ class EmhassOptimizer(Optimizer):
         self._emhass_path_conf = {}
         # self._emhass_path_conf["config_path"] = pathlib.Path("./energy_assistant.yaml")
         self._emhass_path_conf["data_path"] = self._data_folder
-        # self._emhass_path_conf["root_path"] = self._data_folder
+        self._emhass_path_conf["root_path"] = pathlib.Path(emhass.__file__).parent
 
-        self._power_no_var_loads_id = (
-            f"sensor.{DEFAULT_HASS_ENTITY_PREFIX}_{SENSOR_POWER_NO_VAR_LOADS}"
-        )
+        self._power_no_var_loads_id = f"sensor.{DEFAULT_HASS_ENTITY_PREFIX}_{SENSOR_POWER_NO_VAR_LOADS}"
         if self._emhass_config is not None:
             self._cost_fun = self._emhass_config.get("costfun", DEFAULT_COST_FUNC)
-            self._hass_entity_prefix = self._emhass_config.get(
-                "hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX
-            )
-            self._power_no_var_loads_id = (
-                f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
-            )
+            self._hass_entity_prefix = self._emhass_config.get("hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX)
+            self._power_no_var_loads_id = f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
             params = json.dumps(self._emhass_config)
-            RetrieveHass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
-                pathlib.Path(), False, params=params
-            )
+            RetrieveHass_conf, optim_conf, plant_conf = utils.get_yaml_parse(pathlib.Path(), False, params=params)
             # Patch variables with Energy Assistant Config
             RetrieveHass_conf["hass_url"] = self._hass_url
             RetrieveHass_conf["long_lived_token"] = self._hass_token
@@ -152,16 +144,12 @@ class EmhassOptimizer(Optimizer):
             attributes,
         )
         state_repository.set_state(
-            StateId(
-                id=f"sensor.{self._hass_entity_prefix}_p_consumption", channel=HOMEASSISTANT_CHANNEL
-            ),
+            StateId(id=f"sensor.{self._hass_entity_prefix}_p_consumption", channel=HOMEASSISTANT_CHANNEL),
             str(self._get_forecast_value("P_Load")),
             attributes,
         )
 
-    def perfect_forecast_optim(
-        self, save_data_to_file: bool = True, debug: bool = False
-    ) -> pd.DataFrame:
+    def perfect_forecast_optim(self, save_data_to_file: bool = True, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the perfect forecast optimization routine.
 
         :param input_data_dict:  A dictionary with multiple data used by the action functions
@@ -211,9 +199,7 @@ class EmhassOptimizer(Optimizer):
 
         days_list = utils.get_days_list(self._RetrieveHass_conf["days_to_retrieve"])
         var_list = [self._solar_power_id, self._power_no_var_loads_id]
-        self._RetrieveHass.get_data(
-            days_list, var_list, minimal_response=False, significant_changes_only=False
-        )
+        self._RetrieveHass.get_data(days_list, var_list, minimal_response=False, significant_changes_only=False)
         self._RetrieveHass.prepare_data(
             self._RetrieveHass_conf["var_load"],
             load_negative=self._RetrieveHass_conf["load_negative"],
@@ -225,9 +211,7 @@ class EmhassOptimizer(Optimizer):
 
         self._logger.info("Performing perfect forecast optimization")
         # Load cost and prod price forecast
-        df_input_data = fcst.get_load_cost_forecast(
-            df_input_data, method=fcst.optim_conf["load_cost_forecast_method"]
-        )
+        df_input_data = fcst.get_load_cost_forecast(df_input_data, method=fcst.optim_conf["load_cost_forecast_method"])
         df_input_data = fcst.get_prod_price_forecast(
             df_input_data, method=fcst.optim_conf["prod_price_forecast_method"]
         )
@@ -248,14 +232,10 @@ class EmhassOptimizer(Optimizer):
         runtimeparams: dict = {
             "num_def_loads": len(self._optimzed_devices),
             "P_deferrable_nom": [device.nominal_power for device in self._optimzed_devices],
-            "def_total_hours": [
-                max(round(device.duration / 3600), 1) for device in self._optimzed_devices
-            ],
+            "def_total_hours": [max(round(device.duration / 3600), 1) for device in self._optimzed_devices],
             "def_start_timestep": [device.start_timestep for device in self._optimzed_devices],
             "def_end_timestep": [device.end_timestep for device in self._optimzed_devices],
-            "treat_def_as_semi_cont": [
-                not device.is_continous for device in self._optimzed_devices
-            ],
+            "treat_def_as_semi_cont": [not device.is_continous for device in self._optimzed_devices],
             "set_def_constant": [device.is_constant for device in self._optimzed_devices],
             "days_to_retrieve": self._RetrieveHass_conf.get("days_to_retrieve", 10),
             "model_type": LOAD_FORECAST_MODEL_TYPE,
@@ -267,7 +247,7 @@ class EmhassOptimizer(Optimizer):
         }
         return runtimeparams
 
-    def dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> None:
+    async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> None:
         """Perform a call to the day-ahead optimization routine.
 
         :param save_data_to_file: Save optimization results to CSV file
@@ -315,12 +295,18 @@ class EmhassOptimizer(Optimizer):
             self._logger,
         )
 
-        df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
-        P_PV_forecast = fcst.get_power_from_weather(df_weather)
+        # df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
+        # pv_forecast = fcst.get_power_from_weather(df_weather)
+
+        pv_forecast = await self._hass.get_solar_forecast()
+        start = fcst.forecast_dates[0]
+        end = fcst.forecast_dates[-1]
+        pv_forecast_in_range = pv_forecast.loc[(pv_forecast.index >= start) & (pv_forecast.index <= end)]
+        pv_forecast_serie = pv_forecast_in_range["sum"]
+        pv_forecast_serie.index = pv_forecast_serie.index.tz_convert(self._location.get_time_zone())
+        pv_forecast = pv_forecast_serie
         try:
-            P_load_forecast = fcst.get_load_forecast(
-                method=self._optim_conf["load_forecast_method"]
-            )
+            P_load_forecast = fcst.get_load_forecast(method=self._optim_conf["load_forecast_method"])
             P_load_forecast_values = np.array(P_load_forecast.values)
         except Exception:
             self._logger.warning(
@@ -328,16 +314,16 @@ class EmhassOptimizer(Optimizer):
             )
             avg_non_var_power = self._no_var_loads.average()
             P_load_forecast = pd.Series(
-                [avg_non_var_power for x in P_PV_forecast.values],
-                index=P_PV_forecast.index,
+                [avg_non_var_power for x in pv_forecast.values],
+                index=pv_forecast.index,
             )
-            P_load_forecast_values = np.array([avg_non_var_power for x in P_PV_forecast.values])
+            P_load_forecast_values = np.array([avg_non_var_power for x in pv_forecast.values])
 
         freq = self._RetrieveHass_conf["freq"]
 
         df_input_data_dayahead = pd.DataFrame(
-            np.transpose(np.vstack([np.array(P_PV_forecast.values), P_load_forecast_values])),
-            index=P_PV_forecast.index,
+            np.transpose(np.vstack([np.array(pv_forecast.values), P_load_forecast_values])),
+            index=pv_forecast.index,
             columns=["P_PV_forecast", "P_non_deferrable_load_forecast"],
         )
 
@@ -355,15 +341,12 @@ class EmhassOptimizer(Optimizer):
         if projected_load is not None:
             projected_load = projected_load.tz_convert(self._location.get_time_zone())
             df_input_data_dayahead["P_projected_load"] = projected_load
-            df_input_data_dayahead["P_projected_load"] = df_input_data_dayahead[
-                "P_projected_load"
-            ].fillna(0)
+            df_input_data_dayahead["P_projected_load"] = df_input_data_dayahead["P_projected_load"].fillna(0)
         else:
             df_input_data_dayahead["P_projected_load"] = 0
 
         df_input_data_dayahead["P_load_forecast"] = (
-            df_input_data_dayahead["P_projected_load"]
-            + df_input_data_dayahead["P_non_deferrable_load_forecast"]
+            df_input_data_dayahead["P_projected_load"] + df_input_data_dayahead["P_non_deferrable_load_forecast"]
         )
         P_load_forecast = df_input_data_dayahead["P_load_forecast"]
         df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
@@ -382,19 +365,15 @@ class EmhassOptimizer(Optimizer):
             df_input_data_dayahead, method=fcst.optim_conf["prod_price_forecast_method"]
         )
         self._day_ahead_forecast = opt.perform_dayahead_forecast_optim(
-            df_input_data_dayahead, P_PV_forecast, P_load_forecast
+            df_input_data_dayahead, pv_forecast, P_load_forecast
         )
         if self._day_ahead_forecast is not None:
-            self._day_ahead_forecast["P_projected_load"] = df_input_data_dayahead[
-                "P_projected_load"
-            ].copy()
+            self._day_ahead_forecast["P_projected_load"] = df_input_data_dayahead["P_projected_load"].copy()
 
         if not debug and self._day_ahead_forecast is not None:
             # Save CSV file for publish_data
             if save_data_to_file:
-                today = datetime.now(timezone.utc).replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
+                today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
                 filename = "opt_res_dayahead_" + today.strftime("%Y_%m_%d") + ".csv"
             else:  # Just save the latest optimization results
                 filename = "opt_res_latest.csv"
@@ -418,9 +397,7 @@ class EmhassOptimizer(Optimizer):
 
         self._logger.info("Setting up needed data")
 
-        runtimeparams: dict = {
-            "prediction_horizon": 48  # How many 30 min slots do we predict -> 24h
-        }
+        runtimeparams: dict = {"prediction_horizon": 48}  # How many 30 min slots do we predict -> 24h
 
         # Treat runtimeparams
         params: str = ""
@@ -456,9 +433,7 @@ class EmhassOptimizer(Optimizer):
         # Retrieve data from hass
         days_list = utils.get_days_list(1)
         var_list = [self._solar_power_id, self._power_no_var_loads_id]
-        self._RetrieveHass.get_data(
-            days_list, var_list, minimal_response=False, significant_changes_only=False
-        )
+        self._RetrieveHass.get_data(days_list, var_list, minimal_response=False, significant_changes_only=False)
         self._RetrieveHass.prepare_data(
             self._RetrieveHass_conf["var_load"],
             load_negative=self._RetrieveHass_conf["load_negative"],
@@ -470,9 +445,7 @@ class EmhassOptimizer(Optimizer):
 
         # Get PV and load forecasts
         df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
-        P_PV_forecast = fcst.get_power_from_weather(
-            df_weather, set_mix_forecast=True, df_now=df_input_data
-        )
+        P_PV_forecast = fcst.get_power_from_weather(df_weather, set_mix_forecast=True, df_now=df_input_data)
         P_load_forecast = fcst.get_load_forecast(
             method=self._optim_conf["load_forecast_method"],
             set_mix_forecast=True,
@@ -584,9 +557,7 @@ class EmhassOptimizer(Optimizer):
             self._logger,
         )
         # Fit the ML model
-        df_pred, df_pred_backtest = mlf.fit(
-            split_date_delta=split_date_delta, perform_backtest=perform_backtest
-        )
+        df_pred, df_pred_backtest = mlf.fit(split_date_delta=split_date_delta, perform_backtest=perform_backtest)
         predictions = df_pred["pred"].dropna()
         test_data = df_pred["test"].dropna()
         r2 = r2_score(test_data, predictions)
@@ -697,7 +668,7 @@ class EmhassOptimizer(Optimizer):
             return mlf.predict(data_last_window)
         return None
 
-    def get_forecast(self) -> ForecastSchema:
+    async def async_get_forecast(self) -> ForecastSchema:
         """Get the previously calculated forecast."""
         temp_folder = self._data_folder / "temp"
         forecast_filename = "forecast.csv"
@@ -706,10 +677,8 @@ class EmhassOptimizer(Optimizer):
             try:
                 self._day_ahead_forecast = pd.read_csv(temp_folder / forecast_filename)
             except Exception:
-                self._logger.exception(
-                    f"{forecast_filename} is not available. Creating forecast..."
-                )
-                self.dayahead_forecast_optim()
+                self._logger.exception(f"{forecast_filename} is not available. Creating forecast...")
+                await self.async_dayahead_forecast_optim()
 
         if self._day_ahead_forecast is not None:
             freq = self._RetrieveHass_conf["freq"]
@@ -719,9 +688,7 @@ class EmhassOptimizer(Optimizer):
             no_var_load_df = self._no_var_loads.get_data_frame(
                 freq, self._location.get_time_zone(), "non_var_loads", temp_folder
             )
-            df = self._day_ahead_forecast.merge(
-                pv_df, how="left", left_index=True, right_index=True
-            )
+            df = self._day_ahead_forecast.merge(pv_df, how="left", left_index=True, right_index=True)
             df = df.merge(no_var_load_df, how="left", left_index=True, right_index=True)
 
             df.rename(columns={"P_PV": "pv_forecast"}, inplace=True)
@@ -781,9 +748,7 @@ class EmhassOptimizer(Optimizer):
     def _get_forecast_value(self, columnName: str) -> float:
         """Get a forecasted value."""
         if self._day_ahead_forecast is not None:
-            now_precise = datetime.now(self._location.get_time_zone()).replace(
-                second=0, microsecond=0
-            )
+            now_precise = datetime.now(self._location.get_time_zone()).replace(second=0, microsecond=0)
             if self._method_ts_round == "nearest":
                 method = "nearest"
             elif self._method_ts_round == "first":
@@ -793,9 +758,7 @@ class EmhassOptimizer(Optimizer):
             else:
                 method = "nearest"
 
-            idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[  # type: ignore
-                0
-            ]
+            idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[0]  # type: ignore
             if idx_closest == -1:
                 idx_closest = self._day_ahead_forecast.index.get_indexer(  # type: ignore
                     [now_precise], method="nearest"
@@ -811,7 +774,7 @@ class EmhassOptimizer(Optimizer):
                 return True
         return False
 
-    def update_devices(self, home: Home) -> None:
+    async def async_update_devices(self, home: Home) -> None:
         """Update the selected devices from the list of devices."""
         new_optimizhed_devices = []
         needs_update = False
@@ -832,4 +795,4 @@ class EmhassOptimizer(Optimizer):
                 needs_update = True
         self._optimzed_devices = new_optimizhed_devices
         if needs_update or self._day_ahead_forecast is None:
-            self.dayahead_forecast_optim()
+            await self.async_dayahead_forecast_optim()
