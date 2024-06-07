@@ -237,9 +237,7 @@ class Home:
             self._exported_energy_value.evaluate(state_repository),
         )
 
-        self._consumed_energy = (
-            self.grid_imported_energy - self.grid_exported_energy + self.produced_solar_energy
-        )
+        self._consumed_energy = self.grid_imported_energy - self.grid_exported_energy + self.produced_solar_energy
         self._consumed_solar_energy = self.produced_solar_energy - self.grid_exported_energy
 
         if self._energy_snapshop is None:
@@ -254,17 +252,13 @@ class Home:
         for device in self.devices:
             await device.update_state(state_repository, self.self_sufficiency)
 
-    async def update_power_consumption(
-        self, state_repository: StatesRepository, optimizer: Optimizer
-    ) -> None:
+    async def update_power_consumption(self, state_repository: StatesRepository, optimizer: Optimizer) -> None:
         """Update the device based on the current pv availability."""
         self.grid_exported_power_data.add_data_point(self.grid_imported_power)
 
         if not self._disable_device_control:
             for device in self.devices:
-                await device.update_power_consumption(
-                    state_repository, optimizer, self.grid_exported_power_data
-                )
+                await device.update_power_consumption(state_repository, optimizer, self.grid_exported_power_data)
 
     @property
     def icon(self) -> str:

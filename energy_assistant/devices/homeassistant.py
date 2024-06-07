@@ -89,9 +89,7 @@ def convert_statistics(value: dict) -> dict:
 
 def convert_history(value: dict) -> HistoryState:
     """Convert a history state to a HistoryState instance."""
-    return HistoryState(
-        time_stamp=datetime.fromtimestamp(value["lu"], timezone.utc), state=float(value["s"])
-    )
+    return HistoryState(time_stamp=datetime.fromtimestamp(value["lu"], timezone.utc), state=float(value["s"]))
 
 
 class StatisticsType(StrEnum):
@@ -292,9 +290,7 @@ class Homeassistant(StatesSingleRepository):
                         )
 
                     elif id.startswith("switch"):
-                        await self.hass.call_service(
-                            "switch", service=f"turn_{state.value}", target={"entity_id": id}
-                        )
+                        await self.hass.call_service("switch", service=f"turn_{state.value}", target={"entity_id": id})
 
                     elif id.startswith("sensor"):
                         headers = {
@@ -327,15 +323,9 @@ class Homeassistant(StatesSingleRepository):
             self._read_states["sensor.solaredge_m1_ac_power"] = HomeassistantState(
                 "sensor.solaredge_m1_ac_power", "6000"
             )
-            self._read_states["sensor.keba_charge_power"] = HomeassistantState(
-                "sensor.keba_charge_power", "2500"
-            )
-            self._read_states["sensor.tumbler_power"] = HomeassistantState(
-                "sensor.tumbler_power", "600"
-            )
-            self._read_states["sensor.officedesk_power"] = HomeassistantState(
-                "sensor.officedesk_power", "40"
-            )
+            self._read_states["sensor.keba_charge_power"] = HomeassistantState("sensor.keba_charge_power", "2500")
+            self._read_states["sensor.tumbler_power"] = HomeassistantState("sensor.tumbler_power", "600")
+            self._read_states["sensor.officedesk_power"] = HomeassistantState("sensor.officedesk_power", "40")
             self._read_states["sensor.rack_power"] = HomeassistantState("sensor.rack_power", "80")
         else:
             headers = {
@@ -480,9 +470,7 @@ class HomeassistantDevice(DeviceWithState):
                 "nominal_duration",
                 self._device_type.nominal_duration if self._device_type else None,
             )
-            self._is_constant = config.get(
-                "constant", self._device_type.constant if self._device_type else None
-            )
+            self._is_constant = config.get("constant", self._device_type.constant if self._device_type else None)
         else:
             self._nominal_power = config.get("nominal_power")
             self._nominal_duration = config.get("nominal_duration")
@@ -495,11 +483,7 @@ class HomeassistantDevice(DeviceWithState):
             self._device_type = DeviceType(
                 str(config.get("icon", "mdi:lightning-bolt")),
                 self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER,
-                (
-                    self._nominal_duration
-                    if self._nominal_duration is not None
-                    else DEFAULT_NOMINAL_DURATION
-                ),
+                (self._nominal_duration if self._nominal_duration is not None else DEFAULT_NOMINAL_DURATION),
                 self._is_constant if self._is_constant is not None else False,
                 state_on.get("threshold", 2),
                 state_off.get("threshold", 0),
@@ -519,19 +503,13 @@ class HomeassistantDevice(DeviceWithState):
         """The device type."""
         return "homeassistant"
 
-    async def update_state(
-        self, state_repository: StatesRepository, self_sufficiency: float
-    ) -> None:
+    async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the own state from the states of a StatesRepository."""
         if self._output_id is not None:
-            self._output_state = assign_if_available(
-                self._output_state, state_repository.get_state(self._output_id)
-            )
+            self._output_state = assign_if_available(self._output_state, state_repository.get_state(self._output_id))
         else:
             self._output_state = None
-        self._power = assign_if_available(
-            self._power, state_repository.get_state(self._power_entity_id)
-        )
+        self._power = assign_if_available(self._power, state_repository.get_state(self._power_entity_id))
         self._consumed_energy = assign_if_available(
             self._consumed_energy,
             self._consumed_energy_value.evaluate(state_repository),
@@ -544,28 +522,18 @@ class HomeassistantDevice(DeviceWithState):
             old_state = self.state == OnOffState.ON
             if self._device_type is not None:
                 self._power_data.add_data_point(self.power)
-                if (
-                    self.state != OnOffState.ON
-                    and self.power > self._device_type.state_on_threshold
-                ):
+                if self.state != OnOffState.ON and self.power > self._device_type.state_on_threshold:
                     self._state = OnOffState.ON
                 elif self.state != OnOffState.OFF:
-                    if (
-                        self.state == OnOffState.ON
-                        and self.power <= self._device_type.state_off_threshold
-                    ):
-                        is_between = (
-                            self._device_type.state_off_for > 0
-                            and self._power_data.is_between(
-                                self._device_type.state_off_lower,
-                                self._device_type.state_off_upper,
-                                self._device_type.state_off_for,
-                                without_trailing_zeros=True,
-                            )
+                    if self.state == OnOffState.ON and self.power <= self._device_type.state_off_threshold:
+                        is_between = self._device_type.state_off_for > 0 and self._power_data.is_between(
+                            self._device_type.state_off_lower,
+                            self._device_type.state_off_upper,
+                            self._device_type.state_off_for,
+                            without_trailing_zeros=True,
                         )
-                        max = (
-                            self._device_type.trailing_zeros_for > 0
-                            and self._power_data.get_max_for(self._device_type.trailing_zeros_for)
+                        max = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(
+                            self._device_type.trailing_zeros_for
                         )
                         if is_between or max <= self._device_type.state_off_threshold:
                             self._state = OnOffState.OFF
@@ -582,9 +550,7 @@ class HomeassistantDevice(DeviceWithState):
     ) -> None:
         """Update the device based on the current pv availability."""
         if self._output_id is not None:
-            state: bool = (
-                self._output_state.value == "on" if self._output_state is not None else False
-            )
+            state: bool = self._output_state.value == "on" if self._output_state is not None else False
             new_state = state
             if self.power_mode == PowerModes.PV:
                 avg_300 = grid_exported_power_data.get_average_for(300)

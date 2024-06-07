@@ -24,9 +24,7 @@ class SessionLogEntry(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str]
 
-    device_id: Mapped[uuid.UUID] = mapped_column(
-        "device_id", ForeignKey("devices.id"), nullable=False
-    )
+    device_id: Mapped[uuid.UUID] = mapped_column("device_id", ForeignKey("devices.id"), nullable=False)
 
     device: Mapped[Device] = relationship("Device", back_populates="session_log_entries")
 
@@ -48,9 +46,7 @@ class SessionLogEntry(Base):
             yield row
 
     @classmethod
-    async def read_by_device_id(
-        cls, session: AsyncSession, device_id: uuid.UUID
-    ) -> AsyncIterator[SessionLogEntry]:
+    async def read_by_device_id(cls, session: AsyncSession, device_id: uuid.UUID) -> AsyncIterator[SessionLogEntry]:
         """Read all session log entries."""
         stmt = select(cls).where(cls.device_id == device_id)
         stream = await session.stream_scalars(stmt.order_by(cls.start.desc()))

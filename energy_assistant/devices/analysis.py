@@ -42,9 +42,7 @@ class DataBuffer:
         if now is None:
             now = datetime.now(timezone.utc)
         threshold = now - timedelta(seconds=timespan)
-        result = [
-            data_point.value for data_point in self.data if data_point.time_stamp >= threshold
-        ]
+        result = [data_point.value for data_point in self.data if data_point.time_stamp >= threshold]
         if without_trailing_zeros:
             while result[-1] == 0.0:
                 result.pop()
@@ -103,9 +101,7 @@ class DataBuffer:
     ) -> pd.DataFrame:
         """Get a pandas data frame from from the available data."""
         data = [(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
-        result = pd.DataFrame.from_records(
-            data, index="timestamp", columns=["timestamp", value_name]
-        )
+        result = pd.DataFrame.from_records(data, index="timestamp", columns=["timestamp", value_name])
         result.to_csv(folder / f"{value_name}.csv")
         if not result.empty:
             result.index = result.index.tz_convert(time_zone)  # type: ignore

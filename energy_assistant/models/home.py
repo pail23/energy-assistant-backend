@@ -38,9 +38,7 @@ class HomeMeasurement(Base):
     )
 
     @classmethod
-    async def read_all(
-        cls, session: AsyncSession, include_device_measurements: bool
-    ) -> AsyncIterator[HomeMeasurement]:
+    async def read_all(cls, session: AsyncSession, include_device_measurements: bool) -> AsyncIterator[HomeMeasurement]:
         """Read all home measurements."""
         stmt = select(cls)
         if include_device_measurements:
@@ -104,11 +102,7 @@ class HomeMeasurement(Base):
         include_device_measurements: bool = False,
     ) -> AsyncIterator[HomeMeasurement]:
         """Read last home measurement by date."""
-        stmt = (
-            select(cls)
-            .where(cls.measurement_date >= from_date)
-            .where(cls.measurement_date <= to_date)
-        )
+        stmt = select(cls).where(cls.measurement_date >= from_date).where(cls.measurement_date <= to_date)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
         stream = await session.stream_scalars(stmt.order_by(cls.measurement_date))

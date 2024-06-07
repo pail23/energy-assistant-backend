@@ -67,22 +67,16 @@ class DeviceTypeRegistry:
             else:
                 device_type_config = config.get("device_type")
                 if device_type_config is None:
-                    LOGGER.error(
-                        f"Device type config file {filename} does not contain a device_type item."
-                    )
+                    LOGGER.error(f"Device type config file {filename} does not contain a device_type item.")
                 else:
                     manufacturer = device_type_config.get("manufacturer")
                     model = device_type_config.get("model")
                     icon = device_type_config.get("icon")
                     nominal_power = device_type_config.get("nominal_power", DEFAULT_NOMINAL_POWER)
-                    nominal_duration = device_type_config.get(
-                        "nominal_duration", DEFAULT_NOMINAL_DURATION
-                    )
+                    nominal_duration = device_type_config.get("nominal_duration", DEFAULT_NOMINAL_DURATION)
                     constant = device_type_config.get("constant", False)
                     if model is None or manufacturer is None or icon is None:
-                        LOGGER.error(
-                            f"Manufacturer or Model or Icon not set in device type config file {filename}"
-                        )
+                        LOGGER.error(f"Manufacturer or Model or Icon not set in device type config file {filename}")
                     else:
                         device_state_config = device_type_config.get("state")
                         state_on_threshold: float | None = None
@@ -120,9 +114,7 @@ class DeviceTypeRegistry:
                                 state_off_for=state_off_for,
                                 trailing_zeros_for=trailing_zeros_for,
                             )
-                            self._registry[DeviceTypeId(manufacturer=manufacturer, model=model)] = (
-                                device_type
-                            )
+                            self._registry[DeviceTypeId(manufacturer=manufacturer, model=model)] = device_type
 
     def get_device_type(self, manufacturer: str, model: str) -> DeviceType | None:
         """Get the device type for a given manufacturer and model."""

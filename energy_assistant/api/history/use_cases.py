@@ -48,14 +48,10 @@ class ReadHomeMeasurementDifference:
                 session, from_date, include_device_measurements=True
             )
             if not home_measurement_from:
-                home_measurement_from = await HomeMeasurement.read_first(
-                    session, include_device_measurements=True
-                )
+                home_measurement_from = await HomeMeasurement.read_first(session, include_device_measurements=True)
                 if not home_measurement_from:
                     raise HTTPException(status_code=404)
-            home_measurement_to = await HomeMeasurement.read_by_date(
-                session, to_date, include_device_measurements=True
-            )
+            home_measurement_to = await HomeMeasurement.read_by_date(session, to_date, include_device_measurements=True)
 
             if not home_measurement_from:
                 raise HTTPException(status_code=404)
@@ -71,15 +67,13 @@ class ReadHomeMeasurementDifference:
                 if to_device is not None:
                     measurement = DeviceMeasurementPeriodSchema(
                         device_id=from_device.device_id,
-                        solar_consumed_energy=to_device.solar_consumed_energy
-                        - from_device.solar_consumed_energy,
+                        solar_consumed_energy=to_device.solar_consumed_energy - from_device.solar_consumed_energy,
                         consumed_energy=to_device.consumed_energy - from_device.consumed_energy,
                     )
                     device_measurements.append(measurement)
 
             result = HomeMeasurementPeriodSchema(
-                consumed_energy=home_measurement_to.consumed_energy
-                - home_measurement_from.consumed_energy,
+                consumed_energy=home_measurement_to.consumed_energy - home_measurement_from.consumed_energy,
                 solar_consumed_energy=home_measurement_to.solar_consumed_energy
                 - home_measurement_from.solar_consumed_energy,
                 solar_produced_energy=home_measurement_to.solar_produced_energy
@@ -108,37 +102,29 @@ class ReadHomeMeasurementDaily:
                 session, from_date, include_device_measurements=True
             )
             if not last_measurement:
-                last_measurement = await HomeMeasurement.read_first(
-                    session, include_device_measurements=True
-                )
+                last_measurement = await HomeMeasurement.read_first(session, include_device_measurements=True)
                 if not last_measurement:
                     raise HTTPException(status_code=404)
             result = []
-            async for home_measurement in HomeMeasurement.read_between_dates(
-                session, from_date, to_date, True
-            ):
+            async for home_measurement in HomeMeasurement.read_between_dates(session, from_date, to_date, True):
                 device_measurements = []
                 for from_device in last_measurement.device_measurements:
                     to_device = home_measurement.get_device_measurement(from_device.device_id)
                     if to_device is not None:
                         device_measurement = DeviceMeasurementPeriodSchema(
                             device_id=from_device.device_id,
-                            solar_consumed_energy=to_device.solar_consumed_energy
-                            - from_device.solar_consumed_energy,
+                            solar_consumed_energy=to_device.solar_consumed_energy - from_device.solar_consumed_energy,
                             consumed_energy=to_device.consumed_energy - from_device.consumed_energy,
                         )
                         device_measurements.append(device_measurement)
                 measurement = HomeMeasurementDateSchema(
                     solar_consumed_energy=home_measurement.solar_consumed_energy
                     - last_measurement.solar_consumed_energy,
-                    consumed_energy=home_measurement.consumed_energy
-                    - last_measurement.consumed_energy,
+                    consumed_energy=home_measurement.consumed_energy - last_measurement.consumed_energy,
                     solar_produced_energy=home_measurement.solar_produced_energy
                     - last_measurement.solar_produced_energy,
-                    grid_imported_energy=home_measurement.grid_imported_energy
-                    - last_measurement.grid_imported_energy,
-                    grid_exported_energy=home_measurement.grid_exported_energy
-                    - last_measurement.grid_exported_energy,
+                    grid_imported_energy=home_measurement.grid_imported_energy - last_measurement.grid_imported_energy,
+                    grid_exported_energy=home_measurement.grid_exported_energy - last_measurement.grid_exported_energy,
                     measurement_date=home_measurement.measurement_date,
                     device_measurements=device_measurements,
                 )

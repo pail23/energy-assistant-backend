@@ -20,9 +20,7 @@ class ReadAllHomeMeasurement:
     async def execute(self) -> AsyncIterator[HomeMeasurementSchema]:
         """Execute the read all home measurements use case."""
         async with self.async_session() as session:
-            async for home_measurement in HomeMeasurement.read_all(
-                session, include_device_measurements=True
-            ):
+            async for home_measurement in HomeMeasurement.read_all(session, include_device_measurements=True):
                 yield HomeMeasurementSchema.model_validate(home_measurement)
 
 

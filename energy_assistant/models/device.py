@@ -94,9 +94,7 @@ class Device(Base):
         config: dict,
     ) -> Device:
         """Create a device."""
-        device = Device(
-            id=id, name=name, icon=icon, power_mode=power_mode, type=type, config=json.dumps(config)
-        )
+        device = Device(id=id, name=name, icon=icon, power_mode=power_mode, type=type, config=json.dumps(config))
         session.add(device)
         await session.flush()
         return device
@@ -134,9 +132,7 @@ class DeviceMeasurement(Base):
 
     __tablename__ = "DeviceMeasurement"
 
-    id: Mapped[int] = mapped_column(
-        "id", autoincrement=True, nullable=False, unique=True, primary_key=True
-    )
+    id: Mapped[int] = mapped_column("id", autoincrement=True, nullable=False, unique=True, primary_key=True)
     consumed_energy: Mapped[float]
     solar_consumed_energy: Mapped[float]
 
@@ -144,13 +140,9 @@ class DeviceMeasurement(Base):
         "home_measurement_id", ForeignKey("HomeMeasurement.id"), nullable=False
     )
 
-    home_measurement: Mapped[HomeMeasurement] = relationship(
-        "HomeMeasurement", back_populates="device_measurements"
-    )
+    home_measurement: Mapped[HomeMeasurement] = relationship("HomeMeasurement", back_populates="device_measurements")
 
-    device_id: Mapped[uuid.UUID] = mapped_column(
-        "device_id", ForeignKey("devices.id"), nullable=False
-    )
+    device_id: Mapped[uuid.UUID] = mapped_column("device_id", ForeignKey("devices.id"), nullable=False)
 
     device: Mapped[Device] = relationship("Device", back_populates="device_measurements")
 
@@ -168,35 +160,23 @@ class DeviceMeasurement(Base):
             yield row
 
     @classmethod
-    async def read_by_id(
-        cls, session: AsyncSession, measurement_id: int
-    ) -> DeviceMeasurement | None:
+    async def read_by_id(cls, session: AsyncSession, measurement_id: int) -> DeviceMeasurement | None:
         """Read a device measurements by id."""
         stmt = select(cls).where(cls.id == measurement_id).options(joinedload(cls.home_measurement))
         return await session.scalar(stmt.order_by(cls.id))
 
     @classmethod
-    async def read_by_device_id(
-        cls, session: AsyncSession, device_id: uuid.UUID
-    ) -> AsyncIterator[DeviceMeasurement]:
+    async def read_by_device_id(cls, session: AsyncSession, device_id: uuid.UUID) -> AsyncIterator[DeviceMeasurement]:
         """Read a device measurements by id."""
-        stmt = (
-            select(cls).where(cls.device_id == device_id).options(joinedload(cls.home_measurement))
-        )
+        stmt = select(cls).where(cls.device_id == device_id).options(joinedload(cls.home_measurement))
         stream = await session.stream_scalars(stmt.order_by(text("HomeMeasurement_1.date DESC")))
         async for row in stream:
             yield row
 
     @classmethod
-    async def read_by_ids(
-        cls, session: AsyncSession, measurement_ids: list[int]
-    ) -> AsyncIterator[DeviceMeasurement]:
+    async def read_by_ids(cls, session: AsyncSession, measurement_ids: list[int]) -> AsyncIterator[DeviceMeasurement]:
         """Read the device measurements by within a set of ids."""
-        stmt = (
-            select(cls)
-            .where(cls.id.in_(measurement_ids))  # type: ignore
-            .options(joinedload(cls.home_measurement))
-        )
+        stmt = select(cls).where(cls.id.in_(measurement_ids)).options(joinedload(cls.home_measurement))  # type: ignore
         stream = await session.stream_scalars(stmt.order_by(cls.id))
         async for row in stream:
             yield row
@@ -255,16 +235,12 @@ class UtilityMeter(Base):
 
     __tablename__ = "utility_meter"
 
-    id: Mapped[int] = mapped_column(
-        "id", autoincrement=True, nullable=False, unique=True, primary_key=True
-    )
+    id: Mapped[int] = mapped_column("id", autoincrement=True, nullable=False, unique=True, primary_key=True)
     name: Mapped[str]
 
     last_meter_value: Mapped[float]
 
-    device_id: Mapped[uuid.UUID] = mapped_column(
-        "device_id", ForeignKey("devices.id"), nullable=False
-    )
+    device_id: Mapped[uuid.UUID] = mapped_column("device_id", ForeignKey("devices.id"), nullable=False)
 
     device: Mapped[Device] = relationship("Device", back_populates="utility_meters")
 
@@ -275,9 +251,7 @@ class UtilityMeter(Base):
         return await session.scalar(stmt.order_by(cls.id))
 
     @classmethod
-    async def read_by_name(
-        cls, session: AsyncSession, name: str, device_id: uuid.UUID
-    ) -> UtilityMeter | None:
+    async def read_by_name(cls, session: AsyncSession, name: str, device_id: uuid.UUID) -> UtilityMeter | None:
         """Read a utility meter by id."""
         stmt = select(cls).where(cls.name == name).where(cls.device_id == device_id)
         return await session.scalar(stmt.order_by(cls.id))
@@ -297,9 +271,7 @@ class UtilityMeter(Base):
         await session.flush()
         return utility_meter
 
-    async def update(
-        self, session: AsyncSession, device_id: uuid.UUID, name: str, last_meter_value: float
-    ) -> None:
+    async def update(self, session: AsyncSession, device_id: uuid.UUID, name: str, last_meter_value: float) -> None:
         """Update a utility meter."""
 
         self.name = name

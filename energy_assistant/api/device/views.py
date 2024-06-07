@@ -31,9 +31,7 @@ async def read_all(
     use_case: ReadAllDevices = Depends(ReadAllDevices),
 ) -> ReadAllDevicesResponse:
     """Rest end point for read all devices."""
-    energy_assistant = (
-        request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    )
+    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
     return ReadAllDevicesResponse(
         devices=[
             device
@@ -66,9 +64,7 @@ async def read_measurements(
 ) -> ReadDeviceMeasurementsResponse:
     """REST end point for read a device."""
     return ReadDeviceMeasurementsResponse(
-        device_measurements=[
-            device_measurement async for device_measurement in use_case.execute(device_id)
-        ]
+        device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)]
     )
 
 
@@ -93,9 +89,5 @@ async def delete(
     use_case: DeleteDevice = Depends(DeleteDevice),
 ) -> None:
     """REST end point for delete a device."""
-    energy_assistant = (
-        request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    )
-    await use_case.execute(
-        device_id, energy_assistant.home if energy_assistant is not None else None
-    )
+    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
+    await use_case.execute(device_id, energy_assistant.home if energy_assistant is not None else None)

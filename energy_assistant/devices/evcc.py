@@ -56,9 +56,7 @@ class EvccDevice(DeviceWithState):
         """The device type."""
         return "evcc"
 
-    async def update_state(
-        self, state_repository: StatesRepository, self_sufficiency: float
-    ) -> None:
+    async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the Stiebel Eltron device."""
         old_state = self.state == OnOffState.ON
         charging = state_repository.get_state(self.get_device_topic_id("charging"))
@@ -68,9 +66,7 @@ class EvccDevice(DeviceWithState):
             self._state = OnOffState.UNKNOWN
         new_state = self.state == OnOffState.ON
 
-        self._consumed_energy = state_repository.get_state(
-            self.get_device_topic_id("chargeTotalImport")
-        )
+        self._consumed_energy = state_repository.get_state(self.get_device_topic_id("chargeTotalImport"))
         if self.consumed_energy == 0:
             state = state_repository.get_state(self.get_device_topic_id("sessionEnergy"))
             if state is not None:
@@ -79,9 +75,7 @@ class EvccDevice(DeviceWithState):
         self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
         self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
         self._vehicle_soc = state_repository.get_state(self.get_device_topic_id("vehicleSoc"))
-        self._vehicle_capacity = state_repository.get_state(
-            self.get_device_topic_id("vehicleCapacity")
-        )
+        self._vehicle_capacity = state_repository.get_state(self.get_device_topic_id("vehicleCapacity"))
         self._max_current = state_repository.get_state(self.get_device_topic_id("maxCurrent"))
         self._is_connected = state_repository.get_state(self.get_device_topic_id("connected"))
 
@@ -160,9 +154,7 @@ class EvccDevice(DeviceWithState):
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore the previously stored state."""
         super().restore_state(consumed_solar_energy, consumed_energy)
-        self._consumed_energy = State(
-            self.get_device_topic_id("chargeTotalImport").id, str(consumed_energy)
-        )
+        self._consumed_energy = State(self.get_device_topic_id("chargeTotalImport").id, str(consumed_energy))
 
     @property
     def attributes(self) -> dict[str, str]:
@@ -177,11 +169,7 @@ class EvccDevice(DeviceWithState):
 
     def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
-        if (
-            self._is_connected is not None
-            and self._max_current is not None
-            and self._is_connected.value == "true"
-        ):
+        if self._is_connected is not None and self._max_current is not None and self._is_connected.value == "true":
             if self.state == OnOffState.ON:
                 remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
                 if remainingEnergy > 0:

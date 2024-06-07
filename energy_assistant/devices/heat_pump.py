@@ -39,12 +39,8 @@ class HeatPumpDevice(DeviceWithState):
         self._state: State | None = None
         self._nominal_power: float = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
         self._comfort_target_temperature_entity_id = config.get("comfort_target_temperature")
-        self._target_temperature_normal: float | None = numeric_value(
-            config.get("target_temperature_normal")
-        )
-        self._target_temperature_pv: float | None = numeric_value(
-            config.get("target_temperatrure_pv")
-        )
+        self._target_temperature_normal: float | None = numeric_value(config.get("target_temperature_normal"))
+        self._target_temperature_pv: float | None = numeric_value(config.get("target_temperatrure_pv"))
         if (
             self._target_temperature_normal is not None
             and self._target_temperature_pv is not None
@@ -62,14 +58,10 @@ class HeatPumpDevice(DeviceWithState):
         """The device type."""
         return "heat-pump"
 
-    async def update_state(
-        self, state_repository: StatesRepository, self_sufficiency: float
-    ) -> None:
+    async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the Stiebel Eltron device."""
         old_state = self.state == "on"
-        self._state = assign_if_available(
-            self._state, state_repository.get_state(self._state_entity_id)
-        )
+        self._state = assign_if_available(self._state, state_repository.get_state(self._state_entity_id))
         new_state = self.state == "on"
 
         self._consumed_energy = assign_if_available(
@@ -98,9 +90,7 @@ class HeatPumpDevice(DeviceWithState):
             and self._target_temperature_pv is not None
             and self._comfort_target_temperature_entity_id is not None
         ):
-            current_target_temperature = state_repository.get_state(
-                self._comfort_target_temperature_entity_id
-            )
+            current_target_temperature = state_repository.get_state(self._comfort_target_temperature_entity_id)
             if current_target_temperature is not None:
                 target_temperature: float = current_target_temperature.numeric_value
                 if self.power_mode == PowerModes.PV:
@@ -111,9 +101,7 @@ class HeatPumpDevice(DeviceWithState):
                         elif avg_300 < self.requested_additional_power * (1 - POWER_HYSTERESIS):
                             target_temperature = self._target_temperature_normal
                 elif self.power_mode == PowerModes.OPTIMIZED:
-                    target_temperature = self._get_temperature_for_optimized(
-                        optimizer, target_temperature
-                    )
+                    target_temperature = self._get_temperature_for_optimized(optimizer, target_temperature)
                 if target_temperature != current_target_temperature.numeric_value:
                     state_repository.set_state(
                         StateId(
@@ -123,9 +111,7 @@ class HeatPumpDevice(DeviceWithState):
                         str(target_temperature),
                     )
 
-    def _get_temperature_for_optimized(
-        self, optimizer: Optimizer, current_target_temperature: float
-    ) -> float:
+    def _get_temperature_for_optimized(self, optimizer: Optimizer, current_target_temperature: float) -> float:
         if (
             self.state == "off"
             and self._target_temperature_normal is not None

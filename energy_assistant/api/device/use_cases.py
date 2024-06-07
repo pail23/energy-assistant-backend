@@ -25,9 +25,7 @@ class ReadAllDevices:
         """Create a read all devices use case."""
         self.async_session = session
 
-    async def execute(
-        self, home: Home | None, filter_with_session_log_enties: bool
-    ) -> AsyncIterator[DeviceSchema]:
+    async def execute(self, home: Home | None, filter_with_session_log_enties: bool) -> AsyncIterator[DeviceSchema]:
         """Execute the read all devices use case."""
         async with self.async_session() as session:
             async for device in Device.read_all(session, False, filter_with_session_log_enties):
@@ -108,9 +106,7 @@ class UpdateDevicePowerMode:
                 if device.type is None:
                     raise HTTPException(status_code=500)
 
-                await device.update(
-                    session, device.name, device.icon, power_mode, device.type, device.get_config()
-                )
+                await device.update(session, device.name, device.icon, power_mode, device.type, device.get_config())
                 await session.refresh(device)
                 result = DeviceSchema.model_validate(device)
                 result.supported_power_modes = list(d.supported_power_modes)

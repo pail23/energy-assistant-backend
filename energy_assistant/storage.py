@@ -86,9 +86,7 @@ class Database:
         """Restore the utility meters."""
         for device in home.devices:
             for utility_meter in device._utility_meters:
-                utility_meter_dto = await UtilityMeterDTO.read_by_name(
-                    session, utility_meter.name, device.id
-                )
+                utility_meter_dto = await UtilityMeterDTO.read_by_name(session, utility_meter.name, device.id)
                 if utility_meter_dto is not None:
                     utility_meter.restore_last_meter_value(utility_meter_dto.last_meter_value)
 
@@ -191,25 +189,17 @@ class Database:
         all_devices = DeviceDTO.read_all(session)
         async for device_dto in all_devices:
             if home.get_device(device_dto.id) is None and device_dto.type is not None:
-                home.create_device(
-                    device_dto.type, device_dto.get_config(), session_storage, device_type_registry
-                )
+                home.create_device(device_dto.type, device_dto.get_config(), session_storage, device_type_registry)
 
     async def create_or_update_utility_meter(
         self, session: AsyncSession, device_id: uuid.UUID, utility_meter: UtilityMeter
     ) -> None:
         """Create or update a utility meter for a given device."""
-        utility_meter_dto = await UtilityMeterDTO.read_by_name(
-            session, utility_meter.name, device_id
-        )
+        utility_meter_dto = await UtilityMeterDTO.read_by_name(session, utility_meter.name, device_id)
         if utility_meter_dto is None:
-            await UtilityMeterDTO.create(
-                session, device_id, utility_meter.name, utility_meter.last_meter_value
-            )
+            await UtilityMeterDTO.create(session, device_id, utility_meter.name, utility_meter.last_meter_value)
         else:
-            await utility_meter_dto.update(
-                session, device_id, utility_meter.name, utility_meter.last_meter_value
-            )
+            await utility_meter_dto.update(session, device_id, utility_meter.name, utility_meter.last_meter_value)
 
 
 class DbSessionStorage(SessionStorage):
@@ -238,9 +228,7 @@ class DbSessionStorage(SessionStorage):
             )
             return Session(entry.id, entry.start, solar_consumed_energy, consumed_energy)
 
-    async def update_session(
-        self, id: int, solar_consumed_energy: float, consumed_energy: float
-    ) -> None:
+    async def update_session(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
         async_session = await get_async_session()
         async with async_session.begin() as session:
@@ -258,9 +246,7 @@ class DbSessionStorage(SessionStorage):
                     consumed_energy,
                 )
 
-    async def update_session_energy(
-        self, id: int, solar_consumed_energy: float, consumed_energy: float
-    ) -> None:
+    async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
         async_session = await get_async_session()
         async with async_session.begin() as session:

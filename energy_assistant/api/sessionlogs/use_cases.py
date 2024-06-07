@@ -26,8 +26,7 @@ class ReadAllLogEntries:
                         end=entry.end,
                         text=entry.text,
                         device_id=entry.device_id,
-                        solar_consumed_energy=entry.end_solar_consumed_energy
-                        - entry.start_solar_consumed_energy,
+                        solar_consumed_energy=entry.end_solar_consumed_energy - entry.start_solar_consumed_energy,
                         consumed_energy=entry.end_consumed_energy - entry.start_consumed_energy,
                     )
             else:
@@ -37,7 +36,6 @@ class ReadAllLogEntries:
                         end=entry.end,
                         text=entry.text,
                         device_id=entry.device_id,
-                        solar_consumed_energy=entry.end_solar_consumed_energy
-                        - entry.start_solar_consumed_energy,
+                        solar_consumed_energy=entry.end_solar_consumed_energy - entry.start_solar_consumed_energy,
                         consumed_energy=entry.end_consumed_energy - entry.start_consumed_energy,
                     )

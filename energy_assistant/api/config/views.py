@@ -14,9 +14,7 @@ async def read_configuration(
     use_case: ReadConfiguration = Depends(ReadConfiguration),
 ) -> ConfigModel:
     """Rest end point for read all devices."""
-    energy_assistant = (
-        request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    )
+    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
     if energy_assistant is None:
         raise HTTPException(status_code=500)
     return await use_case.execute(energy_assistant.config)

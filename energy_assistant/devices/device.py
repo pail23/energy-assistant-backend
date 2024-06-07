@@ -63,8 +63,7 @@ class Device(ABC):
     def power_controllable(self) -> bool:
         """The power mode of the device."""
         return not (
-            len(self._supported_power_modes) == 1
-            and self._supported_power_modes[0] == PowerModes.DEVICE_CONTROLLED
+            len(self._supported_power_modes) == 1 and self._supported_power_modes[0] == PowerModes.DEVICE_CONTROLLED
         )
 
     @property
@@ -125,9 +124,7 @@ class Device(ABC):
         pass
 
     @abstractmethod
-    async def update_state(
-        self, state_repository: StatesRepository, self_sufficiency: float
-    ) -> None:
+    async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the device."""
         pass
 
@@ -231,12 +228,8 @@ class DeviceWithState(Device):
         if self.has_state:
             result["state"] = self.state
         if self.state == "on" and self.current_session is not None:
-            result["session_time"] = str(
-                (datetime.now(timezone.utc) - self.current_session.start).total_seconds()
-            )
-            result["session_energy"] = str(
-                self.consumed_energy - self.current_session.start_consumed_energy
-            )
+            result["session_time"] = str((datetime.now(timezone.utc) - self.current_session.start).total_seconds())
+            result["session_energy"] = str(self.consumed_energy - self.current_session.start_consumed_energy)
             result["session_solar_energy"] = str(
                 self.consumed_solar_energy - self.current_session.start_solar_consumed_energy
             )

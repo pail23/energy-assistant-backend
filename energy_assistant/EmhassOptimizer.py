@@ -64,6 +64,7 @@ class EmhassOptimizer(Optimizer):
 
         self._power_no_var_loads_id = f"sensor.{DEFAULT_HASS_ENTITY_PREFIX}_{SENSOR_POWER_NO_VAR_LOADS}"
         if self._emhass_config is not None:
+            self._pv_forecast_method = self._emhass_config.get("pv_forecast_method", "homeassistant")
             self._cost_fun = self._emhass_config.get("costfun", DEFAULT_COST_FUNC)
             self._hass_entity_prefix = self._emhass_config.get("hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX)
             self._power_no_var_loads_id = f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
@@ -87,6 +88,8 @@ class EmhassOptimizer(Optimizer):
             RetrieveHass_conf["lat"] = self._location.latitude
             RetrieveHass_conf["lon"] = self._location.longitude
             RetrieveHass_conf["alt"] = self._location.elevation
+            if "continual_publish" not in RetrieveHass_conf:
+                RetrieveHass_conf["continual_publish"] = False
 
             optim_conf["num_def_loads"] = 0
 
@@ -247,6 +250,24 @@ class EmhassOptimizer(Optimizer):
         }
         return runtimeparams
 
+    async def async_get_pv_forecast(
+        self, fcst: Forecast, set_mix_forecast: bool | None = False, df_now: pd.DataFrame | None = None
+    ) -> pd.Series:
+        """Get the PV forecast."""
+        if self._pv_forecast_method != "homeassistant":
+            df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
+            if df_now is None:
+                df_now = pd.DataFrame()
+            return fcst.get_power_from_weather(df_weather, set_mix_forecast, df_now)
+        else:
+            pv_forecast = await self._hass.get_solar_forecast()
+            start = fcst.forecast_dates[0]
+            end = fcst.forecast_dates[-1]
+            pv_forecast_in_range = pv_forecast.loc[(pv_forecast.index >= start) & (pv_forecast.index <= end)]
+            pv_forecast_serie = pv_forecast_in_range["sum"]
+            pv_forecast_serie.index = pv_forecast_serie.index.tz_convert(self._location.get_time_zone())
+            return pv_forecast_serie
+
     async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> None:
         """Perform a call to the day-ahead optimization routine.
 
@@ -295,16 +316,7 @@ class EmhassOptimizer(Optimizer):
             self._logger,
         )
 
-        # df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
-        # pv_forecast = fcst.get_power_from_weather(df_weather)
-
-        pv_forecast = await self._hass.get_solar_forecast()
-        start = fcst.forecast_dates[0]
-        end = fcst.forecast_dates[-1]
-        pv_forecast_in_range = pv_forecast.loc[(pv_forecast.index >= start) & (pv_forecast.index <= end)]
-        pv_forecast_serie = pv_forecast_in_range["sum"]
-        pv_forecast_serie.index = pv_forecast_serie.index.tz_convert(self._location.get_time_zone())
-        pv_forecast = pv_forecast_serie
+        pv_forecast = await self.async_get_pv_forecast(fcst)
         try:
             P_load_forecast = fcst.get_load_forecast(method=self._optim_conf["load_forecast_method"])
             P_load_forecast_values = np.array(P_load_forecast.values)
@@ -379,7 +391,7 @@ class EmhassOptimizer(Optimizer):
                 filename = "opt_res_latest.csv"
             self._day_ahead_forecast.to_csv(self._data_folder / filename, index_label="timestamp")
 
-    def naive_mpc_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
+    async def async_naive_mpc_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the naive Model Predictive Controller optimization routine.
 
         :param input_data_dict:  A dictionary with multiple data used by the action functions
@@ -444,8 +456,8 @@ class EmhassOptimizer(Optimizer):
         df_input_data = self._RetrieveHass.df_final.copy()
 
         # Get PV and load forecasts
-        df_weather = fcst.get_weather_forecast(method=self._optim_conf["weather_forecast_method"])
-        P_PV_forecast = fcst.get_power_from_weather(df_weather, set_mix_forecast=True, df_now=df_input_data)
+        P_PV_forecast = await self.async_get_pv_forecast(fcst, set_mix_forecast=True, df_now=df_input_data)
+
         P_load_forecast = fcst.get_load_forecast(
             method=self._optim_conf["load_forecast_method"],
             set_mix_forecast=True,

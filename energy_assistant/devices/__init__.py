@@ -49,16 +49,12 @@ class SessionStorage(ABC):
         pass
 
     @abstractmethod
-    async def update_session(
-        self, id: int, solar_consumed_energy: float, consumed_energy: float
-    ) -> None:
+    async def update_session(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
         pass
 
     @abstractmethod
-    async def update_session_energy(
-        self, id: int, solar_consumed_energy: float, consumed_energy: float
-    ) -> None:
+    async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
         pass
 
@@ -89,13 +85,10 @@ class Integrator:
             if delta_t > 0.1:
                 if measurement > self.last_measurement:
                     self._value = self._value + (
-                        delta_t
-                        * (self.last_measurement + (measurement - self.last_measurement) / 2)
+                        delta_t * (self.last_measurement + (measurement - self.last_measurement) / 2)
                     )
                 else:
-                    self._value = self._value + (
-                        delta_t * (measurement + (self.last_measurement - measurement) / 2)
-                    )
+                    self._value = self._value + (delta_t * (measurement + (self.last_measurement - measurement) / 2))
 
     def restore_state(self, state: float) -> None:
         """Restore the integrator value with a previously saved state."""
@@ -118,8 +111,7 @@ class EnergyIntegrator:
     def add_measurement(self, consumed_energy: float, self_sufficiency: float) -> None:
         """Update the value of the integrator with and new measuremenent value."""
         self._consumed_solar_energy = (
-            self._consumed_solar_energy
-            + (consumed_energy - self._last_consumed_energy) * self_sufficiency
+            self._consumed_solar_energy + (consumed_energy - self._last_consumed_energy) * self_sufficiency
         )
         self._last_consumed_energy = consumed_energy
 
