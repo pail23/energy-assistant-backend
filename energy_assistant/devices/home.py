@@ -309,7 +309,6 @@ class Home:
     ) -> None:
         """Set the energy snapshot for the home."""
         self._energy_snapshop = HomeEnergySnapshot(
-            consumed_solar_energy,
             consumed_energy,
             solar_produced_energy,
             grid_imported_energy,

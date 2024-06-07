@@ -145,14 +145,12 @@ class HomeEnergySnapshot(EnergySnapshot):
 
     def __init__(
         self,
-        consumed_solar_energy: float,
         consumed_energy: float,
         solar_produced_energy: float,
         grid_imported_energy: float,
         grid_exported_energy: float,
     ) -> None:
         """Create an energy snapshot."""
-        self._consumed_solar_energy = consumed_solar_energy
         self._consumed_energy = consumed_energy
         self._produced_solar_energy = solar_produced_energy
         self._grid_imported_energy = grid_imported_energy
@@ -161,7 +159,7 @@ class HomeEnergySnapshot(EnergySnapshot):
     @property
     def consumed_solar_energy(self) -> float:
         """The amount of consumed solar energy."""
-        return self._consumed_solar_energy
+        return self.consumed_energy - self.grid_imported_energy
 
     @property
     def consumed_energy(self) -> float:

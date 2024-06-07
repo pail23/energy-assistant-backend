@@ -50,10 +50,10 @@ def get_self_sufficiency(consumed_solar_energy: float, consumed_energy: float) -
     return min(round(consumed_solar_energy / consumed_energy * 100) if consumed_energy > 0 else 0.0, 100)
 
 
-def get_self_consumption(produced_solar_energy: float, consumed_energy: float) -> float:
+def get_self_consumption(produced_solar_energy: float, consumed_solar_energy: float) -> float:
     """Calculate the self sufficiency value."""
     return min(
-        round(consumed_energy / produced_solar_energy * 100) if produced_solar_energy > 0 else 0.0,
+        round(consumed_solar_energy / produced_solar_energy * 100) if produced_solar_energy > 0 else 0.0,
         100,
     )
 
@@ -133,7 +133,7 @@ def get_home_message(home: Home) -> str:
             "consumed_energy": consumed_energy_today,
             "produced_solar_energy": produced_solar_energy_today,
             "self_sufficiency": get_self_sufficiency(consumed_solar_energy_today, consumed_energy_today),
-            "self_consumption": get_self_consumption(produced_solar_energy_today, consumed_energy_today),
+            "self_consumption": get_self_consumption(produced_solar_energy_today, consumed_solar_energy_today),
         },
         "devices": devices_messages,
     }
