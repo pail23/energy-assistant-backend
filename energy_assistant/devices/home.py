@@ -189,7 +189,7 @@ class Home:
 
     @property
     def solar_self_consumption_power(self) -> float:
-        """Self consumed power of the home."""
+        """Self consumed solar power."""
         if self.grid_imported_power < 0:
             return self.solar_production_power
         else:
@@ -209,7 +209,7 @@ class Home:
         """Self consumption ratio of the home."""
         solar_power = self.solar_production_power
         if solar_power > 0:
-            return min(self.home_consumption_power / solar_power, 1.0)
+            return min(self.solar_self_consumption_power / solar_power, 1.0)
         else:
             return 0
 
