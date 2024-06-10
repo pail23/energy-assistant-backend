@@ -18,7 +18,7 @@ classifiers = [
 keywords = ["energy assistant", "home assistant"]
 dependencies = [
     "SQLAlchemy==2.0.30",
-    "requests==2.31.0",
+    "requests==2.32.2",
     "fastapi==0.111.0",
     "pydantic-settings==2.2.1",
     "pyyaml >= 6.0.1",
@@ -31,7 +31,7 @@ dependencies = [
     "jinja2==3.1.4",
     "colorlog==6.8.0",
     "emhass==0.10.1",
-    "energy_assistant_frontend==0.0.56",
+    "energy_assistant_frontend==0.0.57",
     "hass-client==1.0.1"
 ]
 requires-python = ">=3.11"
@@ -45,8 +45,8 @@ dev = [
   "black==24.4.2",
   "codespell==2.3.0",
   "mypy==1.10.0",
-  "ruff==0.4.7",
-  "pytest==8.2.1",
+  "ruff==0.4.8",
+  "pytest==8.2.2",
   "pytest-asyncio==0.23.6",
   "pytest-aiohttp==1.0.5",
   "pytest-cov==5.0.0",

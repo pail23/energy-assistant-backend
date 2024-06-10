@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -87,9 +88,17 @@ def convert_statistics(value: dict) -> dict:
     return result
 
 
+def convert_float(value: str) -> float:
+    """Convert a value from Home Assistant to a float."""
+    if value == "unavailable":
+        return math.nan
+    else:
+        return float(value)
+
+
 def convert_history(value: dict) -> HistoryState:
     """Convert a history state to a HistoryState instance."""
-    return HistoryState(time_stamp=datetime.fromtimestamp(value["lu"], timezone.utc), state=float(value["s"]))
+    return HistoryState(time_stamp=datetime.fromtimestamp(value["lu"], timezone.utc), state=convert_float(value["s"]))
 
 
 class StatisticsType(StrEnum):
@@ -404,7 +413,7 @@ class Homeassistant(StatesSingleRepository):
         if response.ok:
             return response.json()
         else:
-            raise Exception("Could not get location from Home Assistant.")
+            raise Exception("Could not get configuration from Home Assistant.")
 
     def get_location(self) -> Location:
         """Read the location from the Homeassistant configuration."""

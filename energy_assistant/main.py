@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import AsyncIterator, Final
 
 import alembic.config
+import pandas as pd
 import requests  # type: ignore
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
@@ -22,7 +23,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from energy_assistant.api.main import router as api_router
 from energy_assistant.devices import StatesMultipleRepositories, StatesRepository
@@ -32,6 +33,7 @@ from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.EmhassOptimizer import EmhassOptimizer
+from energy_assistant.importer.homeassistant import import_data
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
 from energy_assistant.storage import Database, get_async_session, session_storage
@@ -57,6 +59,14 @@ class EnergyAssistant:
     should_stop = False
 
 
+async def import_data_task(
+    home: Home, hass: Homeassistant, async_session: async_sessionmaker, freq: pd.Timedelta, days_to_retrieve: int
+) -> None:
+    """Import data from home assistant."""
+    async with async_session() as session:
+        await import_data(home, hass, session, freq, days_to_retrieve)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator:
     """Manage the startup and showdown."""
@@ -64,12 +74,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     app.energy_assistant = ea  # type: ignore
     bt = asyncio.create_task(background_task(ea))
     optimizer_task = asyncio.create_task(optimize(ea.optimizer))
+    if ea.hass is not None:
+        importer_task = asyncio.create_task(
+            import_data_task(ea.home, ea.hass, await get_async_session(), pd.Timedelta(24, "h"), 8)
+        )
     scheduler = AsyncIOScheduler()
     scheduler.add_job(async_daily_optimize, trigger="cron", args=[ea], hour="3", minute="0")  # time is UTC
     scheduler.start()
     yield
     ea.should_stop = True
     await optimizer_task
+    await importer_task
     await bt
     scheduler.shutdown()
     if ea.hass:

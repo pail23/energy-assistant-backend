@@ -25,6 +25,20 @@ class CalculatedState(State):
         self._available = value is not None
 
 
+class VariableMapping(dict):
+    """Helper class implementing a dict in order to catch the used variables."""
+
+    def __init__(self, domain: str):
+        """Create and VariableMapping instance."""
+        self.requested_variables: list[str] = []
+        self.domain = domain
+
+    def __getitem__(self, key: str) -> float:
+        """Capture the requested key in the list of requested variables."""
+        self.requested_variables.append(key)
+        return 0
+
+
 class StateValue:
     """State value supporting the different representation of the states like single value, templates."""
 
@@ -45,6 +59,7 @@ class StateValue:
 
             if template is not None:
                 self._template = environment.from_string(template)
+                self._template_str = template
 
     def evaluate(self, state_repository: StatesRepository) -> State:
         """Evaluate the value."""
@@ -69,3 +84,16 @@ class StateValue:
     def invert_value(self) -> None:
         """Set the value to inverted. Evaluate multiples the result with -1."""
         self._scale = -self._scale
+
+    def get_variables(self) -> list[str]:
+        """Get all used variables."""
+        if self._value_id is not None:
+            return [self._value_id]
+        elif self._template is not None:
+            mapping = {"sensor": VariableMapping("sensor")}
+            self._template.render(mapping)
+            result = []
+            for domain in mapping.values():
+                result.extend([f"{domain.domain}.{x}" for x in domain.requested_variables])
+            return result
+        return []

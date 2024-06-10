@@ -46,8 +46,6 @@ class Database:
                 home_measurement = await HomeMeasurement.read_last(session, True)
                 if home_measurement is not None:
                     home.restore_state(
-                        home_measurement.solar_consumed_energy,
-                        home_measurement.consumed_energy,
                         home_measurement.solar_produced_energy,
                         home_measurement.grid_imported_energy,
                         home_measurement.grid_exported_energy,
@@ -59,8 +57,6 @@ class Database:
                     if snapshot_measurement is None:
                         snapshot_measurement = home_measurement
                     home.set_snapshot(
-                        snapshot_measurement.solar_consumed_energy,
-                        snapshot_measurement.consumed_energy,
                         snapshot_measurement.solar_produced_energy,
                         snapshot_measurement.grid_imported_energy,
                         snapshot_measurement.grid_exported_energy,
