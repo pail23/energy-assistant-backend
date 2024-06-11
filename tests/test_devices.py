@@ -38,14 +38,17 @@ async def setup_data(session: AsyncSession) -> None:
 
     dates = [date(2023, 1, 9), date(2023, 1, 10), date(2023, 1, 11)]
     for m, d in enumerate(dates):
+        solar_produced_energy = 300 + m
+        grid_exported_energy = 200 + m
+        grid_imported_energy = 100 + m
         home_measurement = HomeMeasurement(
             name="my home",
             measurement_date=d,
-            consumed_energy=123 + m,
-            solar_consumed_energy=120 + 0.5 * m,
-            solar_produced_energy=150 + m,
-            grid_imported_energy=1123 + m,
-            grid_exported_energy=1540 + m,
+            consumed_energy=grid_imported_energy + solar_produced_energy - grid_exported_energy,
+            solar_consumed_energy=solar_produced_energy - grid_exported_energy,
+            solar_produced_energy=solar_produced_energy,
+            grid_imported_energy=grid_imported_energy,
+            grid_exported_energy=grid_exported_energy,
             device_measurements=[],
         )
         session.add(home_measurement)
@@ -103,8 +106,8 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
     home_measurement = await HomeMeasurement.read_last(session, True)
     assert home_measurement is not None
     await db.restore_home_state(home, session)
-    assert home.consumed_energy == 125
-    assert home.consumed_solar_energy == 121
+    assert home.consumed_energy == 202
+    assert home.consumed_solar_energy == 100
     assert home.devices[0].consumed_solar_energy == 2
     assert home.devices[0].consumed_energy == 4
 
