@@ -55,11 +55,9 @@ async def setup_data(session: AsyncSession) -> None:
         home_measurement = HomeMeasurement(
             name="my home",
             measurement_date=d,
-            consumed_energy=123 + 2 * m,
-            solar_consumed_energy=120 + m,
-            solar_produced_energy=150 + m,
-            grid_imported_energy=1123 + m,
-            grid_exported_energy=1540 + m,
+            solar_produced_energy=300 + m,
+            grid_imported_energy=100 + m,
+            grid_exported_energy=200 + m,
             device_measurements=[],
         )
         session.add(home_measurement)
@@ -103,21 +101,17 @@ async def test_home_measurements_read_difference(ac: AsyncClient, session: Async
     assert response.status_code == 200
 
     assert response.json() == {
-        "solar_consumed_energy": 1.0,
-        "consumed_energy": 2.0,
+        "solar_consumed_energy": 0.0,
+        "consumed_energy": 1.0,
         "solar_produced_energy": 1.0,
         "grid_imported_energy": 1.0,
         "grid_exported_energy": 1.0,
         "device_measurements": [
-            {
-                "device_id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec",
-                "solar_consumed_energy": 0.5,
-                "consumed_energy": 1.0,
-            },
+            {"device_id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec", "solar_consumed_energy": 0.5, "consumed_energy": 1.0},
             {
                 "device_id": "9c0e0865-f3b0-488f-8d3f-b3b0cdda5de7",
-                "solar_consumed_energy": 0.5,
-                "consumed_energy": 1.0,
+                "solar_consumed_energy": -0.5,
+                "consumed_energy": 0.0,
             },
         ],
     }
@@ -158,8 +152,8 @@ async def test_home_measurements_read_daily(ac: AsyncClient, session: AsyncSessi
                 "measurement_date": "2023-01-09",
             },
             {
-                "solar_consumed_energy": 1.0,
-                "consumed_energy": 2.0,
+                "solar_consumed_energy": 0.0,
+                "consumed_energy": 1.0,
                 "solar_produced_energy": 1.0,
                 "grid_imported_energy": 1.0,
                 "grid_exported_energy": 1.0,
@@ -171,8 +165,8 @@ async def test_home_measurements_read_daily(ac: AsyncClient, session: AsyncSessi
                     },
                     {
                         "device_id": "9c0e0865-f3b0-488f-8d3f-b3b0cdda5de7",
-                        "solar_consumed_energy": 0.5,
-                        "consumed_energy": 1.0,
+                        "solar_consumed_energy": -0.5,
+                        "consumed_energy": 0.0,
                     },
                 ],
                 "measurement_date": "2023-01-10",

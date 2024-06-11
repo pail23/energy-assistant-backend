@@ -44,8 +44,6 @@ async def setup_data(session: AsyncSession) -> None:
         home_measurement = HomeMeasurement(
             name="my home",
             measurement_date=d,
-            consumed_energy=grid_imported_energy + solar_produced_energy - grid_exported_energy,
-            solar_consumed_energy=solar_produced_energy - grid_exported_energy,
             solar_produced_energy=solar_produced_energy,
             grid_imported_energy=grid_imported_energy,
             grid_exported_energy=grid_exported_energy,

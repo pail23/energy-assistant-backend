@@ -16,6 +16,16 @@ if TYPE_CHECKING:
     from .device import DeviceMeasurement
 
 
+def get_consumed_energy(measurement: HomeMeasurement) -> float:
+    """Get the consumed energy from a measurement."""
+    return measurement.solar_produced_energy + measurement.grid_imported_energy - measurement.grid_exported_energy
+
+
+def get_consumed_solar_energy(measurement: HomeMeasurement) -> float:
+    """Get the consumed solar energy from a measurement."""
+    return measurement.solar_produced_energy - measurement.grid_exported_energy
+
+
 class HomeMeasurement(Base):
     """Data model for a measurement."""
 
@@ -23,8 +33,6 @@ class HomeMeasurement(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    consumed_energy: Mapped[float]
-    solar_consumed_energy: Mapped[float]
     solar_produced_energy: Mapped[float]
     grid_imported_energy: Mapped[float]
     grid_exported_energy: Mapped[float]
@@ -36,6 +44,16 @@ class HomeMeasurement(Base):
         order_by="DeviceMeasurement.id",
         cascade="save-update, merge, refresh-expire, expunge, delete, delete-orphan",
     )
+
+    @property
+    def consumed_energy(self) -> float:
+        """Get the consumed energy from a measurement."""
+        return self.solar_produced_energy + self.grid_imported_energy - self.grid_exported_energy
+
+    @property
+    def solar_consumed_energy(self) -> float:
+        """Get the consumed solar energy from a measurement."""
+        return self.solar_produced_energy - self.grid_exported_energy
 
     @classmethod
     async def read_all(cls, session: AsyncSession, include_device_measurements: bool) -> AsyncIterator[HomeMeasurement]:
@@ -127,8 +145,6 @@ class HomeMeasurement(Base):
         cls,
         session: AsyncSession,
         name: str,
-        solar_consumed_energy: float,
-        consumed_energy: float,
         solar_produced_energy: float,
         grid_imported_energy: float,
         grid_exported_energy: float,
@@ -138,8 +154,6 @@ class HomeMeasurement(Base):
         """Create a home measurement."""
         home_measurement = HomeMeasurement(
             name=name,
-            solar_consumed_energy=solar_consumed_energy,
-            consumed_energy=consumed_energy,
             solar_produced_energy=solar_produced_energy,
             grid_imported_energy=grid_imported_energy,
             grid_exported_energy=grid_exported_energy,
@@ -158,8 +172,6 @@ class HomeMeasurement(Base):
         self,
         session: AsyncSession,
         name: str,
-        solar_consumed_energy: float,
-        consumed_energy: float,
         solar_produced_energy: float,
         grid_imported_energy: float,
         grid_exported_energy: float,
@@ -167,13 +179,10 @@ class HomeMeasurement(Base):
     ) -> None:
         """Update a home measurement."""
         self.name = name
-        self.solar_consumed_energy = solar_consumed_energy
-        self.consumed_energy = consumed_energy
         self.solar_produced_energy = solar_produced_energy
         self.grid_imported_energy = grid_imported_energy
         self.grid_exported_energy = grid_exported_energy
         self.measurement_date = measurement_date
-        # self.device_measurements = device_measurements
         await session.flush()
 
     @classmethod

@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from energy_assistant.api.device import OTHER_DEVICE
 from energy_assistant.db import AsyncSession
-from energy_assistant.models.home import HomeMeasurement
+from energy_assistant.models.home import HomeMeasurement, get_consumed_energy, get_consumed_solar_energy
 
 from .schema import (
     DeviceMeasurementPeriodSchema,
@@ -73,9 +73,9 @@ class ReadHomeMeasurementDifference:
                     device_measurements.append(measurement)
 
             result = HomeMeasurementPeriodSchema(
-                consumed_energy=home_measurement_to.consumed_energy - home_measurement_from.consumed_energy,
-                solar_consumed_energy=home_measurement_to.solar_consumed_energy
-                - home_measurement_from.solar_consumed_energy,
+                consumed_energy=get_consumed_energy(home_measurement_to) - get_consumed_energy(home_measurement_from),
+                solar_consumed_energy=get_consumed_solar_energy(home_measurement_to)
+                - get_consumed_solar_energy(home_measurement_from),
                 solar_produced_energy=home_measurement_to.solar_produced_energy
                 - home_measurement_from.solar_produced_energy,
                 grid_exported_energy=home_measurement_to.grid_exported_energy
@@ -118,9 +118,9 @@ class ReadHomeMeasurementDaily:
                         )
                         device_measurements.append(device_measurement)
                 measurement = HomeMeasurementDateSchema(
-                    solar_consumed_energy=home_measurement.solar_consumed_energy
-                    - last_measurement.solar_consumed_energy,
-                    consumed_energy=home_measurement.consumed_energy - last_measurement.consumed_energy,
+                    solar_consumed_energy=get_consumed_solar_energy(home_measurement)
+                    - get_consumed_solar_energy(last_measurement),
+                    consumed_energy=get_consumed_energy(home_measurement) - get_consumed_energy(last_measurement),
                     solar_produced_energy=home_measurement.solar_produced_energy
                     - last_measurement.solar_produced_energy,
                     grid_imported_energy=home_measurement.grid_imported_energy - last_measurement.grid_imported_energy,
