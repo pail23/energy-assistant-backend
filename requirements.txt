@@ -82,7 +82,7 @@ fastapi==0.111.0
     #   fastapi-cli
 fastapi-cli==0.0.3
     # via fastapi
-filelock==3.13.1
+filelock==3.15.1
     # via virtualenv
 flask==3.0.1
     # via emhass
