@@ -1,5 +1,7 @@
 """The Device classes."""
 
+from __future__ import annotations
+
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -186,6 +188,16 @@ class OnOffState(StrEnum):
     ON = "on"
     OFF = "off"
     UNKNOWN = "unknown"
+
+    @classmethod
+    def from_str(cls, label: str) -> OnOffState:
+        """Convert a string to a OnOffState."""
+        label = label.lower()
+        if label == "on":
+            return cls.ON
+        if label == "off":
+            return cls.OFF
+        return cls.UNKNOWN
 
 
 class State:

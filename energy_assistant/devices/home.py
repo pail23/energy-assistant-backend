@@ -20,7 +20,7 @@ from . import (
 )
 from .config import DeviceConfigException, get_config_param
 from .device import Device
-from .heat_pump import HeatPumpDevice
+from .heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
 from .homeassistant import HomeassistantDevice
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
@@ -173,6 +173,8 @@ class Home:
             self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
         elif type == "heat-pump":
             self.devices.append(HeatPumpDevice(config, session_storage))
+        elif type == "sg-ready-heat-pump":
+            self.devices.append(SGReadyHeatPumpDevice(config, session_storage))
         elif type == "power-state-device":
             # This is deprecated and will be removed.
             self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))

@@ -22,15 +22,16 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      - name: "Install pip-tools"
-        run: python3 -m pip install pip-tools
-      - name: "pip-compile"
-        run: pip-compile --extra dev
+      - name: "Install uv"
+        run: python3 -m pip install uv
+
+      - name: "uv pip-compile"
+        run: uv pip compile pyproject.toml -o requirements.txt --extra dev
 
       # - name: "patch requirements.txt"
       #  run: sed -i 's\workspaces/backend\home/runner/work/energy-assistant-backend/energy-assistant-backend\g' requirements.txt
       - name: "Install requirements"
-        run: pip-sync
+        run: uv pip sync requirements.txt
 
       - name: "Run ruff"
         run: python3 -m ruff check .
@@ -48,20 +49,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: "Install pip-tools"
-        run: python3 -m pip install pip-tools
+      - name: "Install uv"
+        run: python3 -m pip install uv
 
-      - name: "pip-compile"
-        run: pip-compile --extra dev
-
-      # - name: "patch requirements.txt"
-      #   run: sed -i 's\workspaces/backend\home/runner/work/energy-assistant-backend/energy-assistant-backend\g' requirements.txt
+      - name: "uv pip-compile"
+        run: uv pip compile pyproject.toml -o requirements.txt --extra dev
 
       - name: "Install requirements"
-        run: pip-sync
-
-      - name: Create client folder
-        run: mkdir -p client
+        run: uv pip sync requirements.txt
 
       - name: Run tests
         run: |

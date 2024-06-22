@@ -1,11 +1,21 @@
-"""Stiebel Eltron device implementation."""
+"""Heat pump device implementation."""
+
+import uuid
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import POWER_HYSTERESIS
 from energy_assistant.devices.device import DeviceWithState
 from energy_assistant.devices.state_value import StateValue
 
-from . import LoadInfo, PowerModes, SessionStorage, State, StateId, StatesRepository
+from . import (
+    LoadInfo,
+    OnOffState,
+    PowerModes,
+    SessionStorage,
+    State,
+    StateId,
+    StatesRepository,
+)
 from .analysis import DataBuffer
 from .config import DeviceConfigException, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
@@ -196,3 +206,280 @@ class HeatPumpDevice(DeviceWithState):
             "actual_temperature": f"{self.actual_temperature} °C",
         }
         return result
+
+
+class SubHeatPump(DeviceWithState):
+    """The heating or the water heating part of the heat pump."""
+
+    def __init__(self, config: dict, session_storage: SessionStorage, name: str) -> None:
+        """Create a sub heat pump instance."""
+        sub_device_config = {**config, "name": name, "id": uuid.uuid4()}
+        super().__init__(sub_device_config, session_storage)
+
+        energy_config = config.get("energy")
+        if energy_config is not None:
+            self._consumed_energy_value = StateValue(energy_config)
+        else:
+            raise DeviceConfigException("Parameter energy is missing in the configuration")
+        self._actual_temp_entity_id: str = get_config_param(config, "temperature")
+        self._actual_temp: State | None = None
+        self._state: State | None = None
+        self._state_entity_id: str = get_config_param(config, "state")
+        self._consumed_energy: State | None = None
+
+    async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
+        """Update the state of the SGReady Heatpump."""
+
+        old_state = self.state == OnOffState.ON
+        self._state = assign_if_available(self._state, state_repository.get_state(self._state_entity_id))
+        new_state = self.state == OnOffState.ON
+        self._consumed_energy = assign_if_available(
+            self._consumed_energy,
+            self._consumed_energy_value.evaluate(state_repository),
+        )
+        self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
+        self._actual_temp = assign_if_available(
+            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id)
+        )
+
+        if self._energy_snapshot is None:
+            self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
+
+        await self.update_session(old_state, new_state, self._name)
+
+    @property
+    def actual_temperature(self) -> float:
+        """The actual temperature of the heating or water."""
+        return self._actual_temp.numeric_value if self._actual_temp else 0.0
+
+    @property
+    def state(self) -> OnOffState:
+        """The state of the device. The state is `on` in case the device is heating."""
+        return OnOffState.from_str(self._state.value) if self._state and self._state.value else OnOffState.UNKNOWN
+
+    @property
+    def available(self) -> bool:
+        """Is the device available?."""
+        return (
+            self._consumed_energy is not None
+            and self._consumed_energy.available
+            and self._actual_temp is not None
+            and self._actual_temp.available
+            and self._state is not None
+            and self._state.available
+        )
+
+    @property
+    def consumed_energy(self) -> float:
+        """Consumed energy in kWh."""
+        return self._consumed_energy.numeric_value if self._consumed_energy else 0.0
+
+    @property
+    def power(self) -> float:
+        """Current power consumption of the device."""
+        raise NotImplementedError
+
+    @property
+    def type(self) -> str:
+        """The device type."""
+        return "sg-ready-heat-pump"
+
+    @property
+    def icon(self) -> str:
+        """The icon of the device."""
+        return "mdi-heat-pump"
+
+    async def update_power_consumption(
+        self,
+        state_repository: StatesRepository,
+        optimizer: Optimizer,
+        grid_exported_power_data: DataBuffer,
+    ) -> None:
+        """Update the device based on the current pv availability."""
+        raise NotImplementedError
+
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        result: dict[str, str] = {
+            **super().attributes,
+            "actual_temperature": f"{self.actual_temperature} °C",
+        }
+        return result
+
+
+class SGReadyHeatPumpDevice(DeviceWithState):
+    """SG Ready heatpump, supporting water and heating temperature."""
+
+    def __init__(self, config: dict, session_storage: SessionStorage):
+        """Create a SG Ready heatpump."""
+        super().__init__(config, session_storage)
+
+        heating_config = config.get("heating")
+        self._heating = SubHeatPump(heating_config, session_storage, "heating") if heating_config is not None else None
+
+        water_heating_config = config.get("water")
+        self._water_heating = (
+            SubHeatPump(water_heating_config, session_storage, "water_heating")
+            if water_heating_config is not None
+            else None
+        )
+
+        self._nominal_power: float = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
+        self._sg_ready_switch_entity_id = config.get("sg_ready")
+        if self._sg_ready_switch_entity_id is not None:
+            self._supported_power_modes.append(PowerModes.PV)
+            self.supported_power_modes.append(PowerModes.OPTIMIZED)
+
+        self._icon = "mdi-heat-pump"
+
+    @property
+    def type(self) -> str:
+        """The device type."""
+        return "sg-ready-heat-pump"
+
+    async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
+        """Update the state of the SGReady heatpump."""
+
+        if self._heating is not None:
+            await self._heating.update_state(state_repository, self_sufficiency)
+
+        if self._water_heating is not None:
+            await self._water_heating.update_state(state_repository, self_sufficiency)
+
+    async def update_power_consumption(
+        self,
+        state_repository: StatesRepository,
+        optimizer: Optimizer,
+        grid_exported_power_data: DataBuffer,
+    ) -> None:
+        """Update the device based on the current pv availability."""
+        if self._sg_ready_switch_entity_id is not None:
+            current_sg_ready_state = state_repository.get_state(self._sg_ready_switch_entity_id)
+            if current_sg_ready_state is not None:
+                sg_ready_state = OnOffState.from_str(current_sg_ready_state.value)
+                if self.power_mode == PowerModes.PV:
+                    if self.state == OnOffState.OFF:
+                        avg_300 = grid_exported_power_data.get_average_for(300)
+                        if avg_300 > self.requested_additional_power * (1 + POWER_HYSTERESIS):
+                            sg_ready_state = OnOffState.ON
+                        elif avg_300 < self.requested_additional_power * (1 - POWER_HYSTERESIS):
+                            sg_ready_state = OnOffState.OFF
+                elif self.power_mode == PowerModes.OPTIMIZED:
+                    sg_ready_state = self._get_state_for_optimized(
+                        optimizer, OnOffState.from_str(current_sg_ready_state.value)
+                    )
+                if sg_ready_state != current_sg_ready_state.value:
+                    state_repository.set_state(
+                        StateId(
+                            id=self._sg_ready_switch_entity_id,
+                            channel=HOMEASSISTANT_CHANNEL,
+                        ),
+                        str(sg_ready_state),
+                    )
+
+    @property
+    def state(self) -> OnOffState:
+        """State of the device."""
+        if self._heating is not None and self._heating.state == OnOffState.ON:
+            return OnOffState.ON
+        if self._water_heating is not None and self._water_heating.state == OnOffState.ON:
+            return OnOffState.ON
+        return OnOffState.OFF
+
+    def get_load_info(self) -> LoadInfo | None:
+        """Get the current deferrable load info."""
+        if self.power_mode == PowerModes.OPTIMIZED:
+            return LoadInfo(
+                device_id=self.id,
+                nominal_power=self._nominal_power,
+                duration=1800,  # 0.5h -> TODO: make this configurable
+                is_continous=False,
+                is_deferrable=True,
+            )
+        return None
+
+    def _get_state_for_optimized(self, optimizer: Optimizer, current_state: OnOffState) -> OnOffState:
+        if self.state == OnOffState.OFF:
+            power = optimizer.get_optimized_power(self._id)
+            if power > 0:
+                return OnOffState.ON
+            else:
+                return OnOffState.ON
+        else:
+            return current_state
+
+    @property
+    def requested_additional_power(self) -> float:
+        """How much power the device could consume in pv mode."""
+        # TODO: Consider the actual temperature
+        return self._nominal_power if self.state == "off" else 0.0
+
+    @property
+    def consumed_energy(self) -> float:
+        """Consumed energy in kWh."""
+        result: float = 0.0
+        if self._heating is not None:
+            result += self._heating.consumed_energy
+        if self._water_heating is not None:
+            result += self._water_heating.consumed_energy
+        return result
+
+    @property
+    def consumed_solar_energy(self) -> float:
+        """Consumed solar energy in kWh."""
+        result: float = 0.0
+        if self._heating is not None:
+            result += self._heating.consumed_solar_energy
+        if self._water_heating is not None:
+            result += self._water_heating.consumed_solar_energy
+        return result
+
+    @property
+    def power(self) -> float:
+        """Current power consumption of the device."""
+        return self._nominal_power if self.state == OnOffState.ON else 0.0
+
+    @property
+    def icon(self) -> str:
+        """Icon of the device."""
+        return self._icon
+
+    @property
+    def available(self) -> bool:
+        """Is the device available?."""
+        if self._heating is not None and self._heating.available:
+            return True
+        if self._water_heating is not None and self._water_heating.available:
+            return True
+        return False
+
+    def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
+        """Restore the previously stored state."""
+        super().restore_state(consumed_solar_energy, consumed_energy)
+
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        heating_attributes = (
+            {"heating_" + k: v for k, v in self._heating.attributes.items()} if self._heating is not None else {}
+        )
+        del heating_attributes["heating_state"]
+        water_heating_attributes = (
+            {"water_heating_" + k: v for k, v in self._water_heating.attributes.items()}
+            if self._water_heating is not None
+            else {}
+        )
+        del water_heating_attributes["water_heating_state"]
+
+        heatpump_state = str(OnOffState.OFF)
+        if self._heating is not None and self._heating.state == OnOffState.ON:
+            heatpump_state = "Heating"
+        elif self._water_heating is not None and self._water_heating.state == OnOffState.ON:
+            heatpump_state = "Water heating"
+        return {
+            **super().attributes,
+            **heating_attributes,
+            **water_heating_attributes,
+            "heatpump_state": heatpump_state,
+        }

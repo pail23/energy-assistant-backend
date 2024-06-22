@@ -6,7 +6,11 @@ from fastapi import HTTPException
 
 from energy_assistant.api.device import OTHER_DEVICE
 from energy_assistant.db import AsyncSession
-from energy_assistant.models.home import HomeMeasurement, get_consumed_energy, get_consumed_solar_energy
+from energy_assistant.models.home import (
+    HomeMeasurement,
+    get_consumed_energy,
+    get_consumed_solar_energy,
+)
 
 from .schema import (
     DeviceMeasurementPeriodSchema,

@@ -82,7 +82,7 @@ class Device(ABC):
 
     @property
     def consumed_solar_energy(self) -> float:
-        """Solar energy in kWh."""
+        """Consumed solar energy in kWh."""
         return (
             self._consumed_solar_energy.consumed_solar_energy
             if self._consumed_solar_energy.consumed_solar_energy is not None

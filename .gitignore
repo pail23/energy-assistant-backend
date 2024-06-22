@@ -10,6 +10,7 @@ client
 data/
 *.egg-info
 dist/
+.venv
 
 # Unit test / coverage reports
 htmlcov/
