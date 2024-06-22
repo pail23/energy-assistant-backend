@@ -11,6 +11,7 @@ import pandas as pd
 import requests  # type: ignore
 from aiohttp import ClientSession, TCPConnector
 from hass_client import HomeAssistantClient  # type: ignore
+from hass_client.exceptions import BaseHassClientError  # type: ignore
 from hass_client.utils import get_websocket_url  # type: ignore
 
 from energy_assistant import Optimizer
@@ -139,6 +140,10 @@ class EnergySource:
 class Homeassistant(StatesSingleRepository):
     """Home assistant proxy."""
 
+    session: ClientSession
+    hass: HomeAssistantClient
+    _listen_task: asyncio.Task | None = None
+
     def __init__(self, url: str, token: str, demo_mode: bool) -> None:
         """Create an instance of the Homeassistant class."""
         super().__init__(HOMEASSISTANT_CHANNEL)
@@ -162,11 +167,26 @@ class Homeassistant(StatesSingleRepository):
 
         self.hass = HomeAssistantClient(url, self._token, self.session)
         await self.hass.connect()
+        self._listen_task = asyncio.create_task(self._hass_listener())
         LOGGER.info("Connected to Homeassistant version %s", self.hass.version)
 
     async def disconnect(self) -> None:
         """Disconnects from home assistant."""
+        if self._listen_task and not self._listen_task.done():
+            self._listen_task.cancel()
         await self.hass.disconnect()
+
+    async def _hass_listener(self) -> None:
+        """Start listening on the HA websockets."""
+        while True:
+            try:
+                # start listening will block until the connection is lost/closed
+                await self.hass.start_listening()
+            except BaseHassClientError as err:
+                LOGGER.warning("Connection to HA lost due to error: %s", err)
+            LOGGER.info("Connection to HA lost. Reloading provider in 5 seconds.")
+            # schedule a reload of the provider
+            # self.mass.call_later(5, self.mass.config.reload_provider(self.instance_id))
 
     @property
     def url(self) -> str:
