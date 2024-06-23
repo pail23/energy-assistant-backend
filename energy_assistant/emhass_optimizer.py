@@ -6,8 +6,7 @@ import logging
 import pathlib
 import pickle
 import uuid
-from datetime import datetime, timezone
-from typing import Tuple
+from datetime import UTC, datetime
 
 import emhass  # type: ignore
 import numpy as np
@@ -35,6 +34,22 @@ SENSOR_POWER_NO_VAR_LOADS = "power_load_no_var_loads"
 DEFAULT_HASS_ENTITY_PREFIX = "em"
 DEFAULT_COST_FUNC = "profit"
 LOAD_FORECAST_MODEL_TYPE = "load_forecast"
+
+
+class MLForecasterTuneError(Exception):
+    """Error while tuning the ML forecast."""
+
+    def __init__(self) -> None:
+        """Create an MLForecasterTuneError instance."""
+        super().__init__("The ML forecaster file was not found, please run a model fit method before this tune method")
+
+
+class OptimizerNotInitializedError(Exception):
+    """Optimizer not initialized error."""
+
+    def __init__(self) -> None:
+        """Create an OptimizerNotInitializedError instance."""
+        super().__init__("Optimizer forecast is not initialized.")
 
 
 class EmhassOptimizer(Optimizer):
@@ -345,10 +360,7 @@ class EmhassOptimizer(Optimizer):
                 series = create_timeseries_from_const(
                     load_info.nominal_power, pd.Timedelta(int(load_info.duration), "s"), freq
                 )
-                if projected_load is None:
-                    projected_load = series
-                else:
-                    projected_load = projected_load + series
+                projected_load = series if projected_load is None else projected_load + series
 
         if projected_load is not None:
             projected_load = projected_load.tz_convert(self._location.get_time_zone())
@@ -385,7 +397,7 @@ class EmhassOptimizer(Optimizer):
         if not debug and self._day_ahead_forecast is not None:
             # Save CSV file for publish_data
             if save_data_to_file:
-                today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+                today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
                 filename = "opt_res_dayahead_" + today.strftime("%Y_%m_%d") + ".csv"
             else:  # Just save the latest optimization results
                 filename = "opt_res_latest.csv"
@@ -508,7 +520,7 @@ class EmhassOptimizer(Optimizer):
         )
         # Save CSV file for publish_data
         if save_data_to_file:
-            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
             filename = "opt_res_naive_mpc_" + today.strftime("%Y_%m_%d") + ".csv"
         else:  # Just save the latest optimization results
             filename = "opt_res_naive_mpc_latest.csv"
@@ -579,7 +591,7 @@ class EmhassOptimizer(Optimizer):
             pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
         return r2
 
-    def forecast_model_tune(self) -> Tuple[pd.DataFrame, MLForecaster]:
+    def forecast_model_tune(self) -> tuple[pd.DataFrame, MLForecaster]:
         """Tune a forecast model hyperparameters using bayesian optimization.
 
         :param debug: True to debug, useful for unit testing, defaults to False
@@ -607,9 +619,7 @@ class EmhassOptimizer(Optimizer):
             self._logger.error(
                 "The ML forecaster file was not found, please run a model fit method before this tune method"
             )
-            raise Exception(
-                "The ML forecaster file was not found, please run a model fit method before this tune method"
-            )
+            raise MLForecasterTuneError()
 
     def forecast_model_predict(
         self,
@@ -672,10 +682,7 @@ class EmhassOptimizer(Optimizer):
                 )
                 return None
         # Make predictions
-        if use_last_window:
-            data_last_window = copy.deepcopy(df_input_data)
-        else:
-            data_last_window = None
+        data_last_window = copy.deepcopy(df_input_data) if use_last_window else None
         if mlf is not None:
             return mlf.predict(data_last_window)
         return None
@@ -746,7 +753,7 @@ class EmhassOptimizer(Optimizer):
                 series=series,
             )
         else:
-            raise Exception("Optimizer forecast is not initialized.")
+            raise OptimizerNotInitializedError()
 
     def get_optimized_power(self, device_id: uuid.UUID) -> float:
         """Get the optimized power budget for a give device."""
@@ -781,10 +788,7 @@ class EmhassOptimizer(Optimizer):
         return -1
 
     def _has_deferrable_load(self, device_id: uuid.UUID) -> bool:
-        for deferrable_load_info in self._optimzed_devices:
-            if deferrable_load_info.device_id == device_id:
-                return True
-        return False
+        return any(deferrable_load_info.device_id == device_id for deferrable_load_info in self._optimzed_devices)
 
     async def async_update_devices(self, home: Home) -> None:
         """Update the selected devices from the list of devices."""

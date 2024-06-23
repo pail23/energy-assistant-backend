@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
 from enum import StrEnum, auto
-from typing import Any, Optional
+from typing import Any
 
 import pytz  # type: ignore
 
@@ -66,8 +66,8 @@ class Integrator:
 
     def __init__(self) -> None:
         """Initialize the integrator."""
-        self.last_measurement: Optional[float] = None
-        self.last_timestamp: Optional[float] = None
+        self.last_measurement: float | None = None
+        self.last_timestamp: float | None = None
         self._value: float = 0.0
 
     @property

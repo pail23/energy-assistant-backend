@@ -4,12 +4,12 @@ import asyncio
 import logging
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 
 import pandas as pd
 import requests  # type: ignore
-from aiohttp import ClientSession, TCPConnector
+from aiohttp import ClientResponse, ClientSession, TCPConnector
 from hass_client import HomeAssistantClient  # type: ignore
 from hass_client.exceptions import BaseHassClientError  # type: ignore
 from hass_client.utils import get_websocket_url  # type: ignore
@@ -37,7 +37,7 @@ from . import (
     StatesSingleRepository,
     assign_if_available,
 )
-from .config import DeviceConfigError, get_config_param
+from .config import DeviceConfigMissingParameterError, get_config_param
 from .device import DeviceWithState
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
@@ -84,8 +84,8 @@ class HistoryState:
 def convert_statistics(value: dict) -> dict:
     """Convert the times in a Home Assistant dict to date time values."""
     result = value.copy()
-    result["start"] = datetime.fromtimestamp(value["start"] / 1000, timezone.utc)
-    result["end"] = datetime.fromtimestamp(value["end"] / 1000, timezone.utc)
+    result["start"] = datetime.fromtimestamp(value["start"] / 1000, UTC)
+    result["end"] = datetime.fromtimestamp(value["end"] / 1000, UTC)
     return result
 
 
@@ -99,7 +99,7 @@ def convert_float(value: str) -> float:
 
 def convert_history(value: dict) -> HistoryState:
     """Convert a history state to a HistoryState instance."""
-    return HistoryState(time_stamp=datetime.fromtimestamp(value["lu"], timezone.utc), state=convert_float(value["s"]))
+    return HistoryState(time_stamp=datetime.fromtimestamp(value["lu"], UTC), state=convert_float(value["s"]))
 
 
 class StatisticsType(StrEnum):
@@ -135,6 +135,14 @@ class EnergySource:
     source_type: SourceType
     flow_from: str
     flow_to: str | None
+
+
+class HomeAssistantCommunicationError(Exception):
+    """Home Assistant Communication Error."""
+
+    def __init__(self, response: ClientResponse) -> None:
+        """Create a HomeAssistantCommunicationError instance."""
+        super().__init__(f"Error during communication with Home Assistant. Url={response.url} Status={response.status}")
 
 
 class Homeassistant(StatesSingleRepository):
@@ -425,22 +433,21 @@ class Homeassistant(StatesSingleRepository):
                 LOGGER.exception("Exception during homeassistant update_states.")
             self._write_states.clear()
 
-    def get_config(self) -> dict:
+    async def get_config(self) -> dict:
         """Read the Homeassistant configuration."""
         headers = {
             "Authorization": f"Bearer {self._token}",
             "content-type": "application/json",
         }
-        response = requests.get(f"{self._url}/api/config", headers=headers)
+        async with self.session.get(f"{self._url}/api/config", headers=headers) as response:
+            if response.ok:
+                return await response.json()
+            else:
+                raise HomeAssistantCommunicationError(response)
 
-        if response.ok:
-            return response.json()
-        else:
-            raise Exception("Could not get configuration from Home Assistant.")
-
-    def get_location(self) -> Location:
+    async def get_location(self) -> Location:
         """Read the location from the Homeassistant configuration."""
-        config = self.get_config()
+        config = await self.get_config()
 
         return Location(
             latitude=config.get("latitude", ""),
@@ -466,7 +473,7 @@ class HomeassistantDevice(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigError("Parameter energy is missing in the configuration")
+            raise DeviceConfigMissingParameterError("energy")
 
         energy_scale: float | None = config.get("energy_scale")
         if energy_scale is not None:

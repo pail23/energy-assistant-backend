@@ -43,10 +43,7 @@ class StatesRepositoryWithHistory(StatesRepository):
         if self._selected_date is None:
             return None
 
-        if isinstance(id, str):
-            _id = id
-        else:
-            _id = id.id
+        _id = id if isinstance(id, str) else id.id
 
         row = self._read_states.loc[self._selected_date]
         return State(_id, str(row[_id]))
@@ -103,7 +100,7 @@ async def import_data(
     home: Home, hass: Homeassistant, session: AsyncSession, freq: pd.Timedelta, days_to_retrieve: int
 ) -> None:
     """Import data from Homeassistant."""
-    states_repository = StatesRepositoryWithHistory(hass.get_location())
+    states_repository = StatesRepositoryWithHistory(await hass.get_location())
 
     start_date = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days_to_retrieve)
 

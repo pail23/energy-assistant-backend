@@ -1,7 +1,8 @@
 """Base class for Energy Assistant data models."""
 
 import uuid
-from typing import ClassVar, Mapping
+from collections.abc import Mapping
+from typing import ClassVar
 
 from sqlalchemy import MetaData
 from sqlalchemy.dialects.postgresql import UUID
@@ -36,17 +37,16 @@ class GUID(TypeDecorator):
         else:
             return dialect.type_descriptor(CHAR(32))
 
-    def process_bind_param(self, value, dialect):  # type:ignore
+    def process_bind_param(self, value, dialect) -> str | None:  # type:ignore
         """Process the bind parameters."""
         if value is None:
-            return value
-        elif dialect.name == "postgresql":
+            return None
+        if dialect.name == "postgresql":
             return str(value)
-        elif not isinstance(value, uuid.UUID):
-            return "%.32x" % uuid.UUID(value).int
-        else:
-            # hexstring
-            return "%.32x" % value.int
+        if not isinstance(value, uuid.UUID):
+            return uuid.UUID(value).hex
+        # hexstring
+        return f"{value.int:32x}"
 
     def process_result_value(self, value, dialect):  # type:ignore
         """Process the result value."""

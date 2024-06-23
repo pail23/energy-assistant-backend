@@ -3,7 +3,7 @@
 import pathlib
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, timedelta, tzinfo
 from statistics import mean
 
 import pandas as pd
@@ -29,7 +29,7 @@ class DataBuffer:
     def add_data_point(self, value: float, time_stamp: datetime | None = None) -> None:
         """Add a new data point for tracking."""
         if time_stamp is None:
-            time_stamp = datetime.now(timezone.utc)
+            time_stamp = datetime.now(UTC)
         self.data.append(DataPoint(value, time_stamp))
 
     def get_data_for(
@@ -40,7 +40,7 @@ class DataBuffer:
     ) -> list[float]:
         """Extract data for the last timespan seconds."""
         if now is None:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
         threshold = now - timedelta(seconds=timespan)
         result = [data_point.value for data_point in self.data if data_point.time_stamp >= threshold]
         if without_trailing_zeros:
@@ -51,7 +51,7 @@ class DataBuffer:
     def get_average_for(self, timespan: float, now: datetime | None = None) -> float:
         """Calculate the average over the last timespan seconds."""
         if now is None:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
         return mean(self.get_data_for(timespan, now))
 
     def average(self) -> float:
@@ -64,13 +64,13 @@ class DataBuffer:
     def get_min_for(self, timespan: float, now: datetime | None = None) -> float:
         """Calculate the min over the last timespan seconds."""
         if now is None:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
         return min(self.get_data_for(timespan, now))
 
     def get_max_for(self, timespan: float, now: datetime | None = None) -> float:
         """Calculate the max over the last timespan seconds."""
         if now is None:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
         return max(self.get_data_for(timespan, now))
 
     def is_between(
@@ -83,7 +83,7 @@ class DataBuffer:
     ) -> bool:
         """Check if the value in the timespan is always between lower and upper."""
         if now is None:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
         data = self.get_data_for(timespan, now, without_trailing_zeros)
         if len(data) > 0:
             if min(data) < lower:

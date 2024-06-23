@@ -17,7 +17,7 @@ from . import (
     StatesRepository,
 )
 from .analysis import DataBuffer
-from .config import DeviceConfigError, get_config_param
+from .config import DeviceConfigMissingParameterError, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
 DEFAULT_NOMINAL_POWER = 5000
@@ -43,7 +43,7 @@ class HeatPumpDevice(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigError("Parameter energy is missing in the configuration")
+            raise DeviceConfigMissingParameterError("energy")
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -220,7 +220,7 @@ class SubHeatPump(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigError("Parameter energy is missing in the configuration")
+            raise DeviceConfigMissingParameterError("energy")
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None

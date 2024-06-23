@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -211,10 +211,10 @@ class DbSessionStorage(SessionStorage):
                 session,
                 text,
                 device_id,
-                datetime.now(timezone.utc),
+                datetime.now(UTC),
                 solar_consumed_energy,
                 consumed_energy,
-                datetime.now(timezone.utc),
+                datetime.now(UTC),
                 solar_consumed_energy,
                 consumed_energy,
             )
@@ -233,7 +233,7 @@ class DbSessionStorage(SessionStorage):
                     entry.start,
                     entry.start_solar_consumed_energy,
                     entry.start_consumed_energy,
-                    datetime.now(timezone.utc),
+                    datetime.now(UTC),
                     solar_consumed_energy,
                     consumed_energy,
                 )

@@ -1,7 +1,7 @@
 """Conf test for Energy Assistant."""
 
 import contextlib
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from httpx import AsyncClient
@@ -57,9 +57,8 @@ async def session() -> AsyncGenerator:
         def end_savepoint(session: Session, transaction: SessionTransaction) -> None:
             if conn.closed:
                 return
-            if not conn.in_nested_transaction():
-                if conn.sync_connection:
-                    conn.sync_connection.begin_nested()
+            if not conn.in_nested_transaction() and conn.sync_connection:
+                conn.sync_connection.begin_nested()
 
         def test_get_session() -> Generator:
             with contextlib.suppress(SQLAlchemyError):

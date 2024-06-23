@@ -5,7 +5,8 @@ from __future__ import annotations
 import datetime
 import json
 import uuid
-from typing import TYPE_CHECKING, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, select, text
 from sqlalchemy.ext.asyncio import AsyncSession

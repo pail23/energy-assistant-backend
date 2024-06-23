@@ -6,11 +6,12 @@ import logging
 import os
 import sys
 import threading
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from datetime import date
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import AsyncIterator, Final
+from typing import Final
 
 import alembic.config
 import pandas as pd
@@ -345,7 +346,7 @@ async def init_app() -> EnergyAssistant:
             else:
                 hass = await open_hass_connection(config)
                 result.hass = hass
-                result.config = EnergyAssistantConfig(config, hass.get_config() if hass is not None else {})
+                result.config = EnergyAssistantConfig(config, await hass.get_config() if hass is not None else {})
                 if hass is not None:
                     hass.read_states()
                     optimizer = EmhassOptimizer(settings.DATA_FOLDER, result.config, hass)

@@ -3,7 +3,7 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
@@ -187,7 +187,7 @@ class DeviceWithState(Device):
     def session_duration(self) -> float:
         """Return the duration of the current session."""
         if self.current_session is not None:
-            result = datetime.now(timezone.utc) - self.current_session.start
+            result = datetime.now(UTC) - self.current_session.start
             return result.total_seconds()
         return 0.0
 
@@ -228,7 +228,7 @@ class DeviceWithState(Device):
         if self.has_state:
             result["state"] = self.state
         if self.state == "on" and self.current_session is not None:
-            result["session_time"] = str((datetime.now(timezone.utc) - self.current_session.start).total_seconds())
+            result["session_time"] = str((datetime.now(UTC) - self.current_session.start).total_seconds())
             result["session_energy"] = str(self.consumed_energy - self.current_session.start_consumed_energy)
             result["session_solar_energy"] = str(
                 self.consumed_solar_energy - self.current_session.start_solar_consumed_energy

@@ -60,10 +60,10 @@ class DeviceTypeRegistry:
         with open(filename) as stream:
             try:
                 config = yaml.safe_load(stream)
-            except yaml.YAMLError as ex:
-                LOGGER.error(ex)
-            except Exception as ex:
-                LOGGER.error(ex)
+            except yaml.YAMLError:
+                LOGGER.exception("Yaml error while parsing device type file")
+            except Exception:
+                LOGGER.exception("error while parsing device type file")
             else:
                 device_type_config = config.get("device_type")
                 if device_type_config is None:

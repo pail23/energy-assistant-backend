@@ -1,7 +1,7 @@
 """Use cases for home measurements."""
 
+from collections.abc import AsyncIterator
 from datetime import date
-from typing import AsyncIterator
 
 from fastapi import HTTPException
 
