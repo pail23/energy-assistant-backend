@@ -37,11 +37,19 @@ repos:
         args: [--ignore-missing-imports]
         additional_dependencies: [types-PyYAML]
 
-  - repo: https://github.com/jazzband/pip-tools
-    rev: 7.4.1
+  #- repo: https://github.com/jazzband/pip-tools
+  #  rev: 7.4.1
+  #  hooks:
+  #    - id: pip-compile
+  #      args: [--extra, dev]
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.2.13
     hooks:
+      # Run the pip compile
       - id: pip-compile
-        args: [--extra, dev]
+        args: [pyproject.toml, -o, requirements.txt]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0

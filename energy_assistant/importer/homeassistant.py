@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timedelta
+from math import isnan
 from typing import Any
 
 import pandas as pd
@@ -129,14 +130,17 @@ async def import_data(
                     device_measurements=[],
                 )
             else:
-                await home_measurement.update(
-                    session,
-                    name=home.name,
-                    measurement_date=d.date(),
-                    solar_produced_energy=energy_state.produced_solar_energy,
-                    grid_imported_energy=energy_state.grid_imported_energy,
-                    grid_exported_energy=energy_state.grid_exported_energy,
-                )
+                if not isnan(energy_state.grid_exported_energy):
+                    await home_measurement.update(
+                        session,
+                        name=home.name,
+                        measurement_date=d.date(),
+                        solar_produced_energy=energy_state.produced_solar_energy,
+                        grid_imported_energy=energy_state.grid_imported_energy,
+                        grid_exported_energy=energy_state.grid_exported_energy,
+                    )
+                else:
+                    LOGGER.error("invalid grid exported value")
         except Exception:
             LOGGER.exception("error during fetching data from the database")
     await session.flush()
