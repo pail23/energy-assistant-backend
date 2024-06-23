@@ -171,8 +171,8 @@ class EvccDevice(DeviceWithState):
         """Get the current deferrable load info."""
         if self._is_connected is not None and self._max_current is not None and self._is_connected.value == "true":
             if self.state == OnOffState.ON:
-                remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
-                if remainingEnergy > 0:
+                remaining_energy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
+                if remaining_energy > 0:
                     power: float = (
                         self._nominal_power
                         if self._nominal_power is not None
@@ -181,7 +181,7 @@ class EvccDevice(DeviceWithState):
                     return LoadInfo(
                         device_id=self.id,
                         nominal_power=power,
-                        duration=remainingEnergy / power * 3600,
+                        duration=remaining_energy / power * 3600,
                         is_continous=self._is_continous,
                         is_deferrable=self.power_mode == PowerModes.OPTIMIZED,
                     )

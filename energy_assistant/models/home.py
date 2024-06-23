@@ -69,11 +69,11 @@ class HomeMeasurement(Base):
     async def read_by_id(
         cls,
         session: AsyncSession,
-        HomeMeasurement_id: int,
+        home_measurement_id: int,
         include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read a home measurements by id."""
-        stmt = select(cls).where(cls.id == HomeMeasurement_id)
+        stmt = select(cls).where(cls.id == home_measurement_id)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
         return await session.scalar(stmt.order_by(cls.id))
@@ -186,9 +186,9 @@ class HomeMeasurement(Base):
         await session.flush()
 
     @classmethod
-    async def delete(cls, session: AsyncSession, HomeMeasurement: HomeMeasurement) -> None:
+    async def delete(cls, session: AsyncSession, home_measurement: HomeMeasurement) -> None:
         """Delete a home measurement."""
-        await session.delete(HomeMeasurement)
+        await session.delete(home_measurement)
         await session.flush()
 
     def get_device_measurement(self, device_id: uuid.UUID) -> DeviceMeasurement | None:

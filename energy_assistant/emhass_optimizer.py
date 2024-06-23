@@ -69,41 +69,41 @@ class EmhassOptimizer(Optimizer):
             self._hass_entity_prefix = self._emhass_config.get("hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX)
             self._power_no_var_loads_id = f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
             params = json.dumps(self._emhass_config)
-            RetrieveHass_conf, optim_conf, plant_conf = utils.get_yaml_parse(pathlib.Path(), False, params=params)
+            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(pathlib.Path(), False, params=params)
             # Patch variables with Energy Assistant Config
-            RetrieveHass_conf["hass_url"] = self._hass_url
-            RetrieveHass_conf["long_lived_token"] = self._hass_token
-            RetrieveHass_conf["var_PV"] = self._solar_power_id
-            if "var_load" not in RetrieveHass_conf:
-                RetrieveHass_conf["var_load"] = self._power_no_var_loads_id
+            retrieve_hass_conf["hass_url"] = self._hass_url
+            retrieve_hass_conf["long_lived_token"] = self._hass_token
+            retrieve_hass_conf["var_PV"] = self._solar_power_id
+            if "var_load" not in retrieve_hass_conf:
+                retrieve_hass_conf["var_load"] = self._power_no_var_loads_id
             else:
-                self._power_no_var_loads_id = RetrieveHass_conf["var_load"]
-            RetrieveHass_conf["var_replace_zero"] = [self._solar_power_id]
-            RetrieveHass_conf["var_interp"] = [
+                self._power_no_var_loads_id = retrieve_hass_conf["var_load"]
+            retrieve_hass_conf["var_replace_zero"] = [self._solar_power_id]
+            retrieve_hass_conf["var_interp"] = [
                 self._solar_power_id,
                 self._power_no_var_loads_id,
             ]
 
-            RetrieveHass_conf["time_zone"] = self._location.get_time_zone()
-            RetrieveHass_conf["lat"] = self._location.latitude
-            RetrieveHass_conf["lon"] = self._location.longitude
-            RetrieveHass_conf["alt"] = self._location.elevation
-            if "continual_publish" not in RetrieveHass_conf:
-                RetrieveHass_conf["continual_publish"] = False
+            retrieve_hass_conf["time_zone"] = self._location.get_time_zone()
+            retrieve_hass_conf["lat"] = self._location.latitude
+            retrieve_hass_conf["lon"] = self._location.longitude
+            retrieve_hass_conf["alt"] = self._location.elevation
+            if "continual_publish" not in retrieve_hass_conf:
+                retrieve_hass_conf["continual_publish"] = False
 
             optim_conf["num_def_loads"] = 0
 
-            self._RetrieveHass_conf = RetrieveHass_conf
+            self._RetrieveHass_conf = retrieve_hass_conf
             self._optim_conf = optim_conf
             self._plant_conf = plant_conf
 
-            self._method_ts_round = RetrieveHass_conf.get("method_ts_round")
+            self._method_ts_round = retrieve_hass_conf.get("method_ts_round")
 
             # Define main objects
             self._RetrieveHass = RetrieveHass(
                 self._hass_url,
                 self._hass_token,
-                RetrieveHass_conf["freq"],
+                retrieve_hass_conf["freq"],
                 self._location.get_time_zone(),
                 params,
                 self._data_folder,
@@ -171,7 +171,7 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             None,
             json.dumps(self._emhass_config),
             self._RetrieveHass_conf,
@@ -287,7 +287,7 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(self.get_ml_runtime_params()),
             json.dumps(self._emhass_config),
             self._RetrieveHass_conf,
@@ -318,23 +318,23 @@ class EmhassOptimizer(Optimizer):
 
         pv_forecast = await self.async_get_pv_forecast(fcst)
         try:
-            P_load_forecast = fcst.get_load_forecast(method=self._optim_conf["load_forecast_method"])
-            P_load_forecast_values = np.array(P_load_forecast.values)
+            p_load_forecast = fcst.get_load_forecast(method=self._optim_conf["load_forecast_method"])
+            p_load_forecast_values = np.array(p_load_forecast.values)
         except Exception:
             self._logger.warning(
                 "Forecasting the load failed, probably due to missing history data in Home Assistant. "
             )
             avg_non_var_power = self._no_var_loads.average()
-            P_load_forecast = pd.Series(
+            p_load_forecast = pd.Series(
                 [avg_non_var_power for x in pv_forecast.values],
                 index=pv_forecast.index,
             )
-            P_load_forecast_values = np.array([avg_non_var_power for x in pv_forecast.values])
+            p_load_forecast_values = np.array([avg_non_var_power for x in pv_forecast.values])
 
         freq = self._RetrieveHass_conf["freq"]
 
         df_input_data_dayahead = pd.DataFrame(
-            np.transpose(np.vstack([np.array(pv_forecast.values), P_load_forecast_values])),
+            np.transpose(np.vstack([np.array(pv_forecast.values), p_load_forecast_values])),
             index=pv_forecast.index,
             columns=["P_PV_forecast", "P_non_deferrable_load_forecast"],
         )
@@ -360,7 +360,7 @@ class EmhassOptimizer(Optimizer):
         df_input_data_dayahead["P_load_forecast"] = (
             df_input_data_dayahead["P_projected_load"] + df_input_data_dayahead["P_non_deferrable_load_forecast"]
         )
-        P_load_forecast = df_input_data_dayahead["P_load_forecast"]
+        p_load_forecast = df_input_data_dayahead["P_load_forecast"]
         df_input_data_dayahead = utils.set_df_index_freq(df_input_data_dayahead)
 
         # params_dayahead: dict = json.loads(params)
@@ -377,7 +377,7 @@ class EmhassOptimizer(Optimizer):
             df_input_data_dayahead, method=fcst.optim_conf["prod_price_forecast_method"]
         )
         self._day_ahead_forecast = opt.perform_dayahead_forecast_optim(
-            df_input_data_dayahead, pv_forecast, P_load_forecast
+            df_input_data_dayahead, pv_forecast, p_load_forecast
         )
         if self._day_ahead_forecast is not None:
             self._day_ahead_forecast["P_projected_load"] = df_input_data_dayahead["P_projected_load"].copy()
@@ -413,7 +413,7 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(runtimeparams),
             json.dumps(self._emhass_config),
             self._RetrieveHass_conf,
@@ -456,17 +456,17 @@ class EmhassOptimizer(Optimizer):
         df_input_data = self._RetrieveHass.df_final.copy()
 
         # Get PV and load forecasts
-        P_PV_forecast = await self.async_get_pv_forecast(fcst, set_mix_forecast=True, df_now=df_input_data)
+        p_pv_forecast = await self.async_get_pv_forecast(fcst, set_mix_forecast=True, df_now=df_input_data)
 
-        P_load_forecast = fcst.get_load_forecast(
+        p_load_forecast = fcst.get_load_forecast(
             method=self._optim_conf["load_forecast_method"],
             set_mix_forecast=True,
             df_now=df_input_data,
         )
         df_input_data_dayahead = pd.concat(
             [
-                pd.Series(P_PV_forecast, name="P_PV_forecast"),
-                pd.Series(P_load_forecast, name="P_load_forecast"),
+                pd.Series(p_pv_forecast, name="P_PV_forecast"),
+                pd.Series(p_load_forecast, name="P_load_forecast"),
             ],
             axis=1,
         )
@@ -499,8 +499,8 @@ class EmhassOptimizer(Optimizer):
 
         opt_res_naive_mpc = opt.perform_naive_mpc_optim(
             df_input_data_dayahead,
-            P_PV_forecast,
-            P_load_forecast,
+            p_pv_forecast,
+            p_load_forecast,
             prediction_horizon,
             soc_init,
             soc_final,
@@ -532,7 +532,7 @@ class EmhassOptimizer(Optimizer):
 
         # Treat runtimeparams
         params: str = ""
-        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(self.get_ml_runtime_params()),
             json.dumps(self._emhass_config),
             self._RetrieveHass_conf,
@@ -639,7 +639,7 @@ class EmhassOptimizer(Optimizer):
         """
         # Treat runtimeparams
         params: str = ""
-        params, RetrieveHass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(self.get_ml_runtime_params()),
             json.dumps(self._emhass_config),
             self._RetrieveHass_conf,
@@ -753,11 +753,11 @@ class EmhassOptimizer(Optimizer):
         if self._day_ahead_forecast is not None:
             for i, deferrable_load_info in enumerate(self._optimzed_devices):
                 if deferrable_load_info.device_id == device_id:
-                    columnName = f"P_deferrable{i}"
-                    return self._get_forecast_value(columnName)
+                    column_name = f"P_deferrable{i}"
+                    return self._get_forecast_value(column_name)
         return -1
 
-    def _get_forecast_value(self, columnName: str) -> float:
+    def _get_forecast_value(self, column_name: str) -> float:
         """Get a forecasted value."""
         if self._day_ahead_forecast is not None:
             now_precise = datetime.now(self._location.get_time_zone()).replace(second=0, microsecond=0)
@@ -776,7 +776,7 @@ class EmhassOptimizer(Optimizer):
                     [now_precise], method="nearest"
                 )[0]
 
-            value = self._day_ahead_forecast.iloc[idx_closest][columnName]
+            value = self._day_ahead_forecast.iloc[idx_closest][column_name]
             return float(value)
         return -1
 

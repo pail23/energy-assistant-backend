@@ -18,7 +18,7 @@ from . import (
     StatesRepository,
     assign_if_available,
 )
-from .config import DeviceConfigException, get_config_param
+from .config import DeviceConfigError, get_config_param
 from .device import Device
 from .heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
 from .homeassistant import HomeassistantDevice
@@ -37,21 +37,21 @@ class HomeEnergyState:
         if solar_energy_config is not None:
             self._solar_energy_value = StateValue(solar_energy_config)
         else:
-            raise DeviceConfigException("Parameter solar_energy is missing in the configuration")
+            raise DeviceConfigError("Parameter solar_energy is missing in the configuration")
 
         imported_energy_config = config.get("imported_energy")
         self._config["imported_energy"] = imported_energy_config
         if imported_energy_config is not None:
             self._imported_energy_value = StateValue(imported_energy_config)
         else:
-            raise DeviceConfigException("Parameter imported_energy is missing in the configuration")
+            raise DeviceConfigError("Parameter imported_energy is missing in the configuration")
 
         exported_energy_config = config.get("exported_energy")
         self._config["exported_energy"] = exported_energy_config
         if exported_energy_config is not None:
             self._exported_energy_value = StateValue(exported_energy_config)
         else:
-            raise DeviceConfigException("Parameter exported_energy is missing in the configuration")
+            raise DeviceConfigError("Parameter exported_energy is missing in the configuration")
 
         self._grid_exported_energy: State | None = None
         self._grid_imported_energy: State | None = None
@@ -188,13 +188,13 @@ class Home:
         if solar_power_config is not None:
             self._solar_power_value = StateValue(solar_power_config)
         else:
-            raise DeviceConfigException("Parameter solar_power is missing in the configuration")
+            raise DeviceConfigError("Parameter solar_power is missing in the configuration")
 
         grid_supply_power_config = config.get("grid_supply_power")
         if grid_supply_power_config is not None:
             self._grid_imported_power_value = StateValue(grid_supply_power_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            raise DeviceConfigError("Parameter energy is missing in the configuration")
 
         grid_inverted: bool | None = config.get("grid_inverted")
         if grid_inverted is not None:

@@ -14,8 +14,8 @@ from typing import AsyncIterator, Final
 
 import alembic.config
 import pandas as pd
-import requests  # type: ignore
 import yaml
+from anyio import open_file
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
 from energy_assistant_frontend import where as locate_frontend
@@ -32,7 +32,7 @@ from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.devices.registry import DeviceTypeRegistry
-from energy_assistant.EmhassOptimizer import EmhassOptimizer
+from energy_assistant.emhass_optimizer import EmhassOptimizer
 from energy_assistant.importer.homeassistant import import_data
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
@@ -127,7 +127,7 @@ async def async_handle_state_update(
             ea.optimizer.update_repository_states(ea.home, state_repository)
         else:
             logging.error("The variable optimizer is None in async_handle_state_update")
-        state_repository.write_states()
+        await state_repository.async_write_states()
         if ea.db:
             if ea.home:
                 await asyncio.gather(
@@ -155,7 +155,6 @@ async def background_task(ea: EnergyAssistant) -> None:
         repositories.append(ea.mqtt)
     state_repository = StatesMultipleRepositories(repositories)
     while not ea.should_stop:
-        await asyncio.sleep(30)
         # delta_t = datetime.now().timestamp()
         # print("Start refresh from home assistant")
         today = date.today()
@@ -169,6 +168,7 @@ async def background_task(ea: EnergyAssistant) -> None:
         except Exception:
             logging.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
+        await asyncio.sleep(30)
 
 
 def create_mqtt_connection(config: dict) -> MqttConnection | None:
@@ -204,17 +204,9 @@ async def open_hass_connection(config: dict) -> Homeassistant | None:
             logging.info(f"suvervisor token detected. len={len(token)}")
             url = "http://supervisor/core"
 
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "content-type": "application/json",
-            }
-            response = requests.get(f"{url}/api/states", headers=headers)
-            logging.info(f"pinging homeassistant api succeeded. Status code = {response.status_code}")
-            if response.ok:
-                logging.info(f"Using {url} to connect")
-                hass = Homeassistant(url, token, False)
-                await hass.connect()
-                return hass
+            hass = Homeassistant(url, token, False)
+            await hass.connect()
+            return hass
     except Exception:
         logging.exception("Error while trying to connect to the homeassistant supervisor api")
         url = None
@@ -312,8 +304,10 @@ async def init_app() -> EnergyAssistant:
 
     hass_options_file = "/data/options.json"
     if os.path.isfile(hass_options_file):
-        with open(hass_options_file, "rb") as _file:
-            hass_options = json.loads(_file.read())
+        async with await open_file(hass_options_file) as _file:
+            hass_options = json.loads(await _file.read())
+    #        with open(hass_options_file, "rb") as _file:
+    #            hass_options = json.loads(_file.read())
     else:
         hass_options = {}
 
@@ -339,10 +333,10 @@ async def init_app() -> EnergyAssistant:
 
     logger.info(f"Loading config file {config_file}")
     try:
-        with open(config_file) as stream:
-            logger.debug(f"Successfully opened config file {config_file}")
+        async with await open_file(config_file) as stream:
+            logger.debug("Successfully opened config file %s", config_file)
             try:
-                config = yaml.safe_load(stream)
+                config = yaml.safe_load(await stream.read())
                 logger.debug(f"config file {config_file} successfully loaded")
             except yaml.YAMLError:
                 logger.exception("Failed to parse the config file")
@@ -420,14 +414,14 @@ def main() -> None:
     try:
         alembic_config = Path(__file__).parent / "alembic.ini"
 
-        alembicArgs = [
+        alembic_args = [
             "-c",
             str(alembic_config),
             "--raiseerr",
             "upgrade",
             "head",
         ]
-        alembic.config.main(argv=alembicArgs)  # type: ignore
+        alembic.config.main(argv=alembic_args)  # type: ignore
     except Exception:
         print("Alembic Migration failed")
         logging.exception("Alembic Migration failed")

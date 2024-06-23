@@ -37,7 +37,7 @@ from . import (
     StatesSingleRepository,
     assign_if_available,
 )
-from .config import DeviceConfigException, get_config_param
+from .config import DeviceConfigError, get_config_param
 from .device import DeviceWithState
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
@@ -49,7 +49,7 @@ HOMEASSISTANT_CHANNEL = "ha"
 class HomeassistantState(State):
     """Abstract base class for states."""
 
-    def __init__(self, id: str, value: str, attributes: dict = {}) -> None:
+    def __init__(self, id: str, value: str, attributes: dict | None = None) -> None:
         """Create a State instance."""
         super().__init__(id, value, attributes)
 
@@ -175,6 +175,7 @@ class Homeassistant(StatesSingleRepository):
         if self._listen_task and not self._listen_task.done():
             self._listen_task.cancel()
         await self.hass.disconnect()
+        await self.session.close()
 
     async def _hass_listener(self) -> None:
         """Start listening on the HA websockets."""
@@ -203,7 +204,7 @@ class Homeassistant(StatesSingleRepository):
         self,
         entity_id: str,
         start_time: datetime | None = None,
-        types: list[StatisticsType] = [],
+        types: list[StatisticsType] | None = None,
         period: StatisticsPeriod = StatisticsPeriod.HOUR,
     ) -> list[dict]:
         """Read the statistics for an entity."""
@@ -214,7 +215,7 @@ class Homeassistant(StatesSingleRepository):
             period=period,
             start_time=start_time.isoformat(),
             statistic_ids=[entity_id],
-            types=types,
+            types=types if types is not None else [],
         )
         if entity_id in statistics:
             result = [convert_statistics(value) for value in statistics[entity_id]]
@@ -331,13 +332,14 @@ class Homeassistant(StatesSingleRepository):
                             "state": state.value,
                             "attributes": state.attributes,
                         }
-                        response = requests.post(
-                            f"{self._url}/api/states/{id}",
-                            headers=headers,
-                            json=sensor_data,
-                        )
-                        if not response.ok:
-                            LOGGER.error(f"State update for {id} in hass failed")
+                        async with self.session.post(
+                            f"{self._url}/api/states/{id}", headers=headers, json=sensor_data
+                        ) as response:
+                            if not response.ok:
+                                LOGGER.error(f"State update for {id} in hass failed")
+                        # response = requests.post(f"{self._url}/api/states/{id}", headers=headers,json=sensor_data)
+                        # if not response.ok:
+                        #    LOGGER.error(f"State update for {id} in hass failed")
                     else:
                         LOGGER.error(f"Writing to id {id} is not yet implemented.")
             except Exception:
@@ -464,7 +466,7 @@ class HomeassistantDevice(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            raise DeviceConfigError("Parameter energy is missing in the configuration")
 
         energy_scale: float | None = config.get("energy_scale")
         if energy_scale is not None:

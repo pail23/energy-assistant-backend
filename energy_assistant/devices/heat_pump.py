@@ -17,7 +17,7 @@ from . import (
     StatesRepository,
 )
 from .analysis import DataBuffer
-from .config import DeviceConfigException, get_config_param
+from .config import DeviceConfigError, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
 DEFAULT_NOMINAL_POWER = 5000
@@ -43,7 +43,7 @@ class HeatPumpDevice(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            raise DeviceConfigError("Parameter energy is missing in the configuration")
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -220,7 +220,7 @@ class SubHeatPump(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            raise DeviceConfigError("Parameter energy is missing in the configuration")
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -379,7 +379,7 @@ class SGReadyHeatPumpDevice(DeviceWithState):
                     sg_ready_state = self._get_state_for_optimized(
                         optimizer, OnOffState.from_str(current_sg_ready_state.value)
                     )
-                if sg_ready_state != current_sg_ready_state.value:
+                if sg_ready_state != OnOffState.from_str(current_sg_ready_state.value):
                     state_repository.set_state(
                         StateId(
                             id=self._sg_ready_switch_entity_id,

@@ -203,11 +203,11 @@ class OnOffState(StrEnum):
 class State:
     """Base class for States."""
 
-    def __init__(self, id: str, value: str, attributes: dict = {}) -> None:
+    def __init__(self, id: str, value: str, attributes: dict | None = None) -> None:
         """Create a state instance."""
         self._id = id
         self._value = value
-        self._attributes = attributes
+        self._attributes = attributes if attributes is not None else {}
         self._available = True
 
     @property
@@ -274,7 +274,7 @@ class StatesRepository(ABC):
         pass
 
     @abstractmethod
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
         pass
 
@@ -287,6 +287,11 @@ class StatesRepository(ABC):
     @abstractmethod
     async def async_read_states(self) -> None:
         """Read the states from the channel asynchronously."""
+        pass
+
+    @abstractmethod
+    async def async_write_states(self) -> None:
+        """Send the changed states to hass."""
         pass
 
     @abstractmethod
@@ -340,7 +345,7 @@ class StatesSingleRepository(StatesRepository):
                     self._template_states[k] = v
         return self._template_states
 
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
         self._write_states[id.id] = State(id.id, value, attributes)
 
@@ -386,7 +391,7 @@ class StatesMultipleRepositories(StatesRepository):
             result = {**result, **reposititory.get_template_states()}
         return result
 
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
         for repository in self._repositories:
             if id.channel == repository.channel:
@@ -406,6 +411,11 @@ class StatesMultipleRepositories(StatesRepository):
         """Read the states from the channel."""
         for repository in self._repositories:
             repository.read_states()
+
+    async def async_write_states(self) -> None:
+        """Send the changed states to hass."""
+        for repository in self._repositories:
+            await repository.async_write_states()
 
     def write_states(self) -> None:
         """Write the states to the channel."""

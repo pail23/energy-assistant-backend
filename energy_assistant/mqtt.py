@@ -84,6 +84,10 @@ class MqttConnection(StatesSingleRepository):
         """Read the states from the channel."""
         pass
 
+    async def async_write_states(self) -> None:
+        """Send the changed states to hass."""
+        self.write_states()
+
     def write_states(self) -> None:
         """Write the states to the channel."""
         if self._client:

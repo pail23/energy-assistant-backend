@@ -112,9 +112,9 @@ class UpdateDevicePowerMode:
                 result.supported_power_modes = list(d.supported_power_modes)
                 result.power_mode = d.power_mode
                 return result
-            except Exception:
+            except Exception as err:
                 LOGGER.error("Invalid power mode: " + power_mode)
-                raise HTTPException(status_code=404)
+                raise HTTPException(status_code=404) from err
 
 
 class DeleteDevice:

@@ -44,14 +44,14 @@ async def session() -> AsyncGenerator:
     async with async_engine.connect() as conn:
         await conn.begin()
         await conn.begin_nested()
-        AsyncSessionLocal = async_sessionmaker(
+        async_session_local = async_sessionmaker(
             autocommit=False,
             autoflush=False,
             bind=conn,
             future=True,
         )
 
-        async_session = AsyncSessionLocal()
+        async_session = async_session_local()
 
         @event.listens_for(async_session.sync_session, "after_transaction_end")
         def end_savepoint(session: Session, transaction: SessionTransaction) -> None:
@@ -63,7 +63,7 @@ async def session() -> AsyncGenerator:
 
         def test_get_session() -> Generator:
             with contextlib.suppress(SQLAlchemyError):
-                yield AsyncSessionLocal
+                yield async_session_local
 
         app.dependency_overrides[get_session] = test_get_session
 

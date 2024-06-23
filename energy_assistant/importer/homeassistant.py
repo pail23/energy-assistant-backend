@@ -73,7 +73,7 @@ class StatesRepositoryWithHistory(StatesRepository):
                     self._template_states[k] = v
         return self._template_states
 
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
         pass
 
@@ -91,6 +91,10 @@ class StatesRepositoryWithHistory(StatesRepository):
         pass
 
     def write_states(self) -> None:
+        """Write the states to the channel."""
+        pass
+
+    async def async_write_states(self) -> None:
         """Write the states to the channel."""
         pass
 

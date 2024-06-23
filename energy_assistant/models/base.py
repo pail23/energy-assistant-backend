@@ -1,7 +1,7 @@
 """Base class for Energy Assistant data models."""
 
 import uuid
-from typing import Mapping
+from typing import ClassVar, Mapping
 
 from sqlalchemy import MetaData
 from sqlalchemy.dialects.postgresql import UUID
@@ -64,11 +64,11 @@ class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
     metadata = MetaData(naming_convention=convention)  # type: ignore
 
-    type_annotation_map = {
+    type_annotation_map: ClassVar[dict] = {
         uuid.UUID: GUID,
     }
 
     def __repr__(self) -> str:
         """Representation of a data model object."""
-        columns = ", ".join([f"{k}={repr(v)}" for k, v in self.__dict__.items() if not k.startswith("_")])
+        columns = ", ".join([f"{k}={v!r}" for k, v in self.__dict__.items() if not k.startswith("_")])
         return f"<{self.__class__.__name__}({columns})>"
