@@ -230,9 +230,9 @@ class SubHeatPump(DeviceWithState):
     async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the SGReady Heatpump."""
 
-        old_state = self.state == OnOffState.ON
+        # old_state = self.state == OnOffState.ON
         self._state = assign_if_available(self._state, state_repository.get_state(self._state_entity_id))
-        new_state = self.state == OnOffState.ON
+        # new_state = self.state == OnOffState.ON
         self._consumed_energy = assign_if_available(
             self._consumed_energy,
             self._consumed_energy_value.evaluate(state_repository),
@@ -245,7 +245,8 @@ class SubHeatPump(DeviceWithState):
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
-        await self.update_session(old_state, new_state, self._name)
+        # todo: implement session tracking for sub devices
+        # await self.update_session(old_state, new_state, self._name)
 
     @property
     def actual_temperature(self) -> float:
@@ -341,11 +342,20 @@ class SGReadyHeatPumpDevice(DeviceWithState):
     async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the SGReady heatpump."""
 
+        old_state = self.state == OnOffState.ON
+
         if self._heating is not None:
             await self._heating.update_state(state_repository, self_sufficiency)
 
         if self._water_heating is not None:
             await self._water_heating.update_state(state_repository, self_sufficiency)
+
+        self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
+
+        if self._energy_snapshot is None:
+            self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
+
+        await self.update_session(old_state, self.state == OnOffState.ON, "Heat pump")
 
     async def update_power_consumption(
         self,

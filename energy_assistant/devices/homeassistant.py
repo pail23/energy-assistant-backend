@@ -178,15 +178,16 @@ class Homeassistant(StatesSingleRepository):
 
     async def _hass_listener(self) -> None:
         """Start listening on the HA websockets."""
-        while True:
-            try:
-                # start listening will block until the connection is lost/closed
-                await self.hass.start_listening()
-            except BaseHassClientError as err:
-                LOGGER.warning("Connection to HA lost due to error: %s", err)
-            LOGGER.info("Connection to HA lost. Reloading provider in 5 seconds.")
-            # schedule a reload of the provider
-            # self.mass.call_later(5, self.mass.config.reload_provider(self.instance_id))
+        if self._listen_task is not None:
+            while not self._listen_task.cancelled():
+                try:
+                    # start listening will block until the connection is lost/closed
+                    await self.hass.start_listening()
+                except BaseHassClientError as err:
+                    LOGGER.warning("Connection to HA lost due to error: %s", err)
+                LOGGER.info("Connection to HA lost. Reconnecting.")
+                # schedule a reload of the provider
+                # self.mass.call_later(5, self.mass.config.reload_provider(self.instance_id))
 
     @property
     def url(self) -> str:
