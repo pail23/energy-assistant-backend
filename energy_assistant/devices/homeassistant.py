@@ -348,9 +348,6 @@ class Homeassistant(StatesSingleRepository):
                         ) as response:
                             if not response.ok:
                                 LOGGER.error(f"State update for {id} in hass failed")
-                        # response = requests.post(f"{self._url}/api/states/{id}", headers=headers,json=sensor_data)
-                        # if not response.ok:
-                        #    LOGGER.error(f"State update for {id} in hass failed")
                     else:
                         LOGGER.error(f"Writing to id {id} is not yet implemented.")
             except Exception:
