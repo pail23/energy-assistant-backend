@@ -58,8 +58,7 @@ class DataBuffer:
         """Average of the data buffer."""
         if len(self.data) > 0:
             return mean([d.value for d in self.data])
-        else:
-            return 0.0
+        return 0.0
 
     def get_min_for(self, timespan: float, now: datetime | None = None) -> float:
         """Calculate the min over the last timespan seconds."""
@@ -89,8 +88,7 @@ class DataBuffer:
             if min(data) < lower:
                 return False
             return max(data) <= upper
-        else:
-            return False
+        return False
 
     def get_data_frame(
         self,
@@ -106,8 +104,7 @@ class DataBuffer:
         if not result.empty:
             result.index = result.index.tz_convert(time_zone)  # type: ignore
             return result.resample(freq).mean()
-        else:
-            return result
+        return result
 
 
 def create_timeseries_from_const(

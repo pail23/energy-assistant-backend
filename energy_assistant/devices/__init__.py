@@ -241,8 +241,7 @@ def assign_if_available(old_state: State | None, new_state: State | None) -> Sta
     """Return new state in case the state is available, otherwise old state."""
     if new_state and new_state.available:
         return new_state
-    else:
-        return old_state
+    return old_state
 
 
 @dataclass(frozen=True, eq=True)
@@ -308,8 +307,7 @@ class StatesSingleRepository(StatesRepository):
         """Get a state from the repository."""
         if isinstance(id, str):
             return self._read_states.get(id)
-        else:
-            return self._read_states.get(id.id)
+        return self._read_states.get(id.id)
 
     def get_numeric_states(self) -> dict[str, float]:
         """Get a states from the repository."""

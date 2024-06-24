@@ -59,7 +59,11 @@ def test_get_data_without_trailing_zeros(power_data_with_trailing_zeros: DataBuf
 def test_is_between_without_trailing_zeros(power_data_with_trailing_zeros: DataBuffer) -> None:
     """Test getting the data without the trailing zeros."""
     data = power_data_with_trailing_zeros.is_between(
-        15, 19, 8, datetime(2023, 1, 10, 10, 10, 23, tzinfo=time_zone), True
+        15,
+        19,
+        8,
+        datetime(2023, 1, 10, 10, 10, 23, tzinfo=time_zone),
+        True,
     )
     assert data
 

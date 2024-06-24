@@ -102,7 +102,10 @@ async def import_data(
     states_repository = StatesRepositoryWithHistory(await hass.get_location())
 
     start_date = datetime.now(tz=await hass.get_timezone()).replace(
-        hour=0, minute=0, second=0, microsecond=0
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
     ) - timedelta(days=days_to_retrieve)
 
     variables = home.get_variables()

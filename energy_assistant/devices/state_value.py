@@ -89,7 +89,7 @@ class StateValue:
         """Get all used variables."""
         if self._value_id is not None:
             return [self._value_id]
-        elif self._template is not None:
+        if self._template is not None:
             mapping = {"sensor": VariableMapping("sensor")}
             self._template.render(mapping)
             result = []

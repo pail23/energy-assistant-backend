@@ -176,7 +176,9 @@ async def test_init_controllable_heatpump(session_storage: SessionStorage, state
 
 @pytest.mark.asyncio()
 async def test_init_sgready_heatpump(
-    session_storage: SessionStorage, state_repository: StatesRepository, optimizer: Optimizer
+    session_storage: SessionStorage,
+    state_repository: StatesRepository,
+    optimizer: Optimizer,
 ) -> None:
     """Test initilaizing a sg ready heat pump."""
 

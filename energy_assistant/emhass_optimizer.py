@@ -278,14 +278,13 @@ class EmhassOptimizer(Optimizer):
             if df_now is None:
                 df_now = pd.DataFrame()
             return fcst.get_power_from_weather(df_weather, set_mix_forecast, df_now)
-        else:
-            pv_forecast = await self._hass.get_solar_forecast()
-            start = fcst.forecast_dates[0]
-            end = fcst.forecast_dates[-1]
-            pv_forecast_in_range = pv_forecast.loc[(pv_forecast.index >= start) & (pv_forecast.index <= end)]
-            pv_forecast_serie = pv_forecast_in_range["sum"]
-            pv_forecast_serie.index = pv_forecast_serie.index.tz_convert(self._location.get_time_zone())
-            return pv_forecast_serie
+        pv_forecast = await self._hass.get_solar_forecast()
+        start = fcst.forecast_dates[0]
+        end = fcst.forecast_dates[-1]
+        pv_forecast_in_range = pv_forecast.loc[(pv_forecast.index >= start) & (pv_forecast.index <= end)]
+        pv_forecast_serie = pv_forecast_in_range["sum"]
+        pv_forecast_serie.index = pv_forecast_serie.index.tz_convert(self._location.get_time_zone())
+        return pv_forecast_serie
 
     async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> None:
         """Perform a call to the day-ahead optimization routine.
@@ -629,11 +628,10 @@ class EmhassOptimizer(Optimizer):
                 pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
             return df_pred_optim, mlf
 
-        else:
-            self._logger.error(
-                "The ML forecaster file was not found, please run a model fit method before this tune method",
-            )
-            raise MLForecasterTuneError
+        self._logger.error(
+            "The ML forecaster file was not found, please run a model fit method before this tune method",
+        )
+        raise MLForecasterTuneError
 
     def forecast_model_predict(
         self,
@@ -769,8 +767,7 @@ class EmhassOptimizer(Optimizer):
                 time=time,
                 series=series,
             )
-        else:
-            raise OptimizerNotInitializedError
+        raise OptimizerNotInitializedError
 
     def get_optimized_power(self, device_id: uuid.UUID) -> float:
         """Get the optimized power budget for a give device."""

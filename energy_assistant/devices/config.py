@@ -16,8 +16,7 @@ def get_config_param(config: dict, param: str) -> str:
     result = config.get(param)
     if result is None:
         raise DeviceConfigMissingParameterError(param)
-    else:
-        return str(result)
+    return str(result)
 
 
 def get_config_param_from_list(config: list, param: str) -> str | None:

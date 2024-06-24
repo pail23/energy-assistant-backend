@@ -119,7 +119,10 @@ app.include_router(ws_router)
 
 
 async def async_handle_state_update(
-    ea: EnergyAssistant, state_repository: StatesRepository, session: AsyncSession, time_zone: tzinfo
+    ea: EnergyAssistant,
+    state_repository: StatesRepository,
+    session: AsyncSession,
+    time_zone: tzinfo,
 ) -> None:
     """Read the values from home assistant and process the update."""
     try:

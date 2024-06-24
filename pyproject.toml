@@ -92,7 +92,7 @@ count=true
 target-version = "py311"
 
 lint.select = [
-
+    "RET",
     "DTZ",
 
     "ASYNC",   # async

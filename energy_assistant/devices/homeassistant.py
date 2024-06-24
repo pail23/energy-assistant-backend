@@ -94,8 +94,7 @@ def convert_float(value: str) -> float:
     """Convert a value from Home Assistant to a float."""
     if value == "unavailable":
         return math.nan
-    else:
-        return float(value)
+    return float(value)
 
 
 def convert_history(value: dict) -> HistoryState:
@@ -230,8 +229,7 @@ class Homeassistant(StatesSingleRepository):
         )
         if entity_id in statistics:
             return [convert_statistics(value) for value in statistics[entity_id]]
-        else:
-            return []
+        return []
 
     async def get_history(
         self,
@@ -254,8 +252,7 @@ class Homeassistant(StatesSingleRepository):
         )
         if entity_id in history:
             return [convert_history(value) for value in history[entity_id]]
-        else:
-            return []
+        return []
 
     async def get_energy_info(self) -> dict:
         """Get the energy info from Home Assistant."""
@@ -452,8 +449,7 @@ class Homeassistant(StatesSingleRepository):
         async with self.session.get(f"{self._url}/api/config", headers=headers) as response:
             if response.ok:
                 return await response.json()
-            else:
-                raise HomeAssistantCommunicationError(response)
+        raise HomeAssistantCommunicationError(response)
 
     async def get_location(self) -> Location:
         """Read the location from the Homeassistant configuration."""

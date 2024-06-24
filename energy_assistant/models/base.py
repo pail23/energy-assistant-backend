@@ -34,8 +34,7 @@ class GUID(TypeDecorator):
         """Load the dialect implementation."""
         if dialect.name == "postgresql":
             return dialect.type_descriptor(UUID())
-        else:
-            return dialect.type_descriptor(CHAR(32))
+        return dialect.type_descriptor(CHAR(32))
 
     def process_bind_param(self, value, dialect) -> str | None:  # type:ignore
         """Process the bind parameters."""
@@ -52,10 +51,9 @@ class GUID(TypeDecorator):
         """Process the result value."""
         if value is None:
             return value
-        else:
-            if not isinstance(value, uuid.UUID):
-                value = uuid.UUID(value)
-            return value
+        if not isinstance(value, uuid.UUID):
+            value = uuid.UUID(value)
+        return value
 
 
 class Base(AsyncAttrs, DeclarativeBase):

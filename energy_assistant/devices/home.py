@@ -1,8 +1,9 @@
 """The home is the root of all devices."""
 
+from __future__ import annotations
+
 import logging
 import uuid
-from typing import Any
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
@@ -60,7 +61,7 @@ class HomeEnergyState:
         self._grid_imported_energy: State | None = None
         self._produced_solar_energy: State | None = None
 
-    def create_clone(self) -> Any:
+    def create_clone(self) -> HomeEnergyState:
         """Create a home energy instance with the same configuration."""
         return HomeEnergyState(self._config)
 

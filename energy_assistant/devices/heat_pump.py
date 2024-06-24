@@ -132,10 +132,8 @@ class HeatPumpDevice(DeviceWithState):
             power = optimizer.get_optimized_power(self._id)
             if power > 0:
                 return self._target_temperature_pv
-            else:
-                return self._target_temperature_normal
-        else:
-            return current_target_temperature
+            return self._target_temperature_normal
+        return current_target_temperature
 
     def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
@@ -170,8 +168,7 @@ class HeatPumpDevice(DeviceWithState):
         """Current power consumption of the device."""
         if self._state is not None:
             return self._nominal_power if self._state.value == "on" else 0.0
-        else:
-            return 0.0
+        return 0.0
 
     @property
     def actual_temperature(self) -> float:
@@ -419,10 +416,8 @@ class SGReadyHeatPumpDevice(DeviceWithState):
             power = optimizer.get_optimized_power(self._id)
             if power > 0:
                 return OnOffState.ON
-            else:
-                return OnOffState.ON
-        else:
-            return current_state
+            return OnOffState.ON
+        return current_state
 
     @property
     def requested_additional_power(self) -> float:
