@@ -231,7 +231,8 @@ class EmhassOptimizer(Optimizer):
         # Load cost and prod price forecast
         df_input_data = fcst.get_load_cost_forecast(df_input_data, method=fcst.optim_conf["load_cost_forecast_method"])
         df_input_data = fcst.get_prod_price_forecast(
-            df_input_data, method=fcst.optim_conf["prod_price_forecast_method"],
+            df_input_data,
+            method=fcst.optim_conf["prod_price_forecast_method"],
         )
         opt_res = opt.perform_perfect_forecast_optim(df_input_data, days_list)
         # Save CSV file for analysis
@@ -266,7 +267,10 @@ class EmhassOptimizer(Optimizer):
         return runtimeparams
 
     async def async_get_pv_forecast(
-        self, fcst: Forecast, set_mix_forecast: bool | None = False, df_now: pd.DataFrame | None = None,
+        self,
+        fcst: Forecast,
+        set_mix_forecast: bool | None = False,
+        df_now: pd.DataFrame | None = None,
     ) -> pd.Series:
         """Get the PV forecast."""
         if self._pv_forecast_method != "homeassistant":
@@ -358,7 +362,9 @@ class EmhassOptimizer(Optimizer):
         for load_info in self._projected_load_devices:
             if not load_info.is_deferrable:
                 series = create_timeseries_from_const(
-                    load_info.nominal_power, pd.Timedelta(int(load_info.duration), "s"), freq,
+                    load_info.nominal_power,
+                    pd.Timedelta(int(load_info.duration), "s"),
+                    freq,
                 )
                 projected_load = series if projected_load is None else projected_load + series
 
@@ -383,13 +389,17 @@ class EmhassOptimizer(Optimizer):
         self._logger.info("Performing day-ahead forecast optimization")
         # Load cost and prod price forecast
         df_input_data_dayahead = fcst.get_load_cost_forecast(
-            df_input_data_dayahead, method=fcst.optim_conf["load_cost_forecast_method"],
+            df_input_data_dayahead,
+            method=fcst.optim_conf["load_cost_forecast_method"],
         )
         df_input_data_dayahead = fcst.get_prod_price_forecast(
-            df_input_data_dayahead, method=fcst.optim_conf["prod_price_forecast_method"],
+            df_input_data_dayahead,
+            method=fcst.optim_conf["prod_price_forecast_method"],
         )
         self._day_ahead_forecast = opt.perform_dayahead_forecast_optim(
-            df_input_data_dayahead, pv_forecast, p_load_forecast,
+            df_input_data_dayahead,
+            pv_forecast,
+            p_load_forecast,
         )
         if self._day_ahead_forecast is not None:
             self._day_ahead_forecast["P_projected_load"] = df_input_data_dayahead["P_projected_load"].copy()
@@ -492,10 +502,12 @@ class EmhassOptimizer(Optimizer):
         self._logger.info("Performing naive MPC optimization")
         # Load cost and prod price forecast
         df_input_data_dayahead = fcst.get_load_cost_forecast(
-            df_input_data_dayahead, method=fcst.optim_conf["load_cost_forecast_method"],
+            df_input_data_dayahead,
+            method=fcst.optim_conf["load_cost_forecast_method"],
         )
         df_input_data_dayahead = fcst.get_prod_price_forecast(
-            df_input_data_dayahead, method=fcst.optim_conf["prod_price_forecast_method"],
+            df_input_data_dayahead,
+            method=fcst.optim_conf["prod_price_forecast_method"],
         )
 
         # The specifics params for the MPC at runtime
@@ -529,7 +541,9 @@ class EmhassOptimizer(Optimizer):
         return opt_res_naive_mpc
 
     def forecast_model_fit(
-        self, only_if_file_does_not_exist: bool = False, days_to_retrieve: int | None = None,
+        self,
+        only_if_file_does_not_exist: bool = False,
+        days_to_retrieve: int | None = None,
     ) -> float:
         """Perform a forecast model fit from training data retrieved from Home Assistant."""
 
@@ -705,7 +719,10 @@ class EmhassOptimizer(Optimizer):
             pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), "pv", temp_folder)
             pv_df.to_csv(temp_folder / "pv_df.csv")
             no_var_load_df = self._no_var_loads.get_data_frame(
-                freq, self._location.get_time_zone(), "non_var_loads", temp_folder,
+                freq,
+                self._location.get_time_zone(),
+                "non_var_loads",
+                temp_folder,
             )
             df = self._day_ahead_forecast.merge(pv_df, how="left", left_index=True, right_index=True)
             df = df.merge(no_var_load_df, how="left", left_index=True, right_index=True)
@@ -780,7 +797,8 @@ class EmhassOptimizer(Optimizer):
             idx_closest = self._day_ahead_forecast.index.get_indexer([now_precise], method=method)[0]  # type: ignore
             if idx_closest == -1:
                 idx_closest = self._day_ahead_forecast.index.get_indexer(  # type: ignore
-                    [now_precise], method="nearest",
+                    [now_precise],
+                    method="nearest",
                 )[0]
 
             value = self._day_ahead_forecast.iloc[idx_closest][column_name]

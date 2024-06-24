@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime, tzinfo
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -52,7 +52,9 @@ class Database:
                     )
 
                     snapshot_measurement = await HomeMeasurement.read_before_date(
-                        session, home_measurement.measurement_date, True,
+                        session,
+                        home_measurement.measurement_date,
+                        True,
                     )
                     if snapshot_measurement is None:
                         snapshot_measurement = home_measurement
@@ -86,9 +88,9 @@ class Database:
                 if utility_meter_dto is not None:
                     utility_meter.restore_last_meter_value(utility_meter_dto.last_meter_value)
 
-    async def store_home_state(self, home: Home, session: AsyncSession) -> None:
+    async def store_home_state(self, home: Home, session: AsyncSession, time_zone: tzinfo) -> None:
         """Store the state of the home including all devices."""
-        today = date.today()
+        today = datetime.now(tz=time_zone).date()
         try:
             home_measurement = await HomeMeasurement.read_by_date(session, today, True)
             if home_measurement is None:
@@ -184,7 +186,10 @@ class Database:
                 home.create_device(device_dto.type, device_dto.get_config(), session_storage, device_type_registry)
 
     async def create_or_update_utility_meter(
-        self, session: AsyncSession, device_id: uuid.UUID, utility_meter: UtilityMeter,
+        self,
+        session: AsyncSession,
+        device_id: uuid.UUID,
+        utility_meter: UtilityMeter,
     ) -> None:
         """Create or update a utility meter for a given device."""
         utility_meter_dto = await UtilityMeterDTO.read_by_name(session, utility_meter.name, device_id)

@@ -23,7 +23,9 @@ async def read_all(request: Request, use_case: Annotated[ReadForecast, Depends(R
 
 @router.post("/create_model", response_model=CreateModelResponse)
 async def create_model(
-    request: Request, days_to_retrieve: int, use_case: Annotated[CreateModel, Depends(CreateModel)],
+    request: Request,
+    days_to_retrieve: int,
+    use_case: Annotated[CreateModel, Depends(CreateModel)],
 ) -> CreateModelResponse:
     """Create the machine learning forecast model."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None

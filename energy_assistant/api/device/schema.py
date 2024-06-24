@@ -9,7 +9,6 @@ class ReadDeviceResponse(DeviceSchema):
     """API Response for reading a device."""
 
 
-
 class ReadAllDevicesResponse(BaseModel):
     """API Response for reading all deviced."""
 

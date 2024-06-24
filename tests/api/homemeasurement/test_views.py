@@ -2,12 +2,15 @@
 
 import uuid
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from energy_assistant.devices import PowerModes
+
+time_zone = ZoneInfo("Europe/Berlin")
 
 
 async def setup_data(session: AsyncSession) -> None:
@@ -28,10 +31,10 @@ async def setup_data(session: AsyncSession) -> None:
     entry1 = SessionLogEntry(
         text="Test log entry",
         device_id=device.id,
-        start=datetime(2023, 1, 9, 10, 22),
+        start=datetime(2023, 1, 9, 10, 22, tzinfo=time_zone),
         start_solar_consumed_energy=100,
         start_consumed_energy=200,
-        end=datetime(2023, 1, 9, 10, 30),
+        end=datetime(2023, 1, 9, 10, 30, tzinfo=time_zone),
         end_solar_consumed_energy=120,
         end_consumed_energy=240,
     )
@@ -40,10 +43,10 @@ async def setup_data(session: AsyncSession) -> None:
     entry2 = SessionLogEntry(
         text="Test log entry",
         device_id=device.id,
-        start=datetime(2023, 1, 10, 10, 22),
+        start=datetime(2023, 1, 10, 10, 22, tzinfo=time_zone),
         start_solar_consumed_energy=100,
         start_consumed_energy=200,
-        end=datetime(2023, 1, 10, 10, 30),
+        end=datetime(2023, 1, 10, 10, 30, tzinfo=time_zone),
         end_solar_consumed_energy=130,
         end_consumed_energy=245,
     )

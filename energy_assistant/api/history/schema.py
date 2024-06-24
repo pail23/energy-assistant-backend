@@ -35,7 +35,6 @@ class ReadHomeMeasurementDifferenceResponse(HomeMeasurementPeriodSchema):
     """API Response for reading home measurements."""
 
 
-
 class HomeMeasurementDateSchema(HomeMeasurementPeriodSchema):
     """Schema class for a home measurement summary of a specific day."""
 

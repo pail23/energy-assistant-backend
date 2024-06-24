@@ -9,7 +9,6 @@ class ReadHomeMeasurementResponse(HomeMeasurementSchema):
     """API Response for reading home measurements."""
 
 
-
 class ReadAllHomeMeasurementResponse(BaseModel):
     """API Response for reading home measurements."""
 

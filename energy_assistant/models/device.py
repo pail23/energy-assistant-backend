@@ -138,7 +138,9 @@ class DeviceMeasurement(Base):
     solar_consumed_energy: Mapped[float]
 
     home_measurement_id: Mapped[int] = mapped_column(
-        "home_measurement_id", ForeignKey("HomeMeasurement.id"), nullable=False,
+        "home_measurement_id",
+        ForeignKey("HomeMeasurement.id"),
+        nullable=False,
     )
 
     home_measurement: Mapped[HomeMeasurement] = relationship("HomeMeasurement", back_populates="device_measurements")
@@ -259,7 +261,11 @@ class UtilityMeter(Base):
 
     @classmethod
     async def create(
-        cls, session: AsyncSession, device_id: uuid.UUID, name: str, last_meter_value: float,
+        cls,
+        session: AsyncSession,
+        device_id: uuid.UUID,
+        name: str,
+        last_meter_value: float,
     ) -> UtilityMeter:
         """Create a utility meter."""
 

@@ -92,12 +92,18 @@ class StatesRepositoryWithHistory(StatesRepository):
 
 
 async def import_data(
-    home: Home, hass: Homeassistant, session: AsyncSession, freq: pd.Timedelta, days_to_retrieve: int,
+    home: Home,
+    hass: Homeassistant,
+    session: AsyncSession,
+    freq: pd.Timedelta,
+    days_to_retrieve: int,
 ) -> None:
     """Import data from Homeassistant."""
     states_repository = StatesRepositoryWithHistory(await hass.get_location())
 
-    start_date = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days_to_retrieve)
+    start_date = datetime.now(tz=await hass.get_timezone()).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ) - timedelta(days=days_to_retrieve)
 
     variables = home.get_variables()
     for variable in variables:

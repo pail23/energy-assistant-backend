@@ -21,7 +21,8 @@ router = APIRouter(prefix="/homemeasurements")
 
 @router.get("", response_model=ReadAllHomeMeasurementResponse)
 async def read_all(
-    request: Request, use_case: Annotated[ReadAllHomeMeasurement, Depends(ReadAllHomeMeasurement)],
+    request: Request,
+    use_case: Annotated[ReadAllHomeMeasurement, Depends(ReadAllHomeMeasurement)],
 ) -> ReadAllHomeMeasurementResponse:
     """Rest end point for read all home measurements."""
     return ReadAllHomeMeasurementResponse(

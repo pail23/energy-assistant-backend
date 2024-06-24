@@ -90,6 +90,7 @@ def state_repository() -> StatesRepository:
     """State repository mock."""
     return MockStateReposity()
 
+
 class OptimizerMock(Optimizer):
     """Mock class for optimizers."""
 
@@ -97,10 +98,12 @@ class OptimizerMock(Optimizer):
         """Get the optimized power budget for a give device."""
         return 3500
 
+
 @pytest.fixture()
 def optimizer() -> Optimizer:
     """Optimizery mock."""
     return OptimizerMock()
+
 
 HEATPUMP_CONFIG = {
     "name": "my heatpump",
@@ -155,6 +158,7 @@ async def test_init_heatpump(session_storage: SessionStorage, state_repository: 
     assert heat_pump.attributes == {"state": "123", "actual_temperature": "123.0 °C"}
     assert len(heat_pump.supported_power_modes) == 1
 
+
 @pytest.mark.asyncio()
 async def test_init_controllable_heatpump(session_storage: SessionStorage, state_repository: StatesRepository) -> None:
     """Test initilaizing a heat pump."""
@@ -169,8 +173,11 @@ async def test_init_controllable_heatpump(session_storage: SessionStorage, state
     assert heat_pump.attributes == {"state": "123", "actual_temperature": "123.0 °C"}
     assert len(heat_pump.supported_power_modes) == 3
 
+
 @pytest.mark.asyncio()
-async def test_init_sgready_heatpump(session_storage: SessionStorage, state_repository: StatesRepository, optimizer: Optimizer) -> None:
+async def test_init_sgready_heatpump(
+    session_storage: SessionStorage, state_repository: StatesRepository, optimizer: Optimizer
+) -> None:
     """Test initilaizing a sg ready heat pump."""
 
     heat_pump = SGReadyHeatPumpDevice(SG_READY_CONFIG, session_storage)

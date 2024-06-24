@@ -8,7 +8,7 @@ import sys
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
-from datetime import date
+from datetime import tzinfo
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Final
@@ -19,6 +19,7 @@ import yaml
 from anyio import open_file
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
+from datatime import datetime, timezone
 from energy_assistant_frontend import where as locate_frontend
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -61,7 +62,11 @@ class EnergyAssistant:
 
 
 async def import_data_task(
-    home: Home, hass: Homeassistant, async_session: async_sessionmaker, freq: pd.Timedelta, days_to_retrieve: int,
+    home: Home,
+    hass: Homeassistant,
+    async_session: async_sessionmaker,
+    freq: pd.Timedelta,
+    days_to_retrieve: int,
 ) -> None:
     """Import data from home assistant."""
     async with async_session() as session:
@@ -114,9 +119,7 @@ app.include_router(ws_router)
 
 
 async def async_handle_state_update(
-    ea: EnergyAssistant,
-    state_repository: StatesRepository,
-    session: AsyncSession,
+    ea: EnergyAssistant, state_repository: StatesRepository, session: AsyncSession, time_zone: tzinfo
 ) -> None:
     """Read the values from home assistant and process the update."""
     try:
@@ -133,7 +136,7 @@ async def async_handle_state_update(
             if ea.home:
                 await asyncio.gather(
                     ws_manager.broadcast(get_home_message(ea.home)),
-                    ea.db.store_home_state(ea.home, session),
+                    ea.db.store_home_state(ea.home, session, time_zone),
                 )
             else:
                 logging.error("The variable home is None in async_handle_state_update")
@@ -147,7 +150,8 @@ async def async_handle_state_update(
 
 async def background_task(ea: EnergyAssistant) -> None:
     """Periodically read the values from home assistant and process the update."""
-    last_update = date.today()
+    time_zone = await ea.hass.get_timezone() if ea.hass is not None else timezone.utc
+    last_update = datetime.now(tzinfo=time_zone).date()
     async_session = await get_async_session()
     repositories: list[StatesRepository] = []
     if ea.hass is not None:
@@ -158,14 +162,14 @@ async def background_task(ea: EnergyAssistant) -> None:
     while not ea.should_stop:
         # delta_t = datetime.now().timestamp()
         # print("Start refresh from home assistant")
-        today = date.today()
+        today = datetime.now(tzinfo=time_zone).date()
         try:
             if today != last_update:
                 ea.home.store_energy_snapshot()
             last_update = today
 
             async with async_session() as session:
-                await async_handle_state_update(ea, state_repository, session)
+                await async_handle_state_update(ea, state_repository, session, time_zone)
         except Exception:
             logging.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")

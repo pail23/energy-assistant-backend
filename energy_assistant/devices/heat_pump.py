@@ -81,7 +81,8 @@ class HeatPumpDevice(DeviceWithState):
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
-            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id),
+            self._actual_temp,
+            state_repository.get_state(self._actual_temp_entity_id),
         )
 
         if self._energy_snapshot is None:
@@ -241,7 +242,8 @@ class SubHeatPump(DeviceWithState):
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
-            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id),
+            self._actual_temp,
+            state_repository.get_state(self._actual_temp_entity_id),
         )
 
         if self._energy_snapshot is None:
@@ -379,7 +381,8 @@ class SGReadyHeatPumpDevice(DeviceWithState):
                             sg_ready_state = OnOffState.OFF
                 elif self.power_mode == PowerModes.OPTIMIZED:
                     sg_ready_state = self._get_state_for_optimized(
-                        optimizer, OnOffState.from_str(current_sg_ready_state.value),
+                        optimizer,
+                        OnOffState.from_str(current_sg_ready_state.value),
                     )
                 if sg_ready_state != OnOffState.from_str(current_sg_ready_state.value):
                     state_repository.set_state(

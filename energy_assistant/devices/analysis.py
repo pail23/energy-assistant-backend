@@ -111,7 +111,10 @@ class DataBuffer:
 
 
 def create_timeseries_from_const(
-    value: float, duration: pd.Timedelta, freq: pd.Timedelta, start: pd.Timestamp | None = None,
+    value: float,
+    duration: pd.Timedelta,
+    freq: pd.Timedelta,
+    start: pd.Timestamp | None = None,
 ) -> pd.Series:
     """Create a time series with constant values."""
     if start is None:

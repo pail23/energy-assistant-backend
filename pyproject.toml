@@ -92,6 +92,9 @@ count=true
 target-version = "py311"
 
 lint.select = [
+
+    "DTZ",
+
     "ASYNC",   # async
     "B",       # Bug Bear
     "C",  # complexity

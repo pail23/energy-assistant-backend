@@ -186,7 +186,10 @@ class DeviceWithState(Device):
     async def start_session(self, text: str) -> None:
         """Start a session."""
         self.current_session = await self.session_storage.start_session(
-            self.id, text, self.consumed_solar_energy, self.consumed_energy,
+            self.id,
+            text,
+            self.consumed_solar_energy,
+            self.consumed_energy,
         )
 
     async def update_session(self, old_state: bool, new_state: bool, text: str) -> None:

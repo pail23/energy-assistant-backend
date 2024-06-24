@@ -81,7 +81,9 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_first(
-        cls, session: AsyncSession, include_device_measurements: bool = False,
+        cls,
+        session: AsyncSession,
+        include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read last home measurement by date."""
         stmt = select(cls)
@@ -91,7 +93,9 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_last(
-        cls, session: AsyncSession, include_device_measurements: bool = False,
+        cls,
+        session: AsyncSession,
+        include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read last home measurement."""
         stmt = select(cls)

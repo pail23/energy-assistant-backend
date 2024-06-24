@@ -27,7 +27,9 @@ router = APIRouter(prefix="/devices")
 
 @router.get("", response_model=ReadAllDevicesResponse)
 async def read_all(
-    request: Request, filter_with_session_log_enties: bool, use_case: Annotated[ReadAllDevices, Depends(ReadAllDevices)],
+    request: Request,
+    filter_with_session_log_enties: bool,
+    use_case: Annotated[ReadAllDevices, Depends(ReadAllDevices)],
 ) -> ReadAllDevicesResponse:
     """Rest end point for read all devices."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None

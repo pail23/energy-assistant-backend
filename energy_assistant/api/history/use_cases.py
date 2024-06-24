@@ -49,7 +49,9 @@ class ReadHomeMeasurementDifference:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement_from = await HomeMeasurement.read_before_date(
-                session, from_date, include_device_measurements=True,
+                session,
+                from_date,
+                include_device_measurements=True,
             )
             if not home_measurement_from:
                 home_measurement_from = await HomeMeasurement.read_first(session, include_device_measurements=True)
@@ -103,7 +105,9 @@ class ReadHomeMeasurementDaily:
         """Execute the read daily home measurement use case."""
         async with self.async_session() as session:
             last_measurement = await HomeMeasurement.read_before_date(
-                session, from_date, include_device_measurements=True,
+                session,
+                from_date,
+                include_device_measurements=True,
             )
             if not last_measurement:
                 last_measurement = await HomeMeasurement.read_first(session, include_device_measurements=True)

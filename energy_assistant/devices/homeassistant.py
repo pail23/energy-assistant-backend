@@ -4,8 +4,9 @@ import asyncio
 import logging
 import math
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, tzinfo
 from enum import StrEnum
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests  # type: ignore
@@ -152,6 +153,8 @@ class Homeassistant(StatesSingleRepository):
     hass: HomeAssistantClient
     _listen_task: asyncio.Task | None = None
 
+    time_zone: tzinfo | None
+
     def __init__(self, url: str, token: str, demo_mode: bool) -> None:
         """Create an instance of the Homeassistant class."""
         super().__init__(HOMEASSISTANT_CHANNEL)
@@ -217,7 +220,7 @@ class Homeassistant(StatesSingleRepository):
     ) -> list[dict]:
         """Read the statistics for an entity."""
         if start_time is None:
-            start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            start_time = datetime.now(tz=await self.get_timezone()).replace(hour=0, minute=0, second=0, microsecond=0)
         statistics = await self.hass.send_command(
             "recorder/statistics_during_period",
             period=period,
@@ -231,13 +234,16 @@ class Homeassistant(StatesSingleRepository):
             return []
 
     async def get_history(
-        self, entity_id: str, start_time: datetime | None = None, end_time: datetime | None = None,
+        self,
+        entity_id: str,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
     ) -> list[HistoryState]:
         """Get the history of a state from Home Assistant."""
         if start_time is None:
-            start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            start_time = datetime.now(tz=await self.get_timezone()).replace(hour=0, minute=0, second=0, microsecond=0)
         if end_time is None:
-            end_time = datetime.now()
+            end_time = datetime.now(tz=await self.get_timezone())
         history = await self.hass.send_command(
             "history/history_during_period",
             start_time=start_time.isoformat(),
@@ -304,7 +310,9 @@ class Homeassistant(StatesSingleRepository):
             for state in states:
                 entity_id = state.get("entity_id")
                 self._read_states[entity_id] = HomeassistantState(
-                    entity_id, state.get("state"), state.get("attributes"),
+                    entity_id,
+                    state.get("state"),
+                    state.get("attributes"),
                 )
             self._template_states = None
         except Exception:
@@ -337,7 +345,9 @@ class Homeassistant(StatesSingleRepository):
                             "attributes": state.attributes,
                         }
                         async with self.session.post(
-                            f"{self._url}/api/states/{id}", headers=headers, json=sensor_data,
+                            f"{self._url}/api/states/{id}",
+                            headers=headers,
+                            json=sensor_data,
                         ) as response:
                             if not response.ok:
                                 LOGGER.error(f"State update for {id} in hass failed")
@@ -354,10 +364,12 @@ class Homeassistant(StatesSingleRepository):
         """Read the states from the homeassistant instance."""
         if self._demo_mode:
             self._read_states["sensor.solaredge_i1_ac_power"] = HomeassistantState(
-                "sensor.solaredge_i1_ac_power", "10000",
+                "sensor.solaredge_i1_ac_power",
+                "10000",
             )
             self._read_states["sensor.solaredge_m1_ac_power"] = HomeassistantState(
-                "sensor.solaredge_m1_ac_power", "6000",
+                "sensor.solaredge_m1_ac_power",
+                "6000",
             )
             self._read_states["sensor.keba_charge_power"] = HomeassistantState("sensor.keba_charge_power", "2500")
             self._read_states["sensor.tumbler_power"] = HomeassistantState("sensor.tumbler_power", "600")
@@ -377,7 +389,9 @@ class Homeassistant(StatesSingleRepository):
                     for state in states:
                         entity_id = state.get("entity_id")
                         self._read_states[entity_id] = HomeassistantState(
-                            entity_id, state.get("state"), state.get("attributes"),
+                            entity_id,
+                            state.get("state"),
+                            state.get("attributes"),
                         )
                     self._template_states = None
 
@@ -452,6 +466,12 @@ class Homeassistant(StatesSingleRepository):
             time_zone=config.get("time_zone", ""),
         )
 
+    async def get_timezone(self) -> tzinfo:
+        """Get the local timezone."""
+        if self.time_zone is None:
+            self.time_zone = ZoneInfo((await self.get_location()).time_zone)
+        return self.time_zone
+
 
 class HomeassistantDevice(DeviceWithState):
     """A generic Homeassistant device."""
@@ -500,7 +520,8 @@ class HomeassistantDevice(DeviceWithState):
         if model is not None and manufacturer is not None:
             self._device_type = device_type_registry.get_device_type(manufacturer, model)
             self._nominal_power = config.get(
-                "nominal_power", self._device_type.nominal_power if self._device_type else None,
+                "nominal_power",
+                self._device_type.nominal_power if self._device_type else None,
             )
             self._nominal_duration = config.get(
                 "nominal_duration",
