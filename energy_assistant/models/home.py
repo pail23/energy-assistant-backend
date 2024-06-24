@@ -81,7 +81,7 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_first(
-        cls, session: AsyncSession, include_device_measurements: bool = False
+        cls, session: AsyncSession, include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read last home measurement by date."""
         stmt = select(cls)
@@ -91,7 +91,7 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_last(
-        cls, session: AsyncSession, include_device_measurements: bool = False
+        cls, session: AsyncSession, include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read last home measurement."""
         stmt = select(cls)
@@ -166,7 +166,7 @@ class HomeMeasurement(Base):
         # To fetch device measurements
         new = await cls.read_by_id(session, home_measurement.id, include_device_measurements=True)
         if not new:
-            raise RuntimeError()
+            raise RuntimeError
         return new
 
     async def update(
