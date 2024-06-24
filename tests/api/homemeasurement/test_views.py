@@ -74,7 +74,7 @@ async def setup_data(session: AsyncSession) -> None:
     await session.commit()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_home_measurements_read_all(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all home_measurements."""
     # setup
@@ -88,7 +88,7 @@ async def test_home_measurements_read_all(ac: AsyncClient, session: AsyncSession
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_home_measurements_read_difference(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all home_measurements."""
     # setup
@@ -117,7 +117,7 @@ async def test_home_measurements_read_difference(ac: AsyncClient, session: Async
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_home_measurements_read_daily(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all home_measurements."""
     # setup
@@ -171,11 +171,11 @@ async def test_home_measurements_read_daily(ac: AsyncClient, session: AsyncSessi
                 ],
                 "measurement_date": "2023-01-10",
             },
-        ]
+        ],
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_session_log(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all sessions."""
     # setup
@@ -205,5 +205,5 @@ async def test_session_log(ac: AsyncClient, session: AsyncSession) -> None:
                 "solar_consumed_energy": 20.0,
                 "consumed_energy": 40.0,
             },
-        ]
+        ],
     }

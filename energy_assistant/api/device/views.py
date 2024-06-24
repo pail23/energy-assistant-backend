@@ -27,7 +27,7 @@ router = APIRouter(prefix="/devices")
 
 @router.get("", response_model=ReadAllDevicesResponse)
 async def read_all(
-    request: Request, filter_with_session_log_enties: bool, use_case: Annotated[ReadAllDevices, Depends(ReadAllDevices)]
+    request: Request, filter_with_session_log_enties: bool, use_case: Annotated[ReadAllDevices, Depends(ReadAllDevices)],
 ) -> ReadAllDevicesResponse:
     """Rest end point for read all devices."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
@@ -38,7 +38,7 @@ async def read_all(
                 energy_assistant.home if energy_assistant is not None else None,
                 filter_with_session_log_enties,
             )
-        ]
+        ],
     )
 
 
@@ -63,7 +63,7 @@ async def read_measurements(
 ) -> ReadDeviceMeasurementsResponse:
     """REST end point for read a device."""
     return ReadDeviceMeasurementsResponse(
-        device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)]
+        device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)],
     )
 
 

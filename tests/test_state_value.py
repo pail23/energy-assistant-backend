@@ -14,19 +14,15 @@ class StatesSingleRepositoryMock(StatesSingleRepository):
 
     def read_states(self) -> None:
         """Read the states from the channel."""
-        pass
 
     def write_states(self) -> None:
         """Write the states to the channel."""
-        pass
 
     async def async_read_states(self) -> None:
         """Read the states from the channel asynchronously."""
-        pass
 
     async def async_write_states(self) -> None:
         """Write the states to the channel."""
-        pass
 
 
 def test_state_value() -> None:

@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, tzinfo
 from enum import StrEnum, auto
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from zoneinfo import ZoneInfo
 
-import pytz  # type: ignore
+if TYPE_CHECKING:
+    import uuid
+    from datetime import datetime, tzinfo
 
 
 @dataclass
@@ -48,17 +49,14 @@ class SessionStorage(ABC):
         consumed_energy: float,
     ) -> Session:
         """Start a new session."""
-        pass
 
     @abstractmethod
     async def update_session(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
-        pass
 
     @abstractmethod
     async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
-        pass
 
 
 class Integrator:
@@ -261,48 +259,39 @@ class StatesRepository(ABC):
     @abstractmethod
     def get_state(self, id: StateId | str) -> State | None:
         """Get a state from the repository."""
-        pass
 
     @abstractmethod
     def get_numeric_states(self) -> dict[str, float]:
         """Get a states from the repository."""
-        pass
 
     @abstractmethod
     def get_template_states(self) -> dict:
         """Get a states from the repository."""
-        pass
 
     @abstractmethod
     def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
-        pass
 
     @property
     @abstractmethod
     def channel(self) -> str:
         """Get the channel of the State Repository."""
-        pass
 
     @abstractmethod
     async def async_read_states(self) -> None:
         """Read the states from the channel asynchronously."""
-        pass
 
     @abstractmethod
     async def async_write_states(self) -> None:
         """Send the changed states to hass."""
-        pass
 
     @abstractmethod
     def read_states(self) -> None:
         """Read the states from the channel."""
-        pass
 
     @abstractmethod
     def write_states(self) -> None:
         """Write the states to the channel."""
-        pass
 
 
 class StatesSingleRepository(StatesRepository):
@@ -324,8 +313,7 @@ class StatesSingleRepository(StatesRepository):
 
     def get_numeric_states(self) -> dict[str, float]:
         """Get a states from the repository."""
-        result = {k: v.numeric_value for k, v in self._read_states.items()}
-        return result
+        return {k: v.numeric_value for k, v in self._read_states.items()}
 
     def get_template_states(self) -> dict:
         """Get template states from the repository."""
@@ -445,4 +433,4 @@ class Location:
 
     def get_time_zone(self) -> tzinfo:
         """Get the timezone."""
-        return pytz.timezone(self.time_zone)
+        return ZoneInfo(self.time_zone)

@@ -22,18 +22,15 @@ class SessionStorageMock(SessionStorage):
         consumed_energy: float,
     ) -> Session:
         """Start a new session."""
-        pass
 
     async def update_session(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
-        pass
 
     async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
-        pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def session_storage() -> SessionStorage:
     """Session storage mock."""
     return SessionStorageMock()
@@ -55,11 +52,11 @@ class MockStateReposity(StatesRepository):
 
     def get_numeric_states(self) -> dict[str, float]:
         """Get a states from the repository."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def get_template_states(self) -> dict:
         """Get a states from the repository."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
@@ -73,22 +70,22 @@ class MockStateReposity(StatesRepository):
 
     async def async_read_states(self) -> None:
         """Read the states from the channel asynchronously."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     async def async_write_states(self) -> None:
         """Send the changed states to hass."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def read_states(self) -> None:
         """Read the states from the channel."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def write_states(self) -> None:
         """Write the states to the channel."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
-@pytest.fixture
+@pytest.fixture()
 def state_repository() -> StatesRepository:
     """State repository mock."""
     return MockStateReposity()
@@ -100,7 +97,7 @@ class OptimizerMock(Optimizer):
         """Get the optimized power budget for a give device."""
         return 3500
 
-@pytest.fixture
+@pytest.fixture()
 def optimizer() -> Optimizer:
     """Optimizery mock."""
     return OptimizerMock()
@@ -144,7 +141,7 @@ SG_READY_CONFIG = {
 }
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_init_heatpump(session_storage: SessionStorage, state_repository: StatesRepository) -> None:
     """Test initilaizing a heat pump."""
 
@@ -158,7 +155,7 @@ async def test_init_heatpump(session_storage: SessionStorage, state_repository: 
     assert heat_pump.attributes == {"state": "123", "actual_temperature": "123.0 °C"}
     assert len(heat_pump.supported_power_modes) == 1
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_init_controllable_heatpump(session_storage: SessionStorage, state_repository: StatesRepository) -> None:
     """Test initilaizing a heat pump."""
 
@@ -172,7 +169,7 @@ async def test_init_controllable_heatpump(session_storage: SessionStorage, state
     assert heat_pump.attributes == {"state": "123", "actual_temperature": "123.0 °C"}
     assert len(heat_pump.supported_power_modes) == 3
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_init_sgready_heatpump(session_storage: SessionStorage, state_repository: StatesRepository, optimizer: Optimizer) -> None:
     """Test initilaizing a sg ready heat pump."""
 
@@ -191,7 +188,7 @@ async def test_init_sgready_heatpump(session_storage: SessionStorage, state_repo
     }
 
     data_buffer = DataBuffer()
-    for x in range(0, 20):
+    for x in range(20):
         d = datetime.now(UTC) - timedelta(minutes=x)
         data_buffer.add_data_point(x * 1000, d)
     await heat_pump.update_power_consumption(state_repository, optimizer, data_buffer)

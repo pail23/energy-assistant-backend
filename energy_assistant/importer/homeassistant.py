@@ -72,7 +72,6 @@ class StatesRepositoryWithHistory(StatesRepository):
 
     def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
-        pass
 
     @property
     def channel(self) -> str:
@@ -81,23 +80,19 @@ class StatesRepositoryWithHistory(StatesRepository):
 
     async def async_read_states(self) -> None:
         """Read the states from the channel asynchronously."""
-        pass
 
     def read_states(self) -> None:
         """Read the states from the channel."""
-        pass
 
     def write_states(self) -> None:
         """Write the states to the channel."""
-        pass
 
     async def async_write_states(self) -> None:
         """Write the states to the channel."""
-        pass
 
 
 async def import_data(
-    home: Home, hass: Homeassistant, session: AsyncSession, freq: pd.Timedelta, days_to_retrieve: int
+    home: Home, hass: Homeassistant, session: AsyncSession, freq: pd.Timedelta, days_to_retrieve: int,
 ) -> None:
     """Import data from Homeassistant."""
     states_repository = StatesRepositoryWithHistory(await hass.get_location())
@@ -130,18 +125,17 @@ async def import_data(
                     grid_exported_energy=energy_state.grid_exported_energy,
                     device_measurements=[],
                 )
+            elif not isnan(energy_state.grid_exported_energy):
+                await home_measurement.update(
+                    session,
+                    name=home.name,
+                    measurement_date=d.date(),
+                    solar_produced_energy=energy_state.produced_solar_energy,
+                    grid_imported_energy=energy_state.grid_imported_energy,
+                    grid_exported_energy=energy_state.grid_exported_energy,
+                )
             else:
-                if not isnan(energy_state.grid_exported_energy):
-                    await home_measurement.update(
-                        session,
-                        name=home.name,
-                        measurement_date=d.date(),
-                        solar_produced_energy=energy_state.produced_solar_energy,
-                        grid_imported_energy=energy_state.grid_imported_energy,
-                        grid_exported_energy=energy_state.grid_exported_energy,
-                    )
-                else:
-                    LOGGER.error("invalid grid exported value")
+                LOGGER.error("invalid grid exported value")
         except Exception:
             LOGGER.exception("error during fetching data from the database")
     await session.flush()

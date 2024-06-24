@@ -47,7 +47,6 @@ class Device(ABC):
     @abstractmethod
     def type(self) -> str:
         """The device type."""
-        pass
 
     @property
     def supported_power_modes(self) -> list[PowerModes]:
@@ -93,25 +92,21 @@ class Device(ABC):
     @abstractmethod
     def consumed_energy(self) -> float:
         """Consumed energy in kWh."""
-        pass
 
     @property
     @abstractmethod
     def power(self) -> float:
         """Current consumed power."""
-        pass
 
     @property
     @abstractmethod
     def available(self) -> float:
         """Is the device available?."""
-        pass
 
     @property
     @abstractmethod
     def icon(self) -> str:
         """Icon for the device."""
-        pass
 
     @abstractmethod
     async def update_power_consumption(
@@ -121,12 +116,10 @@ class Device(ABC):
         grid_exported_power_data: DataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
-        pass
 
     @abstractmethod
     async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the device."""
-        pass
 
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore a previously stored state of the device."""
@@ -165,7 +158,7 @@ class Device(ABC):
 class DeviceWithState(Device):
     """Device with a state."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage):
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a DeviceWithState instance."""
         super().__init__(config)
         self.session_storage: SessionStorage = session_storage
@@ -176,7 +169,6 @@ class DeviceWithState(Device):
     @abstractmethod
     def state(self) -> str:
         """The state of the device."""
-        pass
 
     @property
     def has_state(self) -> bool:
@@ -194,7 +186,7 @@ class DeviceWithState(Device):
     async def start_session(self, text: str) -> None:
         """Start a session."""
         self.current_session = await self.session_storage.start_session(
-            self.id, text, self.consumed_solar_energy, self.consumed_energy
+            self.id, text, self.consumed_solar_energy, self.consumed_energy,
         )
 
     async def update_session(self, old_state: bool, new_state: bool, text: str) -> None:
@@ -231,6 +223,6 @@ class DeviceWithState(Device):
             result["session_time"] = str((datetime.now(UTC) - self.current_session.start).total_seconds())
             result["session_energy"] = str(self.consumed_energy - self.current_session.start_consumed_energy)
             result["session_solar_energy"] = str(
-                self.consumed_solar_energy - self.current_session.start_solar_consumed_energy
+                self.consumed_solar_energy - self.current_session.start_solar_consumed_energy,
             )
         return result

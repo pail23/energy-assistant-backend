@@ -61,7 +61,7 @@ class EnergyAssistant:
 
 
 async def import_data_task(
-    home: Home, hass: Homeassistant, async_session: async_sessionmaker, freq: pd.Timedelta, days_to_retrieve: int
+    home: Home, hass: Homeassistant, async_session: async_sessionmaker, freq: pd.Timedelta, days_to_retrieve: int,
 ) -> None:
     """Import data from home assistant."""
     async with async_session() as session:
@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     optimizer_task = asyncio.create_task(optimize(ea.optimizer))
     if ea.hass is not None:
         importer_task = asyncio.create_task(
-            import_data_task(ea.home, ea.hass, await get_async_session(), pd.Timedelta(24, "h"), 8)
+            import_data_task(ea.home, ea.hass, await get_async_session(), pd.Timedelta(24, "h"), 8),
         )
     scheduler = AsyncIOScheduler()
     scheduler.add_job(async_daily_optimize, trigger="cron", args=[ea], hour="3", minute="0")  # time is UTC
@@ -253,7 +253,7 @@ def setup_logger(log_filename: str, level: str = "DEBUG") -> logging.Logger:
                 "ERROR": "red",
                 "CRITICAL": "red",
             },
-        )
+        ),
     )
 
     # Capture warnings.warn(...) and friends messages in logs.
@@ -382,7 +382,7 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
         optimizer.forecast_model_fit(True)
     except Exception:
         logging.exception(
-            "Optimization of the power consumption forecast model failed, probably due to missing history data in Home Assistant."
+            "Optimization of the power consumption forecast model failed, probably due to missing history data in Home Assistant.",
         )
 
 

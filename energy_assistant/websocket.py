@@ -102,7 +102,7 @@ def get_home_message(home: Home) -> str:
         other_power = max(other_power - device.power, 0.0)
         other_consumed_energy = max(other_consumed_energy - device_message["today"]["consumed_energy"], 0.0)
         other_consumed_solar_energy = max(
-            other_consumed_solar_energy - device_message["today"]["consumed_solar_energy"], 0.0
+            other_consumed_solar_energy - device_message["today"]["consumed_solar_energy"], 0.0,
         )
 
     other_device = {

@@ -17,7 +17,7 @@ from energy_assistant.models.base import Base
 from energy_assistant.settings import settings
 
 
-@pytest.fixture
+@pytest.fixture()
 async def ac() -> AsyncGenerator:
     """Test fixture for a client connection to the backend."""
     async with AsyncClient(app=app, base_url="https://test") as c:
@@ -36,7 +36,7 @@ def setup_test_db() -> Generator:
         Base.metadata.drop_all(engine)
 
 
-@pytest.fixture
+@pytest.fixture()
 async def session() -> AsyncGenerator:
     """Test fixure for a session."""
     # https://github.com/sqlalchemy/sqlalchemy/issues/5811#issuecomment-756269881
@@ -71,8 +71,7 @@ async def session() -> AsyncGenerator:
         await conn.rollback()
 
 
-@pytest.fixture
+@pytest.fixture()
 def device_type_registry() -> DeviceTypeRegistry:
     """Device Type Registry test fixture."""
-    registry = DeviceTypeRegistry()
-    return registry
+    return DeviceTypeRegistry()

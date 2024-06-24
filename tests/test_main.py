@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_health(ac: AsyncClient) -> None:
     """Test the health check REST endpoint."""
     # client = await anext(ac)

@@ -28,7 +28,7 @@ class CalculatedState(State):
 class VariableMapping(dict):
     """Helper class implementing a dict in order to catch the used variables."""
 
-    def __init__(self, domain: str):
+    def __init__(self, domain: str) -> None:
         """Create and VariableMapping instance."""
         self.requested_variables: list[str] = []
         self.domain = domain

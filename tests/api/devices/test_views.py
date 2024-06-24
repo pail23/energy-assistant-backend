@@ -74,7 +74,7 @@ async def setup_data(session: AsyncSession) -> None:
     await session.commit()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_devices_read_all(ac: AsyncClient, session: AsyncSession) -> None:
     """Read all devices."""
     # setup
@@ -88,7 +88,7 @@ async def test_devices_read_all(ac: AsyncClient, session: AsyncSession) -> None:
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_devices_delete(ac: AsyncClient, session: AsyncSession) -> None:
     """Delete a device."""
     # setup

@@ -8,7 +8,6 @@ from energy_assistant.models.schema import DeviceMeasurementSchema, DeviceSchema
 class ReadDeviceResponse(DeviceSchema):
     """API Response for reading a device."""
 
-    pass
 
 
 class ReadAllDevicesResponse(BaseModel):
@@ -31,5 +30,3 @@ class UpdateDevicePowerModeRequest(BaseModel):
 
 class UpdateDevicePowerModeResponse(DeviceSchema):
     """API Response for setting the power mode."""
-
-    pass

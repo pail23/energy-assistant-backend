@@ -36,14 +36,15 @@ def numeric_value(value: str | None) -> float | None:
 class HeatPumpDevice(DeviceWithState):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage):
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
         energy_config = config.get("energy")
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigMissingParameterError("energy")
+            msg = "energy"
+            raise DeviceConfigMissingParameterError(msg)
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -80,7 +81,7 @@ class HeatPumpDevice(DeviceWithState):
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
-            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id)
+            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id),
         )
 
         if self._energy_snapshot is None:
@@ -220,7 +221,8 @@ class SubHeatPump(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigMissingParameterError("energy")
+            msg = "energy"
+            raise DeviceConfigMissingParameterError(msg)
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -239,13 +241,13 @@ class SubHeatPump(DeviceWithState):
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
-            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id)
+            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id),
         )
 
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
-        # todo: implement session tracking for sub devices
+        # TODO: implement session tracking for sub devices
         # await self.update_session(old_state, new_state, self._name)
 
     @property
@@ -312,7 +314,7 @@ class SubHeatPump(DeviceWithState):
 class SGReadyHeatPumpDevice(DeviceWithState):
     """SG Ready heatpump, supporting water and heating temperature."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage):
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a SG Ready heatpump."""
         super().__init__(config, session_storage)
 
@@ -377,7 +379,7 @@ class SGReadyHeatPumpDevice(DeviceWithState):
                             sg_ready_state = OnOffState.OFF
                 elif self.power_mode == PowerModes.OPTIMIZED:
                     sg_ready_state = self._get_state_for_optimized(
-                        optimizer, OnOffState.from_str(current_sg_ready_state.value)
+                        optimizer, OnOffState.from_str(current_sg_ready_state.value),
                     )
                 if sg_ready_state != OnOffState.from_str(current_sg_ready_state.value):
                     state_repository.set_state(

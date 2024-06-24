@@ -20,7 +20,7 @@ from .device import DeviceWithState
 class EvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage):
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
         self._evcc_topic: str = get_config_param(config, "evcc_topic")

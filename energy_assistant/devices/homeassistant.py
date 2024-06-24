@@ -226,13 +226,12 @@ class Homeassistant(StatesSingleRepository):
             types=types if types is not None else [],
         )
         if entity_id in statistics:
-            result = [convert_statistics(value) for value in statistics[entity_id]]
-            return result
+            return [convert_statistics(value) for value in statistics[entity_id]]
         else:
             return []
 
     async def get_history(
-        self, entity_id: str, start_time: datetime | None = None, end_time: datetime | None = None
+        self, entity_id: str, start_time: datetime | None = None, end_time: datetime | None = None,
     ) -> list[HistoryState]:
         """Get the history of a state from Home Assistant."""
         if start_time is None:
@@ -248,15 +247,13 @@ class Homeassistant(StatesSingleRepository):
             minimal_response=True,
         )
         if entity_id in history:
-            result = [convert_history(value) for value in history[entity_id]]
-            return result
+            return [convert_history(value) for value in history[entity_id]]
         else:
             return []
 
     async def get_energy_info(self) -> dict:
         """Get the energy info from Home Assistant."""
-        info = await self.hass.send_command("energy/info")
-        return info
+        return await self.hass.send_command("energy/info")
 
     async def get_energy_prefs(self) -> list[EnergySource]:
         """Get the energy configuration from Home Assistant."""
@@ -296,8 +293,7 @@ class Homeassistant(StatesSingleRepository):
         df.index = pd.to_datetime(df.index)
         df["sum"] = df.sum(axis=1)
         freq = pd.Timedelta("30min")
-        result = df.resample(freq).mean().interpolate()
-        return result
+        return df.resample(freq).mean().interpolate()
 
     async def async_read_states(self) -> None:
         """Read the states from the homeassistant instance asynchronously."""
@@ -308,7 +304,7 @@ class Homeassistant(StatesSingleRepository):
             for state in states:
                 entity_id = state.get("entity_id")
                 self._read_states[entity_id] = HomeassistantState(
-                    entity_id, state.get("state"), state.get("attributes")
+                    entity_id, state.get("state"), state.get("attributes"),
                 )
             self._template_states = None
         except Exception:
@@ -341,7 +337,7 @@ class Homeassistant(StatesSingleRepository):
                             "attributes": state.attributes,
                         }
                         async with self.session.post(
-                            f"{self._url}/api/states/{id}", headers=headers, json=sensor_data
+                            f"{self._url}/api/states/{id}", headers=headers, json=sensor_data,
                         ) as response:
                             if not response.ok:
                                 LOGGER.error(f"State update for {id} in hass failed")
@@ -358,10 +354,10 @@ class Homeassistant(StatesSingleRepository):
         """Read the states from the homeassistant instance."""
         if self._demo_mode:
             self._read_states["sensor.solaredge_i1_ac_power"] = HomeassistantState(
-                "sensor.solaredge_i1_ac_power", "10000"
+                "sensor.solaredge_i1_ac_power", "10000",
             )
             self._read_states["sensor.solaredge_m1_ac_power"] = HomeassistantState(
-                "sensor.solaredge_m1_ac_power", "6000"
+                "sensor.solaredge_m1_ac_power", "6000",
             )
             self._read_states["sensor.keba_charge_power"] = HomeassistantState("sensor.keba_charge_power", "2500")
             self._read_states["sensor.tumbler_power"] = HomeassistantState("sensor.tumbler_power", "600")
@@ -381,7 +377,7 @@ class Homeassistant(StatesSingleRepository):
                     for state in states:
                         entity_id = state.get("entity_id")
                         self._read_states[entity_id] = HomeassistantState(
-                            entity_id, state.get("state"), state.get("attributes")
+                            entity_id, state.get("state"), state.get("attributes"),
                         )
                     self._template_states = None
 
@@ -473,13 +469,14 @@ class HomeassistantDevice(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigMissingParameterError("energy")
+            msg = "energy"
+            raise DeviceConfigMissingParameterError(msg)
 
         energy_scale: float | None = config.get("energy_scale")
         if energy_scale is not None:
             self._consumed_energy_value.set_scale(energy_scale)
             LOGGER.warning(
-                f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported."
+                f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported.",
             )
 
         self._output_id: str | None = config.get("output")
@@ -503,7 +500,7 @@ class HomeassistantDevice(DeviceWithState):
         if model is not None and manufacturer is not None:
             self._device_type = device_type_registry.get_device_type(manufacturer, model)
             self._nominal_power = config.get(
-                "nominal_power", self._device_type.nominal_power if self._device_type else None
+                "nominal_power", self._device_type.nominal_power if self._device_type else None,
             )
             self._nominal_duration = config.get(
                 "nominal_duration",
@@ -572,7 +569,7 @@ class HomeassistantDevice(DeviceWithState):
                             without_trailing_zeros=True,
                         )
                         max = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(
-                            self._device_type.trailing_zeros_for
+                            self._device_type.trailing_zeros_for,
                         )
                         if is_between or max <= self._device_type.state_off_threshold:
                             self._state = OnOffState.OFF

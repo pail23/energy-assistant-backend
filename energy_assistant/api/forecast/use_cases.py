@@ -15,6 +15,7 @@ class ReadForecast:
         """Execute the read all devices use case."""
         if optimizer is not None:
             return await optimizer.async_get_forecast()
+        return None
 
 
 class CreateModel:

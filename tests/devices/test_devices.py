@@ -72,7 +72,7 @@ def test_integrator() -> None:
     assert integrator.consumed_solar_energy == 16
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegistry) -> None:
     """Test the loading of the devices."""
     await setup_data(session)
