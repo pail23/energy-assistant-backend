@@ -22,7 +22,7 @@ def on_connect(client: mqtt.Client, userdata, flags, rc, properties) -> None:  #
     userdata.subscribe_topics()
 
 
-def on_disconnect(client: mqtt.Client, userdata, rc, properties) -> None:  # type: ignore
+def on_disconnect(client: mqtt.Client, userdata, flags, rc, properties) -> None:  # type: ignore
     """Handle disconnect from the mqtt server."""
     logging.info("Disconnected to mqtt with result code " + str(rc))
     # TODO: Handle reconnect

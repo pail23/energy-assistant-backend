@@ -109,6 +109,7 @@ lint.select = [
     "PLC", # pylint
     "PLE", # pylint
     "PLW", # pylint
+    "PTH",
     "RUF",     # ruff rules
     "SIM",    # simplify
     "T20",  # flake8-print

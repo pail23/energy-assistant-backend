@@ -79,6 +79,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     app.energy_assistant = ea  # type: ignore
     bt = asyncio.create_task(background_task(ea))
     optimizer_task = asyncio.create_task(optimize(ea.optimizer))
+    importer_task = None
     if ea.hass is not None:
         importer_task = asyncio.create_task(
             import_data_task(ea.home, ea.hass, await get_async_session(), pd.Timedelta(24, "h"), 8),
@@ -89,7 +90,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     yield
     ea.should_stop = True
     await optimizer_task
-    await importer_task
+    if importer_task is not None:
+        await importer_task
     await bt
     scheduler.shutdown()
     if ea.hass:
@@ -309,8 +311,8 @@ async def init_app() -> EnergyAssistant:
     """Initialize the application."""
     result = EnergyAssistant()
 
-    hass_options_file = "/data/options.json"
-    if os.path.isfile(hass_options_file):
+    hass_options_file = Path("/data/options.json")
+    if hass_options_file.is_file():
         async with await open_file(hass_options_file) as _file:
             hass_options = json.loads(await _file.read())
     #        with open(hass_options_file, "rb") as _file:
@@ -333,7 +335,7 @@ async def init_app() -> EnergyAssistant:
     db = Database()
     result.db = db
 
-    device_registry_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config/deviceregistry")
+    device_registry_path = Path(__file__).parent / "config/deviceregistry"
 
     device_type_registry = DeviceTypeRegistry()
     device_type_registry.load(device_registry_path)

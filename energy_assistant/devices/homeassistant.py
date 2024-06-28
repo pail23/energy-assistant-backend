@@ -152,7 +152,7 @@ class Homeassistant(StatesSingleRepository):
     hass: HomeAssistantClient
     _listen_task: asyncio.Task | None = None
 
-    time_zone: tzinfo | None
+    _time_zone: tzinfo | None
 
     def __init__(self, url: str, token: str, demo_mode: bool) -> None:
         """Create an instance of the Homeassistant class."""
@@ -160,6 +160,7 @@ class Homeassistant(StatesSingleRepository):
         self._url = url
         self._token = token
         self._demo_mode = demo_mode is not None and demo_mode
+        self._time_zone: tzinfo | None = None
 
     async def connect(self) -> None:
         """Connect to the homeassistant instance."""
@@ -461,9 +462,9 @@ class Homeassistant(StatesSingleRepository):
 
     async def get_timezone(self) -> tzinfo:
         """Get the local timezone."""
-        if self.time_zone is None:
-            self.time_zone = ZoneInfo((await self.get_location()).time_zone)
-        return self.time_zone
+        if self._time_zone is None:
+            self._time_zone = ZoneInfo((await self.get_location()).time_zone)
+        return self._time_zone
 
 
 class HomeassistantDevice(DeviceWithState):

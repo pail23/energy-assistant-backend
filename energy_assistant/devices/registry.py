@@ -1,8 +1,8 @@
 """Device type registry for device data."""
 
 import logging
-import os
 from dataclasses import dataclass
+from pathlib import Path
 
 import yaml
 
@@ -46,18 +46,14 @@ class DeviceTypeRegistry:
         """Create a Device Type Registry instance."""
         self._registry: dict[DeviceTypeId, DeviceType] = {}
 
-    def load(self, config_folder: str) -> None:
+    def load(self, config_folder: Path) -> None:
         """Load the registry from the configuration folder."""
-        for root, subdirs, files in os.walk(config_folder):
-            for file in files:
-                file_path = os.path.join(root, file)
-                self.load_device_type_file(file_path)
-            for subdir in subdirs:
-                self.load(os.path.join(root, subdir))
+        for config_file in config_folder.glob("**/*/*.yaml"):
+            self.load_device_type_file(config_file)
 
-    def load_device_type_file(self, filename: str) -> None:
+    def load_device_type_file(self, filename: Path) -> None:
         """Load a device type config file and add it to the registry."""
-        with open(filename) as stream:
+        with filename.open() as stream:
             try:
                 config = yaml.safe_load(stream)
             except yaml.YAMLError:
