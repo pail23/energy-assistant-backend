@@ -1,5 +1,7 @@
 """Views for home measurement API."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from .schema import ConfigModel, ReadConfigResponse
@@ -11,7 +13,7 @@ router = APIRouter(prefix="/config")
 @router.get("", response_model=ReadConfigResponse)
 async def read_configuration(
     request: Request,
-    use_case: ReadConfiguration = Depends(ReadConfiguration),
+    use_case: Annotated[ReadConfiguration, Depends(ReadConfiguration)],
 ) -> ConfigModel:
     """Rest end point for read all devices."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None

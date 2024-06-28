@@ -4,12 +4,13 @@ import asyncio
 import logging
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, tzinfo
 from enum import StrEnum
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests  # type: ignore
-from aiohttp import ClientSession, TCPConnector
+from aiohttp import ClientResponse, ClientSession, TCPConnector
 from hass_client import HomeAssistantClient  # type: ignore
 from hass_client.exceptions import BaseHassClientError  # type: ignore
 from hass_client.utils import get_websocket_url  # type: ignore
@@ -37,7 +38,7 @@ from . import (
     StatesSingleRepository,
     assign_if_available,
 )
-from .config import DeviceConfigException, get_config_param
+from .config import DeviceConfigMissingParameterError, get_config_param
 from .device import DeviceWithState
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
@@ -49,7 +50,7 @@ HOMEASSISTANT_CHANNEL = "ha"
 class HomeassistantState(State):
     """Abstract base class for states."""
 
-    def __init__(self, id: str, value: str, attributes: dict = {}) -> None:
+    def __init__(self, id: str, value: str, attributes: dict | None = None) -> None:
         """Create a State instance."""
         super().__init__(id, value, attributes)
 
@@ -84,8 +85,8 @@ class HistoryState:
 def convert_statistics(value: dict) -> dict:
     """Convert the times in a Home Assistant dict to date time values."""
     result = value.copy()
-    result["start"] = datetime.fromtimestamp(value["start"] / 1000, timezone.utc)
-    result["end"] = datetime.fromtimestamp(value["end"] / 1000, timezone.utc)
+    result["start"] = datetime.fromtimestamp(value["start"] / 1000, UTC)
+    result["end"] = datetime.fromtimestamp(value["end"] / 1000, UTC)
     return result
 
 
@@ -93,13 +94,12 @@ def convert_float(value: str) -> float:
     """Convert a value from Home Assistant to a float."""
     if value == "unavailable":
         return math.nan
-    else:
-        return float(value)
+    return float(value)
 
 
 def convert_history(value: dict) -> HistoryState:
     """Convert a history state to a HistoryState instance."""
-    return HistoryState(time_stamp=datetime.fromtimestamp(value["lu"], timezone.utc), state=convert_float(value["s"]))
+    return HistoryState(time_stamp=datetime.fromtimestamp(value["lu"], UTC), state=convert_float(value["s"]))
 
 
 class StatisticsType(StrEnum):
@@ -137,6 +137,14 @@ class EnergySource:
     flow_to: str | None
 
 
+class HomeAssistantCommunicationError(Exception):
+    """Home Assistant Communication Error."""
+
+    def __init__(self, response: ClientResponse) -> None:
+        """Create a HomeAssistantCommunicationError instance."""
+        super().__init__(f"Error during communication with Home Assistant. Url={response.url} Status={response.status}")
+
+
 class Homeassistant(StatesSingleRepository):
     """Home assistant proxy."""
 
@@ -144,12 +152,15 @@ class Homeassistant(StatesSingleRepository):
     hass: HomeAssistantClient
     _listen_task: asyncio.Task | None = None
 
+    _time_zone: tzinfo | None
+
     def __init__(self, url: str, token: str, demo_mode: bool) -> None:
         """Create an instance of the Homeassistant class."""
         super().__init__(HOMEASSISTANT_CHANNEL)
         self._url = url
         self._token = token
         self._demo_mode = demo_mode is not None and demo_mode
+        self._time_zone: tzinfo | None = None
 
     async def connect(self) -> None:
         """Connect to the homeassistant instance."""
@@ -175,6 +186,7 @@ class Homeassistant(StatesSingleRepository):
         if self._listen_task and not self._listen_task.done():
             self._listen_task.cancel()
         await self.hass.disconnect()
+        await self.session.close()
 
     async def _hass_listener(self) -> None:
         """Start listening on the HA websockets."""
@@ -203,33 +215,34 @@ class Homeassistant(StatesSingleRepository):
         self,
         entity_id: str,
         start_time: datetime | None = None,
-        types: list[StatisticsType] = [],
+        types: list[StatisticsType] | None = None,
         period: StatisticsPeriod = StatisticsPeriod.HOUR,
     ) -> list[dict]:
         """Read the statistics for an entity."""
         if start_time is None:
-            start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            start_time = datetime.now(tz=await self.get_timezone()).replace(hour=0, minute=0, second=0, microsecond=0)
         statistics = await self.hass.send_command(
             "recorder/statistics_during_period",
             period=period,
             start_time=start_time.isoformat(),
             statistic_ids=[entity_id],
-            types=types,
+            types=types if types is not None else [],
         )
         if entity_id in statistics:
-            result = [convert_statistics(value) for value in statistics[entity_id]]
-            return result
-        else:
-            return []
+            return [convert_statistics(value) for value in statistics[entity_id]]
+        return []
 
     async def get_history(
-        self, entity_id: str, start_time: datetime | None = None, end_time: datetime | None = None
+        self,
+        entity_id: str,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
     ) -> list[HistoryState]:
         """Get the history of a state from Home Assistant."""
         if start_time is None:
-            start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            start_time = datetime.now(tz=await self.get_timezone()).replace(hour=0, minute=0, second=0, microsecond=0)
         if end_time is None:
-            end_time = datetime.now()
+            end_time = datetime.now(tz=await self.get_timezone())
         history = await self.hass.send_command(
             "history/history_during_period",
             start_time=start_time.isoformat(),
@@ -239,15 +252,12 @@ class Homeassistant(StatesSingleRepository):
             minimal_response=True,
         )
         if entity_id in history:
-            result = [convert_history(value) for value in history[entity_id]]
-            return result
-        else:
-            return []
+            return [convert_history(value) for value in history[entity_id]]
+        return []
 
     async def get_energy_info(self) -> dict:
         """Get the energy info from Home Assistant."""
-        info = await self.hass.send_command("energy/info")
-        return info
+        return await self.hass.send_command("energy/info")
 
     async def get_energy_prefs(self) -> list[EnergySource]:
         """Get the energy configuration from Home Assistant."""
@@ -287,8 +297,7 @@ class Homeassistant(StatesSingleRepository):
         df.index = pd.to_datetime(df.index)
         df["sum"] = df.sum(axis=1)
         freq = pd.Timedelta("30min")
-        result = df.resample(freq).mean().interpolate()
-        return result
+        return df.resample(freq).mean().interpolate()
 
     async def async_read_states(self) -> None:
         """Read the states from the homeassistant instance asynchronously."""
@@ -299,7 +308,9 @@ class Homeassistant(StatesSingleRepository):
             for state in states:
                 entity_id = state.get("entity_id")
                 self._read_states[entity_id] = HomeassistantState(
-                    entity_id, state.get("state"), state.get("attributes")
+                    entity_id,
+                    state.get("state"),
+                    state.get("attributes"),
                 )
             self._template_states = None
         except Exception:
@@ -331,13 +342,13 @@ class Homeassistant(StatesSingleRepository):
                             "state": state.value,
                             "attributes": state.attributes,
                         }
-                        response = requests.post(
+                        async with self.session.post(
                             f"{self._url}/api/states/{id}",
                             headers=headers,
                             json=sensor_data,
-                        )
-                        if not response.ok:
-                            LOGGER.error(f"State update for {id} in hass failed")
+                        ) as response:
+                            if not response.ok:
+                                LOGGER.error(f"State update for {id} in hass failed")
                     else:
                         LOGGER.error(f"Writing to id {id} is not yet implemented.")
             except Exception:
@@ -348,10 +359,12 @@ class Homeassistant(StatesSingleRepository):
         """Read the states from the homeassistant instance."""
         if self._demo_mode:
             self._read_states["sensor.solaredge_i1_ac_power"] = HomeassistantState(
-                "sensor.solaredge_i1_ac_power", "10000"
+                "sensor.solaredge_i1_ac_power",
+                "10000",
             )
             self._read_states["sensor.solaredge_m1_ac_power"] = HomeassistantState(
-                "sensor.solaredge_m1_ac_power", "6000"
+                "sensor.solaredge_m1_ac_power",
+                "6000",
             )
             self._read_states["sensor.keba_charge_power"] = HomeassistantState("sensor.keba_charge_power", "2500")
             self._read_states["sensor.tumbler_power"] = HomeassistantState("sensor.tumbler_power", "600")
@@ -371,7 +384,9 @@ class Homeassistant(StatesSingleRepository):
                     for state in states:
                         entity_id = state.get("entity_id")
                         self._read_states[entity_id] = HomeassistantState(
-                            entity_id, state.get("state"), state.get("attributes")
+                            entity_id,
+                            state.get("state"),
+                            state.get("attributes"),
                         )
                     self._template_states = None
 
@@ -423,22 +438,20 @@ class Homeassistant(StatesSingleRepository):
                 LOGGER.exception("Exception during homeassistant update_states.")
             self._write_states.clear()
 
-    def get_config(self) -> dict:
+    async def get_config(self) -> dict:
         """Read the Homeassistant configuration."""
         headers = {
             "Authorization": f"Bearer {self._token}",
             "content-type": "application/json",
         }
-        response = requests.get(f"{self._url}/api/config", headers=headers)
+        async with self.session.get(f"{self._url}/api/config", headers=headers) as response:
+            if response.ok:
+                return await response.json()
+        raise HomeAssistantCommunicationError(response)
 
-        if response.ok:
-            return response.json()
-        else:
-            raise Exception("Could not get configuration from Home Assistant.")
-
-    def get_location(self) -> Location:
+    async def get_location(self) -> Location:
         """Read the location from the Homeassistant configuration."""
-        config = self.get_config()
+        config = await self.get_config()
 
         return Location(
             latitude=config.get("latitude", ""),
@@ -446,6 +459,12 @@ class Homeassistant(StatesSingleRepository):
             elevation=config.get("elevation", ""),
             time_zone=config.get("time_zone", ""),
         )
+
+    async def get_timezone(self) -> tzinfo:
+        """Get the local timezone."""
+        if self._time_zone is None:
+            self._time_zone = ZoneInfo((await self.get_location()).time_zone)
+        return self._time_zone
 
 
 class HomeassistantDevice(DeviceWithState):
@@ -464,13 +483,14 @@ class HomeassistantDevice(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            msg = "energy"
+            raise DeviceConfigMissingParameterError(msg)
 
         energy_scale: float | None = config.get("energy_scale")
         if energy_scale is not None:
             self._consumed_energy_value.set_scale(energy_scale)
             LOGGER.warning(
-                f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported."
+                f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported.",
             )
 
         self._output_id: str | None = config.get("output")
@@ -494,7 +514,8 @@ class HomeassistantDevice(DeviceWithState):
         if model is not None and manufacturer is not None:
             self._device_type = device_type_registry.get_device_type(manufacturer, model)
             self._nominal_power = config.get(
-                "nominal_power", self._device_type.nominal_power if self._device_type else None
+                "nominal_power",
+                self._device_type.nominal_power if self._device_type else None,
             )
             self._nominal_duration = config.get(
                 "nominal_duration",
@@ -563,7 +584,7 @@ class HomeassistantDevice(DeviceWithState):
                             without_trailing_zeros=True,
                         )
                         max = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(
-                            self._device_type.trailing_zeros_for
+                            self._device_type.trailing_zeros_for,
                         )
                         if is_between or max <= self._device_type.state_off_threshold:
                             self._state = OnOffState.OFF

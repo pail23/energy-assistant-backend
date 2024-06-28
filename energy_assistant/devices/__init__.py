@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, tzinfo
 from enum import StrEnum, auto
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
+from zoneinfo import ZoneInfo
 
-import pytz  # type: ignore
+if TYPE_CHECKING:
+    import uuid
+    from datetime import datetime, tzinfo
 
 
 @dataclass
@@ -48,17 +49,14 @@ class SessionStorage(ABC):
         consumed_energy: float,
     ) -> Session:
         """Start a new session."""
-        pass
 
     @abstractmethod
     async def update_session(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
-        pass
 
     @abstractmethod
     async def update_session_energy(self, id: int, solar_consumed_energy: float, consumed_energy: float) -> None:
         """Update the session with the given id."""
-        pass
 
 
 class Integrator:
@@ -66,8 +64,8 @@ class Integrator:
 
     def __init__(self) -> None:
         """Initialize the integrator."""
-        self.last_measurement: Optional[float] = None
-        self.last_timestamp: Optional[float] = None
+        self.last_measurement: float | None = None
+        self.last_timestamp: float | None = None
         self._value: float = 0.0
 
     @property
@@ -203,11 +201,11 @@ class OnOffState(StrEnum):
 class State:
     """Base class for States."""
 
-    def __init__(self, id: str, value: str, attributes: dict = {}) -> None:
+    def __init__(self, id: str, value: str, attributes: dict | None = None) -> None:
         """Create a state instance."""
         self._id = id
         self._value = value
-        self._attributes = attributes
+        self._attributes = attributes if attributes is not None else {}
         self._available = True
 
     @property
@@ -243,8 +241,7 @@ def assign_if_available(old_state: State | None, new_state: State | None) -> Sta
     """Return new state in case the state is available, otherwise old state."""
     if new_state and new_state.available:
         return new_state
-    else:
-        return old_state
+    return old_state
 
 
 @dataclass(frozen=True, eq=True)
@@ -261,43 +258,39 @@ class StatesRepository(ABC):
     @abstractmethod
     def get_state(self, id: StateId | str) -> State | None:
         """Get a state from the repository."""
-        pass
 
     @abstractmethod
     def get_numeric_states(self) -> dict[str, float]:
         """Get a states from the repository."""
-        pass
 
     @abstractmethod
     def get_template_states(self) -> dict:
         """Get a states from the repository."""
-        pass
 
     @abstractmethod
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
-        pass
 
     @property
     @abstractmethod
     def channel(self) -> str:
         """Get the channel of the State Repository."""
-        pass
 
     @abstractmethod
     async def async_read_states(self) -> None:
         """Read the states from the channel asynchronously."""
-        pass
+
+    @abstractmethod
+    async def async_write_states(self) -> None:
+        """Send the changed states to hass."""
 
     @abstractmethod
     def read_states(self) -> None:
         """Read the states from the channel."""
-        pass
 
     @abstractmethod
     def write_states(self) -> None:
         """Write the states to the channel."""
-        pass
 
 
 class StatesSingleRepository(StatesRepository):
@@ -314,13 +307,11 @@ class StatesSingleRepository(StatesRepository):
         """Get a state from the repository."""
         if isinstance(id, str):
             return self._read_states.get(id)
-        else:
-            return self._read_states.get(id.id)
+        return self._read_states.get(id.id)
 
     def get_numeric_states(self) -> dict[str, float]:
         """Get a states from the repository."""
-        result = {k: v.numeric_value for k, v in self._read_states.items()}
-        return result
+        return {k: v.numeric_value for k, v in self._read_states.items()}
 
     def get_template_states(self) -> dict:
         """Get template states from the repository."""
@@ -340,7 +331,7 @@ class StatesSingleRepository(StatesRepository):
                     self._template_states[k] = v
         return self._template_states
 
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
         self._write_states[id.id] = State(id.id, value, attributes)
 
@@ -386,7 +377,7 @@ class StatesMultipleRepositories(StatesRepository):
             result = {**result, **reposititory.get_template_states()}
         return result
 
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
         for repository in self._repositories:
             if id.channel == repository.channel:
@@ -406,6 +397,11 @@ class StatesMultipleRepositories(StatesRepository):
         """Read the states from the channel."""
         for repository in self._repositories:
             repository.read_states()
+
+    async def async_write_states(self) -> None:
+        """Send the changed states to hass."""
+        for repository in self._repositories:
+            await repository.async_write_states()
 
     def write_states(self) -> None:
         """Write the states to the channel."""
@@ -435,4 +431,4 @@ class Location:
 
     def get_time_zone(self) -> tzinfo:
         """Get the timezone."""
-        return pytz.timezone(self.time_zone)
+        return ZoneInfo(self.time_zone)

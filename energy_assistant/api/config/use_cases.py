@@ -19,5 +19,4 @@ class ReadConfiguration:
 
     async def execute(self, config: EnergyAssistantConfig) -> ConfigModel:
         """Execute the read configuration use case."""
-        result = ConfigModel.model_validate({"config": config.config})
-        return result
+        return ConfigModel.model_validate({"config": config.config})

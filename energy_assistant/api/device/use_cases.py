@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from fastapi import HTTPException
 
@@ -29,14 +29,15 @@ class ReadAllDevices:
         """Execute the read all devices use case."""
         async with self.async_session() as session:
             async for device in Device.read_all(session, False, filter_with_session_log_enties):
-                if not filter_with_session_log_enties or len(device.session_log_entries) > 0:
-                    if device.type is not None:  # TODO: Remove this at a late point
-                        result = DeviceSchema.model_validate(device)
-                        d = home.get_device(device.id) if home is not None else None
-                        if d is not None:
-                            result.supported_power_modes = list(d.supported_power_modes)
-                            result.power_mode = d.power_mode
-                        yield result
+                if device.type is not None and (
+                    not filter_with_session_log_enties or len(device.session_log_entries) > 0
+                ):
+                    result = DeviceSchema.model_validate(device)
+                    d = home.get_device(device.id) if home is not None else None
+                    if d is not None:
+                        result.supported_power_modes = list(d.supported_power_modes)
+                        result.power_mode = d.power_mode
+                    yield result
         if not filter_with_session_log_enties:
             yield DeviceSchema(
                 id=OTHER_DEVICE,
@@ -100,21 +101,27 @@ class UpdateDevicePowerMode:
             try:
                 d.set_power_mode(PowerModes[power_mode.upper()])
                 device = await Device.read_by_id(session, device_id)
-                if not device:
-                    raise HTTPException(status_code=404)
+            except Exception as err:
+                LOGGER.exception("Invalid power mode %s ", power_mode)
+                raise HTTPException(status_code=404) from err
 
-                if device.type is None:
-                    raise HTTPException(status_code=500)
+            if not device:
+                raise HTTPException(status_code=404)
 
+            if device.type is None:
+                raise HTTPException(status_code=500)
+
+            try:
                 await device.update(session, device.name, device.icon, power_mode, device.type, device.get_config())
                 await session.refresh(device)
                 result = DeviceSchema.model_validate(device)
                 result.supported_power_modes = list(d.supported_power_modes)
                 result.power_mode = d.power_mode
+            except Exception as err:
+                LOGGER.exception("Invalid power mode %s ", power_mode)
+                raise HTTPException(status_code=404) from err
+            else:
                 return result
-            except Exception:
-                LOGGER.error("Invalid power mode: " + power_mode)
-                raise HTTPException(status_code=404)
 
 
 class DeleteDevice:

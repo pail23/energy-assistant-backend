@@ -34,8 +34,6 @@ class HomeMeasurementPeriodSchema(BaseModel):
 class ReadHomeMeasurementDifferenceResponse(HomeMeasurementPeriodSchema):
     """API Response for reading home measurements."""
 
-    pass
-
 
 class HomeMeasurementDateSchema(HomeMeasurementPeriodSchema):
     """Schema class for a home measurement summary of a specific day."""
@@ -55,5 +53,3 @@ class HomeMeasurementDailySchema(BaseModel):
 
 class HomeMeasurementDailyResponse(HomeMeasurementDailySchema):
     """Schema for the daily home measurements response."""
-
-    pass

@@ -1,8 +1,9 @@
 """The home is the root of all devices."""
 
+from __future__ import annotations
+
 import logging
 import uuid
-from typing import Any
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
@@ -18,7 +19,7 @@ from . import (
     StatesRepository,
     assign_if_available,
 )
-from .config import DeviceConfigException, get_config_param
+from .config import DeviceConfigMissingParameterError, get_config_param
 from .device import Device
 from .heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
 from .homeassistant import HomeassistantDevice
@@ -37,27 +38,30 @@ class HomeEnergyState:
         if solar_energy_config is not None:
             self._solar_energy_value = StateValue(solar_energy_config)
         else:
-            raise DeviceConfigException("Parameter solar_energy is missing in the configuration")
+            msg = "solar_energy"
+            raise DeviceConfigMissingParameterError(msg)
 
         imported_energy_config = config.get("imported_energy")
         self._config["imported_energy"] = imported_energy_config
         if imported_energy_config is not None:
             self._imported_energy_value = StateValue(imported_energy_config)
         else:
-            raise DeviceConfigException("Parameter imported_energy is missing in the configuration")
+            msg = "imported_energy"
+            raise DeviceConfigMissingParameterError(msg)
 
         exported_energy_config = config.get("exported_energy")
         self._config["exported_energy"] = exported_energy_config
         if exported_energy_config is not None:
             self._exported_energy_value = StateValue(exported_energy_config)
         else:
-            raise DeviceConfigException("Parameter exported_energy is missing in the configuration")
+            msg = "exported_energy"
+            raise DeviceConfigMissingParameterError(msg)
 
         self._grid_exported_energy: State | None = None
         self._grid_imported_energy: State | None = None
         self._produced_solar_energy: State | None = None
 
-    def create_clone(self) -> Any:
+    def create_clone(self) -> HomeEnergyState:
         """Create a home energy instance with the same configuration."""
         return HomeEnergyState(self._config)
 
@@ -188,20 +192,22 @@ class Home:
         if solar_power_config is not None:
             self._solar_power_value = StateValue(solar_power_config)
         else:
-            raise DeviceConfigException("Parameter solar_power is missing in the configuration")
+            msg = "solar_power"
+            raise DeviceConfigMissingParameterError(msg)
 
         grid_supply_power_config = config.get("grid_supply_power")
         if grid_supply_power_config is not None:
             self._grid_imported_power_value = StateValue(grid_supply_power_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            msg = "energy"
+            raise DeviceConfigMissingParameterError(msg)
 
         grid_inverted: bool | None = config.get("grid_inverted")
         if grid_inverted is not None:
             if grid_inverted:
                 self._grid_imported_power_value.invert_value()
             LOGGER.warning(
-                "The home is configured with grid_inverted. This is deprecated and will no longer be supported."
+                "The home is configured with grid_inverted. This is deprecated and will no longer be supported.",
             )
 
         self._solar_production_power: State | None = None
@@ -261,16 +267,14 @@ class Home:
         result = self.solar_production_power - self.grid_imported_power
         if result > 0:
             return result
-        else:
-            return 0
+        return 0
 
     @property
     def solar_self_consumption_power(self) -> float:
         """Self consumed solar power."""
         if self.grid_imported_power < 0:
             return self.solar_production_power
-        else:
-            return self.solar_production_power - self.grid_imported_power
+        return self.solar_production_power - self.grid_imported_power
 
     @property
     def self_sufficiency(self) -> float:
@@ -278,8 +282,7 @@ class Home:
         home_consumption = self.home_consumption_power
         if home_consumption > 0:
             return min(self.solar_self_consumption_power / home_consumption, 1.0)
-        else:
-            return 0
+        return 0
 
     @property
     def self_consumption(self) -> float:
@@ -287,8 +290,7 @@ class Home:
         solar_power = self.solar_production_power
         if solar_power > 0:
             return min(self.solar_self_consumption_power / solar_power, 1.0)
-        else:
-            return 0
+        return 0
 
     async def update_state(self, state_repository: StatesRepository) -> None:
         """Update the state of the home."""

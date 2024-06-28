@@ -3,19 +3,20 @@
 from energy_assistant.devices import Location
 
 
-class DeviceConfigException(Exception):
+class DeviceConfigMissingParameterError(Exception):
     """Device configuration exception."""
 
-    pass
+    def __init__(self, missing_param: str) -> None:
+        """Create a DeviceConfigError instance."""
+        super().__init__(f"Parameter {missing_param} is missing in the configuration")
 
 
 def get_config_param(config: dict, param: str) -> str:
     """Get a config parameter as string or raise an exception if the parameter is not available."""
     result = config.get(param)
     if result is None:
-        raise DeviceConfigException(f"Parameter {param} is missing in the configuration")
-    else:
-        return str(result)
+        raise DeviceConfigMissingParameterError(param)
+    return str(result)
 
 
 def get_config_param_from_list(config: list, param: str) -> str | None:

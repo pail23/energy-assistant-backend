@@ -1,7 +1,7 @@
 """Use cases for home measurements."""
 
+from collections.abc import AsyncIterator
 from datetime import date
-from typing import AsyncIterator
 
 from fastapi import HTTPException
 
@@ -35,7 +35,9 @@ class ReadHomeMeasurement:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement = await HomeMeasurement.read_by_id(
-                session, home_measurement_id, include_device_measurements=True
+                session,
+                home_measurement_id,
+                include_device_measurements=True,
             )
             if not home_measurement:
                 raise HTTPException(status_code=404)
@@ -53,7 +55,9 @@ class ReadHomeMeasurementByDate:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement = await HomeMeasurement.read_by_date(
-                session, measurement_date, include_device_measurements=True
+                session,
+                measurement_date,
+                include_device_measurements=True,
             )
             if not home_measurement:
                 raise HTTPException(status_code=404)
@@ -71,7 +75,9 @@ class ReadHomeMeasurementLastBeforeDate:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement = await HomeMeasurement.read_before_date(
-                session, measurement_date, include_device_measurements=True
+                session,
+                measurement_date,
+                include_device_measurements=True,
             )
             if not home_measurement:
                 raise HTTPException(status_code=404)

@@ -1,7 +1,7 @@
 """Conf test for Energy Assistant."""
 
 import contextlib
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from httpx import AsyncClient
@@ -17,7 +17,7 @@ from energy_assistant.models.base import Base
 from energy_assistant.settings import settings
 
 
-@pytest.fixture
+@pytest.fixture()
 async def ac() -> AsyncGenerator:
     """Test fixture for a client connection to the backend."""
     async with AsyncClient(app=app, base_url="https://test") as c:
@@ -36,7 +36,7 @@ def setup_test_db() -> Generator:
         Base.metadata.drop_all(engine)
 
 
-@pytest.fixture
+@pytest.fixture()
 async def session() -> AsyncGenerator:
     """Test fixure for a session."""
     # https://github.com/sqlalchemy/sqlalchemy/issues/5811#issuecomment-756269881
@@ -44,26 +44,25 @@ async def session() -> AsyncGenerator:
     async with async_engine.connect() as conn:
         await conn.begin()
         await conn.begin_nested()
-        AsyncSessionLocal = async_sessionmaker(
+        async_session_local = async_sessionmaker(
             autocommit=False,
             autoflush=False,
             bind=conn,
             future=True,
         )
 
-        async_session = AsyncSessionLocal()
+        async_session = async_session_local()
 
         @event.listens_for(async_session.sync_session, "after_transaction_end")
         def end_savepoint(session: Session, transaction: SessionTransaction) -> None:
             if conn.closed:
                 return
-            if not conn.in_nested_transaction():
-                if conn.sync_connection:
-                    conn.sync_connection.begin_nested()
+            if not conn.in_nested_transaction() and conn.sync_connection:
+                conn.sync_connection.begin_nested()
 
         def test_get_session() -> Generator:
             with contextlib.suppress(SQLAlchemyError):
-                yield AsyncSessionLocal
+                yield async_session_local
 
         app.dependency_overrides[get_session] = test_get_session
 
@@ -72,8 +71,7 @@ async def session() -> AsyncGenerator:
         await conn.rollback()
 
 
-@pytest.fixture
+@pytest.fixture()
 def device_type_registry() -> DeviceTypeRegistry:
     """Device Type Registry test fixture."""
-    registry = DeviceTypeRegistry()
-    return registry
+    return DeviceTypeRegistry()

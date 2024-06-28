@@ -1,7 +1,8 @@
 """Database for Energy Assistant."""
 
 import logging
-from typing import Annotated, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Annotated
 
 from fastapi import Depends
 from sqlalchemy.exc import SQLAlchemyError
@@ -36,8 +37,8 @@ async def get_session() -> AsyncIterator[async_sessionmaker]:
     """Get the session for db transactions."""
     try:
         yield AsyncSessionLocal
-    except SQLAlchemyError as e:
-        LOGGER.exception(e)
+    except SQLAlchemyError:
+        LOGGER.exception("Error from SQL Alchemy")
 
 
 AsyncSession = Annotated[async_sessionmaker, Depends(get_session)]

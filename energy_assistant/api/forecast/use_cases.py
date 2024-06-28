@@ -2,7 +2,7 @@
 
 from fastapi import HTTPException
 
-from energy_assistant.EmhassOptimizer import EmhassOptimizer
+from energy_assistant.emhass_optimizer import EmhassOptimizer
 from energy_assistant.models.forecast import ForecastSchema
 
 from .schema import CreateModelResponse, TuneModelResponse
@@ -15,6 +15,7 @@ class ReadForecast:
         """Execute the read all devices use case."""
         if optimizer is not None:
             return await optimizer.async_get_forecast()
+        return None
 
 
 class CreateModel:
@@ -25,8 +26,8 @@ class CreateModel:
         try:
             r2 = optimizer.forecast_model_fit(False, days_to_retrieve)
             return CreateModelResponse(r2=r2)
-        except UnboundLocalError:
-            raise HTTPException(status_code=400, detail="Creation of the model failed.")
+        except UnboundLocalError as err:
+            raise HTTPException(status_code=400, detail="Creation of the model failed.") from err
 
 
 class TuneModel:

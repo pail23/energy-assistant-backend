@@ -8,8 +8,6 @@ from energy_assistant.models.schema import HomeMeasurementSchema
 class ReadHomeMeasurementResponse(HomeMeasurementSchema):
     """API Response for reading home measurements."""
 
-    pass
-
 
 class ReadAllHomeMeasurementResponse(BaseModel):
     """API Response for reading home measurements."""

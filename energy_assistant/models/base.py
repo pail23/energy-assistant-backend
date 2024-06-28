@@ -1,7 +1,8 @@
 """Base class for Energy Assistant data models."""
 
 import uuid
-from typing import Mapping
+from collections.abc import Mapping
+from typing import ClassVar
 
 from sqlalchemy import MetaData
 from sqlalchemy.dialects.postgresql import UUID
@@ -33,29 +34,26 @@ class GUID(TypeDecorator):
         """Load the dialect implementation."""
         if dialect.name == "postgresql":
             return dialect.type_descriptor(UUID())
-        else:
-            return dialect.type_descriptor(CHAR(32))
+        return dialect.type_descriptor(CHAR(32))
 
-    def process_bind_param(self, value, dialect):  # type:ignore
+    def process_bind_param(self, value, dialect) -> str | None:  # type:ignore
         """Process the bind parameters."""
         if value is None:
-            return value
-        elif dialect.name == "postgresql":
+            return None
+        if dialect.name == "postgresql":
             return str(value)
-        elif not isinstance(value, uuid.UUID):
-            return "%.32x" % uuid.UUID(value).int
-        else:
-            # hexstring
-            return "%.32x" % value.int
+        if not isinstance(value, uuid.UUID):
+            return uuid.UUID(value).hex
+        # hexstring
+        return f"{value.int:32x}"
 
     def process_result_value(self, value, dialect):  # type:ignore
         """Process the result value."""
         if value is None:
             return value
-        else:
-            if not isinstance(value, uuid.UUID):
-                value = uuid.UUID(value)
-            return value
+        if not isinstance(value, uuid.UUID):
+            value = uuid.UUID(value)
+        return value
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -64,11 +62,11 @@ class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
     metadata = MetaData(naming_convention=convention)  # type: ignore
 
-    type_annotation_map = {
+    type_annotation_map: ClassVar[dict] = {
         uuid.UUID: GUID,
     }
 
     def __repr__(self) -> str:
         """Representation of a data model object."""
-        columns = ", ".join([f"{k}={repr(v)}" for k, v in self.__dict__.items() if not k.startswith("_")])
+        columns = ", ".join([f"{k}={v!r}" for k, v in self.__dict__.items() if not k.startswith("_")])
         return f"<{self.__class__.__name__}({columns})>"

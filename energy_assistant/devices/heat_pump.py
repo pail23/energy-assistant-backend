@@ -17,7 +17,7 @@ from . import (
     StatesRepository,
 )
 from .analysis import DataBuffer
-from .config import DeviceConfigException, get_config_param
+from .config import DeviceConfigMissingParameterError, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
 DEFAULT_NOMINAL_POWER = 5000
@@ -36,14 +36,15 @@ def numeric_value(value: str | None) -> float | None:
 class HeatPumpDevice(DeviceWithState):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage):
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
         energy_config = config.get("energy")
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            msg = "energy"
+            raise DeviceConfigMissingParameterError(msg)
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -80,7 +81,8 @@ class HeatPumpDevice(DeviceWithState):
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
-            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id)
+            self._actual_temp,
+            state_repository.get_state(self._actual_temp_entity_id),
         )
 
         if self._energy_snapshot is None:
@@ -130,10 +132,8 @@ class HeatPumpDevice(DeviceWithState):
             power = optimizer.get_optimized_power(self._id)
             if power > 0:
                 return self._target_temperature_pv
-            else:
-                return self._target_temperature_normal
-        else:
-            return current_target_temperature
+            return self._target_temperature_normal
+        return current_target_temperature
 
     def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
@@ -168,8 +168,7 @@ class HeatPumpDevice(DeviceWithState):
         """Current power consumption of the device."""
         if self._state is not None:
             return self._nominal_power if self._state.value == "on" else 0.0
-        else:
-            return 0.0
+        return 0.0
 
     @property
     def actual_temperature(self) -> float:
@@ -220,7 +219,8 @@ class SubHeatPump(DeviceWithState):
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
-            raise DeviceConfigException("Parameter energy is missing in the configuration")
+            msg = "energy"
+            raise DeviceConfigMissingParameterError(msg)
         self._actual_temp_entity_id: str = get_config_param(config, "temperature")
         self._actual_temp: State | None = None
         self._state: State | None = None
@@ -239,13 +239,14 @@ class SubHeatPump(DeviceWithState):
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
-            self._actual_temp, state_repository.get_state(self._actual_temp_entity_id)
+            self._actual_temp,
+            state_repository.get_state(self._actual_temp_entity_id),
         )
 
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
 
-        # todo: implement session tracking for sub devices
+        # TODO: implement session tracking for sub devices
         # await self.update_session(old_state, new_state, self._name)
 
     @property
@@ -312,7 +313,7 @@ class SubHeatPump(DeviceWithState):
 class SGReadyHeatPumpDevice(DeviceWithState):
     """SG Ready heatpump, supporting water and heating temperature."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage):
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a SG Ready heatpump."""
         super().__init__(config, session_storage)
 
@@ -377,9 +378,10 @@ class SGReadyHeatPumpDevice(DeviceWithState):
                             sg_ready_state = OnOffState.OFF
                 elif self.power_mode == PowerModes.OPTIMIZED:
                     sg_ready_state = self._get_state_for_optimized(
-                        optimizer, OnOffState.from_str(current_sg_ready_state.value)
+                        optimizer,
+                        OnOffState.from_str(current_sg_ready_state.value),
                     )
-                if sg_ready_state != current_sg_ready_state.value:
+                if sg_ready_state != OnOffState.from_str(current_sg_ready_state.value):
                     state_repository.set_state(
                         StateId(
                             id=self._sg_ready_switch_entity_id,
@@ -414,10 +416,8 @@ class SGReadyHeatPumpDevice(DeviceWithState):
             power = optimizer.get_optimized_power(self._id)
             if power > 0:
                 return OnOffState.ON
-            else:
-                return OnOffState.ON
-        else:
-            return current_state
+            return OnOffState.ON
+        return current_state
 
     @property
     def requested_additional_power(self) -> float:

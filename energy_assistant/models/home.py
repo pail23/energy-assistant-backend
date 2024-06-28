@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import AsyncIterator
 from datetime import date
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,18 +70,20 @@ class HomeMeasurement(Base):
     async def read_by_id(
         cls,
         session: AsyncSession,
-        HomeMeasurement_id: int,
+        home_measurement_id: int,
         include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read a home measurements by id."""
-        stmt = select(cls).where(cls.id == HomeMeasurement_id)
+        stmt = select(cls).where(cls.id == home_measurement_id)
         if include_device_measurements:
             stmt = stmt.options(selectinload(cls.device_measurements))
         return await session.scalar(stmt.order_by(cls.id))
 
     @classmethod
     async def read_first(
-        cls, session: AsyncSession, include_device_measurements: bool = False
+        cls,
+        session: AsyncSession,
+        include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read last home measurement by date."""
         stmt = select(cls)
@@ -90,7 +93,9 @@ class HomeMeasurement(Base):
 
     @classmethod
     async def read_last(
-        cls, session: AsyncSession, include_device_measurements: bool = False
+        cls,
+        session: AsyncSession,
+        include_device_measurements: bool = False,
     ) -> HomeMeasurement | None:
         """Read last home measurement."""
         stmt = select(cls)
@@ -165,7 +170,7 @@ class HomeMeasurement(Base):
         # To fetch device measurements
         new = await cls.read_by_id(session, home_measurement.id, include_device_measurements=True)
         if not new:
-            raise RuntimeError()
+            raise RuntimeError
         return new
 
     async def update(
@@ -186,9 +191,9 @@ class HomeMeasurement(Base):
         await session.flush()
 
     @classmethod
-    async def delete(cls, session: AsyncSession, HomeMeasurement: HomeMeasurement) -> None:
+    async def delete(cls, session: AsyncSession, home_measurement: HomeMeasurement) -> None:
         """Delete a home measurement."""
-        await session.delete(HomeMeasurement)
+        await session.delete(home_measurement)
         await session.flush()
 
     def get_device_measurement(self, device_id: uuid.UUID) -> DeviceMeasurement | None:

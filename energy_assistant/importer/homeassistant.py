@@ -43,10 +43,7 @@ class StatesRepositoryWithHistory(StatesRepository):
         if self._selected_date is None:
             return None
 
-        if isinstance(id, str):
-            _id = id
-        else:
-            _id = id.id
+        _id = id if isinstance(id, str) else id.id
 
         row = self._read_states.loc[self._selected_date]
         return State(_id, str(row[_id]))
@@ -73,9 +70,8 @@ class StatesRepositoryWithHistory(StatesRepository):
                     self._template_states[k] = v
         return self._template_states
 
-    def set_state(self, id: StateId, value: str, attributes: dict = {}) -> None:
+    def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
-        pass
 
     @property
     def channel(self) -> str:
@@ -84,24 +80,33 @@ class StatesRepositoryWithHistory(StatesRepository):
 
     async def async_read_states(self) -> None:
         """Read the states from the channel asynchronously."""
-        pass
 
     def read_states(self) -> None:
         """Read the states from the channel."""
-        pass
 
     def write_states(self) -> None:
         """Write the states to the channel."""
-        pass
+
+    async def async_write_states(self) -> None:
+        """Write the states to the channel."""
 
 
 async def import_data(
-    home: Home, hass: Homeassistant, session: AsyncSession, freq: pd.Timedelta, days_to_retrieve: int
+    home: Home,
+    hass: Homeassistant,
+    session: AsyncSession,
+    freq: pd.Timedelta,
+    days_to_retrieve: int,
 ) -> None:
     """Import data from Homeassistant."""
-    states_repository = StatesRepositoryWithHistory(hass.get_location())
+    states_repository = StatesRepositoryWithHistory(await hass.get_location())
 
-    start_date = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days_to_retrieve)
+    start_date = datetime.now(tz=await hass.get_timezone()).replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    ) - timedelta(days=days_to_retrieve)
 
     variables = home.get_variables()
     for variable in variables:
@@ -129,18 +134,17 @@ async def import_data(
                     grid_exported_energy=energy_state.grid_exported_energy,
                     device_measurements=[],
                 )
+            elif not isnan(energy_state.grid_exported_energy):
+                await home_measurement.update(
+                    session,
+                    name=home.name,
+                    measurement_date=d.date(),
+                    solar_produced_energy=energy_state.produced_solar_energy,
+                    grid_imported_energy=energy_state.grid_imported_energy,
+                    grid_exported_energy=energy_state.grid_exported_energy,
+                )
             else:
-                if not isnan(energy_state.grid_exported_energy):
-                    await home_measurement.update(
-                        session,
-                        name=home.name,
-                        measurement_date=d.date(),
-                        solar_produced_energy=energy_state.produced_solar_energy,
-                        grid_imported_energy=energy_state.grid_imported_energy,
-                        grid_exported_energy=energy_state.grid_exported_energy,
-                    )
-                else:
-                    LOGGER.error("invalid grid exported value")
+                LOGGER.error("invalid grid exported value")
         except Exception:
             LOGGER.exception("error during fetching data from the database")
     await session.flush()

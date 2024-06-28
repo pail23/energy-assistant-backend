@@ -6,16 +6,17 @@ import logging
 import os
 import sys
 import threading
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
-from datetime import date
+from datetime import UTC, datetime, tzinfo
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import AsyncIterator, Final
+from typing import Final
 
 import alembic.config
 import pandas as pd
-import requests  # type: ignore
 import yaml
+from anyio import open_file
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
 from energy_assistant_frontend import where as locate_frontend
@@ -32,7 +33,7 @@ from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.devices.registry import DeviceTypeRegistry
-from energy_assistant.EmhassOptimizer import EmhassOptimizer
+from energy_assistant.emhass_optimizer import EmhassOptimizer
 from energy_assistant.importer.homeassistant import import_data
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
@@ -60,7 +61,11 @@ class EnergyAssistant:
 
 
 async def import_data_task(
-    home: Home, hass: Homeassistant, async_session: async_sessionmaker, freq: pd.Timedelta, days_to_retrieve: int
+    home: Home,
+    hass: Homeassistant,
+    async_session: async_sessionmaker,
+    freq: pd.Timedelta,
+    days_to_retrieve: int,
 ) -> None:
     """Import data from home assistant."""
     async with async_session() as session:
@@ -74,9 +79,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     app.energy_assistant = ea  # type: ignore
     bt = asyncio.create_task(background_task(ea))
     optimizer_task = asyncio.create_task(optimize(ea.optimizer))
+    importer_task = None
     if ea.hass is not None:
         importer_task = asyncio.create_task(
-            import_data_task(ea.home, ea.hass, await get_async_session(), pd.Timedelta(24, "h"), 8)
+            import_data_task(ea.home, ea.hass, await get_async_session(), pd.Timedelta(24, "h"), 8),
         )
     scheduler = AsyncIOScheduler()
     scheduler.add_job(async_daily_optimize, trigger="cron", args=[ea], hour="3", minute="0")  # time is UTC
@@ -84,7 +90,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     yield
     ea.should_stop = True
     await optimizer_task
-    await importer_task
+    if importer_task is not None:
+        await importer_task
     await bt
     scheduler.shutdown()
     if ea.hass:
@@ -116,6 +123,7 @@ async def async_handle_state_update(
     ea: EnergyAssistant,
     state_repository: StatesRepository,
     session: AsyncSession,
+    time_zone: tzinfo,
 ) -> None:
     """Read the values from home assistant and process the update."""
     try:
@@ -127,12 +135,12 @@ async def async_handle_state_update(
             ea.optimizer.update_repository_states(ea.home, state_repository)
         else:
             logging.error("The variable optimizer is None in async_handle_state_update")
-        state_repository.write_states()
+        await state_repository.async_write_states()
         if ea.db:
             if ea.home:
                 await asyncio.gather(
                     ws_manager.broadcast(get_home_message(ea.home)),
-                    ea.db.store_home_state(ea.home, session),
+                    ea.db.store_home_state(ea.home, session, time_zone),
                 )
             else:
                 logging.error("The variable home is None in async_handle_state_update")
@@ -146,7 +154,8 @@ async def async_handle_state_update(
 
 async def background_task(ea: EnergyAssistant) -> None:
     """Periodically read the values from home assistant and process the update."""
-    last_update = date.today()
+    time_zone = await ea.hass.get_timezone() if ea.hass is not None else UTC
+    last_update = datetime.now(tz=time_zone).date()
     async_session = await get_async_session()
     repositories: list[StatesRepository] = []
     if ea.hass is not None:
@@ -155,20 +164,20 @@ async def background_task(ea: EnergyAssistant) -> None:
         repositories.append(ea.mqtt)
     state_repository = StatesMultipleRepositories(repositories)
     while not ea.should_stop:
-        await asyncio.sleep(30)
         # delta_t = datetime.now().timestamp()
         # print("Start refresh from home assistant")
-        today = date.today()
+        today = datetime.now(tz=time_zone).date()
         try:
             if today != last_update:
                 ea.home.store_energy_snapshot()
             last_update = today
 
             async with async_session() as session:
-                await async_handle_state_update(ea, state_repository, session)
+                await async_handle_state_update(ea, state_repository, session, time_zone)
         except Exception:
             logging.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
+        await asyncio.sleep(30)
 
 
 def create_mqtt_connection(config: dict) -> MqttConnection | None:
@@ -204,17 +213,9 @@ async def open_hass_connection(config: dict) -> Homeassistant | None:
             logging.info(f"suvervisor token detected. len={len(token)}")
             url = "http://supervisor/core"
 
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "content-type": "application/json",
-            }
-            response = requests.get(f"{url}/api/states", headers=headers)
-            logging.info(f"pinging homeassistant api succeeded. Status code = {response.status_code}")
-            if response.ok:
-                logging.info(f"Using {url} to connect")
-                hass = Homeassistant(url, token, False)
-                await hass.connect()
-                return hass
+            hass = Homeassistant(url, token, False)
+            await hass.connect()
+            return hass
     except Exception:
         logging.exception("Error while trying to connect to the homeassistant supervisor api")
         url = None
@@ -260,7 +261,7 @@ def setup_logger(log_filename: str, level: str = "DEBUG") -> logging.Logger:
                 "ERROR": "red",
                 "CRITICAL": "red",
             },
-        )
+        ),
     )
 
     # Capture warnings.warn(...) and friends messages in logs.
@@ -310,10 +311,12 @@ async def init_app() -> EnergyAssistant:
     """Initialize the application."""
     result = EnergyAssistant()
 
-    hass_options_file = "/data/options.json"
-    if os.path.isfile(hass_options_file):
-        with open(hass_options_file, "rb") as _file:
-            hass_options = json.loads(_file.read())
+    hass_options_file = Path("/data/options.json")
+    if hass_options_file.is_file():
+        async with await open_file(hass_options_file) as _file:
+            hass_options = json.loads(await _file.read())
+    #        with open(hass_options_file, "rb") as _file:
+    #            hass_options = json.loads(_file.read())
     else:
         hass_options = {}
 
@@ -332,17 +335,17 @@ async def init_app() -> EnergyAssistant:
     db = Database()
     result.db = db
 
-    device_registry_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config/deviceregistry")
+    device_registry_path = Path(__file__).parent / "config/deviceregistry"
 
     device_type_registry = DeviceTypeRegistry()
     device_type_registry.load(device_registry_path)
 
     logger.info(f"Loading config file {config_file}")
     try:
-        with open(config_file) as stream:
-            logger.debug(f"Successfully opened config file {config_file}")
+        async with await open_file(config_file) as stream:
+            logger.debug("Successfully opened config file %s", config_file)
             try:
-                config = yaml.safe_load(stream)
+                config = yaml.safe_load(await stream.read())
                 logger.debug(f"config file {config_file} successfully loaded")
             except yaml.YAMLError:
                 logger.exception("Failed to parse the config file")
@@ -351,7 +354,7 @@ async def init_app() -> EnergyAssistant:
             else:
                 hass = await open_hass_connection(config)
                 result.hass = hass
-                result.config = EnergyAssistantConfig(config, hass.get_config() if hass is not None else {})
+                result.config = EnergyAssistantConfig(config, await hass.get_config() if hass is not None else {})
                 if hass is not None:
                     hass.read_states()
                     optimizer = EmhassOptimizer(settings.DATA_FOLDER, result.config, hass)
@@ -387,7 +390,7 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
         optimizer.forecast_model_fit(True)
     except Exception:
         logging.exception(
-            "Optimization of the power consumption forecast model failed, probably due to missing history data in Home Assistant."
+            "Optimization of the power consumption forecast model failed, probably due to missing history data in Home Assistant.",
         )
 
 
@@ -420,14 +423,14 @@ def main() -> None:
     try:
         alembic_config = Path(__file__).parent / "alembic.ini"
 
-        alembicArgs = [
+        alembic_args = [
             "-c",
             str(alembic_config),
             "--raiseerr",
             "upgrade",
             "head",
         ]
-        alembic.config.main(argv=alembicArgs)  # type: ignore
+        alembic.config.main(argv=alembic_args)  # type: ignore
     except Exception:
         print("Alembic Migration failed")
         logging.exception("Alembic Migration failed")

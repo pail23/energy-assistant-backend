@@ -28,7 +28,7 @@ class CalculatedState(State):
 class VariableMapping(dict):
     """Helper class implementing a dict in order to catch the used variables."""
 
-    def __init__(self, domain: str):
+    def __init__(self, domain: str) -> None:
         """Create and VariableMapping instance."""
         self.requested_variables: list[str] = []
         self.domain = domain
@@ -89,7 +89,7 @@ class StateValue:
         """Get all used variables."""
         if self._value_id is not None:
             return [self._value_id]
-        elif self._template is not None:
+        if self._template is not None:
             mapping = {"sensor": VariableMapping("sensor")}
             self._template.render(mapping)
             result = []

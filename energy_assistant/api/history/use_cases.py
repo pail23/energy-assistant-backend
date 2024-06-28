@@ -49,7 +49,9 @@ class ReadHomeMeasurementDifference:
         """Execute the read home measurement use case."""
         async with self.async_session() as session:
             home_measurement_from = await HomeMeasurement.read_before_date(
-                session, from_date, include_device_measurements=True
+                session,
+                from_date,
+                include_device_measurements=True,
             )
             if not home_measurement_from:
                 home_measurement_from = await HomeMeasurement.read_first(session, include_device_measurements=True)
@@ -66,7 +68,7 @@ class ReadHomeMeasurementDifference:
             device_measurements = []
             for from_device in home_measurement_from.device_measurements:
                 to_device = home_measurement_to.get_device_measurement(
-                    from_device.device_id
+                    from_device.device_id,
                 )  # home_measurement_to.device_measurements[index]
                 if to_device is not None:
                     measurement = DeviceMeasurementPeriodSchema(
@@ -103,7 +105,9 @@ class ReadHomeMeasurementDaily:
         """Execute the read daily home measurement use case."""
         async with self.async_session() as session:
             last_measurement = await HomeMeasurement.read_before_date(
-                session, from_date, include_device_measurements=True
+                session,
+                from_date,
+                include_device_measurements=True,
             )
             if not last_measurement:
                 last_measurement = await HomeMeasurement.read_first(session, include_device_measurements=True)

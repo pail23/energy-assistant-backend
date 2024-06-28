@@ -1,6 +1,7 @@
 """Views for home measurement API."""
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Request
 
@@ -27,8 +28,8 @@ router = APIRouter(prefix="/devices")
 @router.get("", response_model=ReadAllDevicesResponse)
 async def read_all(
     request: Request,
-    filter_with_session_log_enties: bool = False,
-    use_case: ReadAllDevices = Depends(ReadAllDevices),
+    filter_with_session_log_enties: bool,
+    use_case: Annotated[ReadAllDevices, Depends(ReadAllDevices)],
 ) -> ReadAllDevicesResponse:
     """Rest end point for read all devices."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
@@ -39,7 +40,7 @@ async def read_all(
                 energy_assistant.home if energy_assistant is not None else None,
                 filter_with_session_log_enties,
             )
-        ]
+        ],
     )
 
 
@@ -49,8 +50,8 @@ async def read_all(
 )
 async def read(
     request: Request,
-    device_id: uuid.UUID = Path(..., description=""),
-    use_case: ReadDevice = Depends(ReadDevice),
+    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    use_case: Annotated[ReadDevice, Depends(ReadDevice)],
 ) -> DeviceSchema:
     """REST end point for read a device."""
     return await use_case.execute(device_id, request.app.home)
@@ -59,12 +60,12 @@ async def read(
 @router.get("/{device_id}/measurements")
 async def read_measurements(
     request: Request,
-    device_id: uuid.UUID = Path(..., description=""),
-    use_case: ReadDeviceMeasurements = Depends(ReadDeviceMeasurements),
+    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    use_case: Annotated[ReadDeviceMeasurements, Depends(ReadDeviceMeasurements)],
 ) -> ReadDeviceMeasurementsResponse:
     """REST end point for read a device."""
     return ReadDeviceMeasurementsResponse(
-        device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)]
+        device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)],
     )
 
 
@@ -75,8 +76,8 @@ async def read_measurements(
 async def update_power_mode(
     request: Request,
     data: UpdateDevicePowerModeRequest,
-    device_id: uuid.UUID = Path(..., description=""),
-    use_case: UpdateDevicePowerMode = Depends(UpdateDevicePowerMode),
+    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    use_case: Annotated[UpdateDevicePowerMode, Depends(UpdateDevicePowerMode)],
 ) -> DeviceSchema:
     """Update the power mode of a device."""
     return await use_case.execute(device_id, data.power_mode, request.app.home)
@@ -85,8 +86,8 @@ async def update_power_mode(
 @router.delete("/{device_id}", status_code=204)
 async def delete(
     request: Request,
-    device_id: uuid.UUID = Path(..., description=""),
-    use_case: DeleteDevice = Depends(DeleteDevice),
+    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    use_case: Annotated[DeleteDevice, Depends(DeleteDevice)],
 ) -> None:
     """REST end point for delete a device."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None

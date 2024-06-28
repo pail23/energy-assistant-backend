@@ -5,7 +5,8 @@ from __future__ import annotations
 import datetime
 import json
 import uuid
-from typing import TYPE_CHECKING, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -137,7 +138,9 @@ class DeviceMeasurement(Base):
     solar_consumed_energy: Mapped[float]
 
     home_measurement_id: Mapped[int] = mapped_column(
-        "home_measurement_id", ForeignKey("HomeMeasurement.id"), nullable=False
+        "home_measurement_id",
+        ForeignKey("HomeMeasurement.id"),
+        nullable=False,
     )
 
     home_measurement: Mapped[HomeMeasurement] = relationship("HomeMeasurement", back_populates="device_measurements")
@@ -203,7 +206,7 @@ class DeviceMeasurement(Base):
         # To fetch home measurement
         new = await cls.read_by_id(session, measurement.id)
         if not new:
-            raise RuntimeError()
+            raise RuntimeError
         return new
 
     async def update(
@@ -258,7 +261,11 @@ class UtilityMeter(Base):
 
     @classmethod
     async def create(
-        cls, session: AsyncSession, device_id: uuid.UUID, name: str, last_meter_value: float
+        cls,
+        session: AsyncSession,
+        device_id: uuid.UUID,
+        name: str,
+        last_meter_value: float,
     ) -> UtilityMeter:
         """Create a utility meter."""
 

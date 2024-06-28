@@ -20,7 +20,7 @@ from .device import DeviceWithState
 class EvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage):
+    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
         self._evcc_topic: str = get_config_param(config, "evcc_topic")
@@ -169,20 +169,22 @@ class EvccDevice(DeviceWithState):
 
     def get_load_info(self) -> LoadInfo | None:
         """Get the current deferrable load info."""
-        if self._is_connected is not None and self._max_current is not None and self._is_connected.value == "true":
-            if self.state == OnOffState.ON:
-                remainingEnergy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
-                if remainingEnergy > 0:
-                    power: float = (
-                        self._nominal_power
-                        if self._nominal_power is not None
-                        else (self._max_current.numeric_value * 230)
-                    )  # TODO: Multiply with active phases
-                    return LoadInfo(
-                        device_id=self.id,
-                        nominal_power=power,
-                        duration=remainingEnergy / power * 3600,
-                        is_continous=self._is_continous,
-                        is_deferrable=self.power_mode == PowerModes.OPTIMIZED,
-                    )
+        if (
+            self.state == OnOffState.ON
+            and self._is_connected is not None
+            and self._max_current is not None
+            and self._is_connected.value == "true"
+        ):
+            remaining_energy = (1 - self.vehicle_soc / 100) * self.vehicle_capacity * 1000
+            if remaining_energy > 0:
+                power: float = (
+                    self._nominal_power if self._nominal_power is not None else (self._max_current.numeric_value * 230)
+                )  # TODO: Multiply with active phases
+                return LoadInfo(
+                    device_id=self.id,
+                    nominal_power=power,
+                    duration=remaining_energy / power * 3600,
+                    is_continous=self._is_continous,
+                    is_deferrable=self.power_mode == PowerModes.OPTIMIZED,
+                )
         return None

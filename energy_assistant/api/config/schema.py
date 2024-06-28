@@ -11,5 +11,3 @@ class ConfigModel(BaseModel):
 
 class ReadConfigResponse(ConfigModel):
     """API Response for reading the configuration."""
-
-    pass
