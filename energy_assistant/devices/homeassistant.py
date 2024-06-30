@@ -296,8 +296,8 @@ class Homeassistant(StatesSingleRepository):
             df[fcst] = pd.Series(series.get("wh_hours"))
         df.index = pd.to_datetime(df.index)
         df["sum"] = df.sum(axis=1)
-        freq = pd.Timedelta("30min")
-        return df.resample(freq).mean().interpolate()
+        freq = pd.Timedelta("60min")
+        return df.resample(freq).sum().interpolate()
 
     async def async_read_states(self) -> None:
         """Read the states from the homeassistant instance asynchronously."""

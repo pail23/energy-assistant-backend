@@ -278,7 +278,9 @@ class EmhassOptimizer(Optimizer):
             if df_now is None:
                 df_now = pd.DataFrame()
             return fcst.get_power_from_weather(df_weather, set_mix_forecast, df_now)
-        pv_forecast = await self._hass.get_solar_forecast()
+        pv_forecast_hourly = await self._hass.get_solar_forecast()
+        freq = self._retrieve_hass_conf["freq"]
+        pv_forecast = pv_forecast_hourly.resample(freq).mean().interpolate()
         start = fcst.forecast_dates[0]
         end = fcst.forecast_dates[-1]
         pv_forecast_in_range = pv_forecast.loc[(pv_forecast.index >= start) & (pv_forecast.index <= end)]
