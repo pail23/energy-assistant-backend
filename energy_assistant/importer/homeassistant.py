@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime, timedelta
 from math import isnan
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -13,6 +14,7 @@ from energy_assistant.devices import Location, State, StateId, StatesRepository
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HistoryState, Homeassistant
 from energy_assistant.models.home import HomeMeasurement
+from energy_assistant.settings import settings
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -116,7 +118,7 @@ async def import_data(
         except Exception:
             LOGGER.exception(f"error during fetching the history of state {variable} for Home Assistant")
 
-    states_repository._read_states.to_csv("data/state_history.csv")
+    states_repository._read_states.to_csv(Path(settings.DATA_FOLDER)/"state_history.csv")
     energy_state = home.create_home_energy_state_clone()
     for row in states_repository._read_states.iterrows():
         try:
