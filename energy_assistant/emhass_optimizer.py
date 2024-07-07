@@ -107,6 +107,8 @@ class EmhassOptimizer(Optimizer):
                 retrieve_hass_conf["continual_publish"] = False
 
             optim_conf["num_def_loads"] = 0
+            if "compute_curtailment" not in plant_conf:
+                plant_conf["compute_curtailment"] = False
 
             self._retrieve_hass_conf = retrieve_hass_conf
             self._optim_conf = optim_conf
