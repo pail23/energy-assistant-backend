@@ -84,7 +84,7 @@ class EmhassOptimizer(Optimizer):
             self._hass_entity_prefix = self._emhass_config.get("hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX)
             self._power_no_var_loads_id = f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
             params = json.dumps(self._emhass_config)
-            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(pathlib.Path(), False, params=params)
+            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(self._emhass_path_conf, False, params=params)
             # Patch variables with Energy Assistant Config
             retrieve_hass_conf["hass_url"] = self._hass_url
             retrieve_hass_conf["long_lived_token"] = self._hass_token
@@ -123,7 +123,7 @@ class EmhassOptimizer(Optimizer):
                 retrieve_hass_conf["freq"],
                 self._location.get_time_zone(),
                 params,
-                self._data_folder,
+                self._emhass_path_conf,
                 self._logger,
                 get_data_from_file=False,
             )  # type: ignore
@@ -202,7 +202,7 @@ class EmhassOptimizer(Optimizer):
             self._optim_conf,
             self._plant_conf,
             params,
-            str(self._data_folder),
+            self._emhass_path_conf,
             self._logger,
             get_data_from_file=False,
         )
@@ -213,7 +213,7 @@ class EmhassOptimizer(Optimizer):
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._cost_fun,
-            str(self._data_folder),
+            self._emhass_path_conf,
             self._logger,
         )
 
@@ -451,7 +451,7 @@ class EmhassOptimizer(Optimizer):
             self._optim_conf,
             self._plant_conf,
             params,
-            str(self._data_folder),
+            self._emhass_path_conf,
             self._logger,
             get_data_from_file=False,
         )
@@ -462,7 +462,7 @@ class EmhassOptimizer(Optimizer):
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._cost_fun,
-            str(self._data_folder),
+            self._emhass_path_conf,
             self._logger,
         )
 
@@ -592,7 +592,7 @@ class EmhassOptimizer(Optimizer):
             self._power_no_var_loads_id,
             sklearn_model,
             num_lags,
-            str(self._data_folder),
+            self._emhass_path_conf,
             self._logger,
         )
         # Fit the ML model
