@@ -84,7 +84,9 @@ class EmhassOptimizer(Optimizer):
             self._hass_entity_prefix = self._emhass_config.get("hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX)
             self._power_no_var_loads_id = f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
             params = json.dumps(self._emhass_config)
-            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(self._emhass_path_conf, False, params=params)
+            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
+                self._emhass_path_conf, False, params=params
+            )
             # Patch variables with Energy Assistant Config
             retrieve_hass_conf["hass_url"] = self._hass_url
             retrieve_hass_conf["long_lived_token"] = self._hass_token
