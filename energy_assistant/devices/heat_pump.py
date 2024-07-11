@@ -460,9 +460,7 @@ class SGReadyHeatPumpDevice(DeviceWithState):
         """Is the device available?."""
         if self._heating is not None and self._heating.available:
             return True
-        if self._water_heating is not None and self._water_heating.available:
-            return True
-        return False
+        return self._water_heating is not None and self._water_heating.available
 
     def restore_state(self, consumed_solar_energy: float, consumed_energy: float) -> None:
         """Restore the previously stored state."""
