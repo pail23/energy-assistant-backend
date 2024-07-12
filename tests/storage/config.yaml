@@ -2,7 +2,7 @@ home:
   name: "my home"
   solar_power: sensor.solar_power
   solar_energy: sensor.solar_energy
-  grid_supply_poweer: sensor.grid_power
+  grid_supply_power: sensor.grid_power
   imported_energy: sensor.energy_imported
   exported_energy: sensor.energyexported
   disable_device_control: true

@@ -66,14 +66,13 @@ class EmhassOptimizer(Optimizer):
         self._hass_token: str = hass.token
         self._location: Location = config.location
 
-        home_config = config.energy_assistant_config.get("home")
+        home_config = config.energy_assistant_config.home
         self._solar_power_id: str | None = None
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
         self._emhass_config: dict | None = config.emhass_config
 
         self._emhass_path_conf = {}
-        # self._emhass_path_conf["config_path"] = pathlib.Path("./energy_assistant.yaml")
         self._emhass_path_conf["data_path"] = self._data_folder
         self._emhass_path_conf["root_path"] = pathlib.Path(emhass.__file__).parent
 

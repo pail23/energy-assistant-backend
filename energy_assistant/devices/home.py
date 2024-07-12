@@ -11,6 +11,7 @@ from energy_assistant.devices.analysis import DataBuffer
 from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
+from energy_assistant.storage.config import ConfigStorage
 
 from . import (
     HomeEnergySnapshot,
@@ -19,7 +20,7 @@ from . import (
     StatesRepository,
     assign_if_available,
 )
-from .config import DeviceConfigMissingParameterError, get_config_param
+from .config import DeviceConfigMissingParameterError
 from .device import Device
 from .heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
 from .homeassistant import HomeassistantDevice
@@ -132,26 +133,25 @@ class Home:
 
     def __init__(
         self,
-        home_config: dict,
-        devices_config: list,
+        config: ConfigStorage,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a home instance."""
-        self._name: str = get_config_param(home_config, "name")
+        self._name: str = config.home.get_param("name")
 
-        self._home_energy_state = HomeEnergyState(home_config)
-        self._init_power_variables(home_config)
+        self._home_energy_state = HomeEnergyState(config.home.as_dict())
+        self._init_power_variables(config.home.as_dict())
 
         self.grid_exported_power_data = DataBuffer()
 
         self._disable_device_control: bool = False
-        disable_control = home_config.get("disable_device_control")
+        disable_control = config.home.get("disable_device_control")
         if disable_control is not None and disable_control:
             self._disable_device_control = True
 
         self._energy_snapshop: HomeEnergySnapshot | None = None
-        self._init_devices(devices_config, session_storage, device_type_registry)
+        self._init_devices(config.devices.as_list(), session_storage, device_type_registry)
 
     def _init_devices(
         self,
@@ -192,15 +192,13 @@ class Home:
         if solar_power_config is not None:
             self._solar_power_value = StateValue(solar_power_config)
         else:
-            msg = "solar_power"
-            raise DeviceConfigMissingParameterError(msg)
+            raise DeviceConfigMissingParameterError("solar_power")
 
         grid_supply_power_config = config.get("grid_supply_power")
         if grid_supply_power_config is not None:
             self._grid_imported_power_value = StateValue(grid_supply_power_config)
         else:
-            msg = "energy"
-            raise DeviceConfigMissingParameterError(msg)
+            raise DeviceConfigMissingParameterError("energy")
 
         grid_inverted: bool | None = config.get("grid_inverted")
         if grid_inverted is not None:

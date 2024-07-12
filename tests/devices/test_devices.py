@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date
+from pathlib import Path
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +12,8 @@ from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.models.home import HomeMeasurement
+from energy_assistant.settings import settings
+from energy_assistant.storage.config import ConfigStorage
 from energy_assistant.storage.storage import Database, session_storage
 
 
@@ -76,17 +79,13 @@ def test_integrator() -> None:
 async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegistry) -> None:
     """Test the loading of the devices."""
     await setup_data(session)
+    config = ConfigStorage(Path(settings.DATA_FOLDER))
+    config.delete_config_file()
+
+    await config.initialize(Path(__file__).parent / "../storage/config.yaml")
 
     home = Home(
-        {
-            "name": "my home",
-            "solar_power": "solar_power_id",
-            "grid_supply_power": "grid_supply_power_id",
-            "solar_energy": "solar_energy_id",
-            "imported_energy": "imported_energy_id",
-            "exported_energy": "exported_energy_id",
-        },
-        [],
+        config,
         session_storage,
         device_type_registry,
     )
@@ -107,7 +106,7 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
     await db.restore_home_state(home, session)
     assert home.consumed_energy == 202
     assert home.consumed_solar_energy == 100
-    assert home.devices[0].consumed_solar_energy == 2
-    assert home.devices[0].consumed_energy == 4
+    assert home.devices[1].consumed_solar_energy == 2
+    assert home.devices[1].consumed_energy == 4
 
     assert True
