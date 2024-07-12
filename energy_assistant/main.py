@@ -341,7 +341,7 @@ async def init_app() -> EnergyAssistant:
         result.config = EnergyAssistantConfig(config, await hass.get_config() if hass is not None else {})
         if hass is not None:
             hass.read_states()
-            optimizer = EmhassOptimizer(settings.DATA_FOLDER, result.config, hass)
+            optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass, await hass.get_location())
             result.optimizer = optimizer
             app.optimizer = optimizer  # type: ignore
 

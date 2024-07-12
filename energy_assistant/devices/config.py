@@ -39,7 +39,7 @@ class EnergyAssistantConfig:
         self._hass_config = hass_config
 
     @property
-    def config(self) -> dict:
+    def as_dict(self) -> dict:
         """Get the complete config."""
         result = {
             "energy_assistant": self._energy_assistant_config.as_dict(),

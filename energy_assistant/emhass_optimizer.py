@@ -21,10 +21,10 @@ from sklearn.metrics import r2_score  # type: ignore
 from energy_assistant import Optimizer
 from energy_assistant.devices import LoadInfo, Location, StateId, StatesRepository
 from energy_assistant.devices.analysis import DataBuffer, create_timeseries_from_const
-from energy_assistant.devices.config import EnergyAssistantConfig
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from energy_assistant.models.forecast import ForecastSchema, ForecastSerieSchema
+from energy_assistant.storage.config import ConfigStorage
 
 from .constants import ROOT_LOGGER_NAME
 
@@ -55,7 +55,7 @@ class OptimizerNotInitializedError(Exception):
 class EmhassOptimizer(Optimizer):
     """Optimizer based on Emhass."""
 
-    def __init__(self, data_folder: str, config: EnergyAssistantConfig, hass: Homeassistant) -> None:
+    def __init__(self, data_folder: str, config: ConfigStorage, hass: Homeassistant, location: Location) -> None:
         """Create an emhass optimizer instance."""
         self._data_folder: pathlib.Path = pathlib.Path(data_folder)
         self._logger = LOGGER
@@ -64,13 +64,13 @@ class EmhassOptimizer(Optimizer):
         if self._hass_url is not None and self._hass_url[-1] != "/":
             self._hass_url = self._hass_url + "/"
         self._hass_token: str = hass.token
-        self._location: Location = config.location
+        self._location: Location = location
 
-        home_config = config.energy_assistant_config.home
+        home_config = config.home
         self._solar_power_id: str | None = None
         if home_config is not None:
             self._solar_power_id = home_config.get("solar_power")
-        self._emhass_config: dict | None = config.emhass_config
+        self._emhass_config: dict | None = config.emhass.as_dict()
 
         self._emhass_path_conf = {}
         self._emhass_path_conf["data_path"] = self._data_folder
