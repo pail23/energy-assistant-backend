@@ -37,7 +37,7 @@ from energy_assistant.emhass_optimizer import EmhassOptimizer
 from energy_assistant.importer.homeassistant import import_data
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
-from energy_assistant.storage import Database, get_async_session, session_storage
+from energy_assistant.storage.storage import Database, get_async_session, session_storage
 from energy_assistant.websocket import get_home_message, ws_manager, ws_router
 
 from .constants import ROOT_LOGGER_NAME
@@ -315,8 +315,6 @@ async def init_app() -> EnergyAssistant:
     if hass_options_file.is_file():
         async with await open_file(hass_options_file) as _file:
             hass_options = json.loads(await _file.read())
-    #        with open(hass_options_file, "rb") as _file:
-    #            hass_options = json.loads(_file.read())
     else:
         hass_options = {}
 
@@ -366,7 +364,7 @@ async def init_app() -> EnergyAssistant:
 
                 home_config = config.get("home")
                 if home_config is not None and home_config.get("name") is not None:
-                    home = Home(home_config, session_storage, device_type_registry)
+                    home = Home(home_config, config.get("devices"), session_storage, device_type_registry)
                     result.home = home
                     app.home = home  # type: ignore
                     if mqtt_connection is not None:

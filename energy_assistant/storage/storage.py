@@ -23,7 +23,7 @@ from energy_assistant.models.device import (
 from energy_assistant.models.home import HomeMeasurement
 from energy_assistant.models.sessionlog import SessionLogEntry
 
-from .constants import ROOT_LOGGER_NAME
+from ..constants import ROOT_LOGGER_NAME
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 

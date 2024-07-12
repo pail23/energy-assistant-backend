@@ -11,7 +11,7 @@ from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.models.home import HomeMeasurement
-from energy_assistant.storage import Database, session_storage
+from energy_assistant.storage.storage import Database, session_storage
 
 
 async def setup_data(session: AsyncSession) -> None:
@@ -86,6 +86,7 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
             "imported_energy": "imported_energy_id",
             "exported_energy": "exported_energy_id",
         },
+        [],
         session_storage,
         device_type_registry,
     )

@@ -132,60 +132,60 @@ class Home:
 
     def __init__(
         self,
-        config: dict,
+        home_config: dict,
+        devices_config: list,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a home instance."""
-        self._name: str = get_config_param(config, "name")
+        self._name: str = get_config_param(home_config, "name")
 
-        self._home_energy_state = HomeEnergyState(config)
-        self._init_power_variables(config)
+        self._home_energy_state = HomeEnergyState(home_config)
+        self._init_power_variables(home_config)
 
         self.grid_exported_power_data = DataBuffer()
 
         self._disable_device_control: bool = False
-        disable_control = config.get("disable_device_control")
+        disable_control = home_config.get("disable_device_control")
         if disable_control is not None and disable_control:
             self._disable_device_control = True
 
         self._energy_snapshop: HomeEnergySnapshot | None = None
-        self._init_devices(config, session_storage, device_type_registry)
+        self._init_devices(devices_config, session_storage, device_type_registry)
 
     def _init_devices(
         self,
-        config: dict,
+        devices_config: list,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         self.devices = list[Device]()
-        config_devices = config.get("devices")
-        if config_devices is not None:
-            for config_device in config_devices:
-                type = config_device.get("type")
-                self.create_device(type, config_device, session_storage, device_type_registry)
+        if devices_config is not None:
+            for config_device in devices_config:
+                device_type = config_device.get("type")
+                self.create_device(device_type, config_device, session_storage, device_type_registry)
 
     def create_device(
         self,
-        type: str,
+        device_type: str,
         config: dict,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create and add a new device."""
-        if type == "homeassistant":
+        if device_type == "homeassistant":
             self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
-        elif type == "heat-pump":
+        elif device_type == "heat-pump":
             self.devices.append(HeatPumpDevice(config, session_storage))
-        elif type == "sg-ready-heat-pump":
+        elif device_type == "sg-ready-heat-pump":
             self.devices.append(SGReadyHeatPumpDevice(config, session_storage))
-        elif type == "power-state-device":
+        elif device_type == "power-state-device":
             # This is deprecated and will be removed.
             self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
-        elif type == "evcc":
+        elif device_type == "evcc":
             self.devices.append(EvccDevice(config, session_storage))
         else:
-            LOGGER.error(f"Unknown device type {type} in configuration")
+            LOGGER.error(f"Unknown device type {device_type} in configuration")
 
     def _init_power_variables(self, config: dict) -> None:
         solar_power_config = config.get("solar_power")
