@@ -1,11 +1,12 @@
 """Views for home measurement API."""
 
+import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Request
 
-from .schema import ConfigModel, ReadConfigResponse
-from .use_cases import ReadConfiguration
+from .schema import ConfigModel, ReadConfigResponse, ReadDeviceConfigResponse
+from .use_cases import ReadConfiguration, ReadDeviceConfiguration
 
 router = APIRouter(prefix="/config")
 
@@ -20,3 +21,19 @@ async def read_configuration(
     if energy_assistant is None:
         raise HTTPException(status_code=500)
     return await use_case.execute(energy_assistant.config)
+
+
+@router.get(
+    "/device/{device_id}",
+    response_model=ReadDeviceConfigResponse,
+)
+async def read(
+    request: Request,
+    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    use_case: Annotated[ReadDeviceConfiguration, Depends(ReadDeviceConfiguration)],
+) -> ConfigModel:
+    """REST end point for read a device configuration."""
+    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
+    if energy_assistant is None:
+        raise HTTPException(status_code=500)
+    return await use_case.execute(energy_assistant.config, device_id)
