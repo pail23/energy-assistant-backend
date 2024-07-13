@@ -136,6 +136,7 @@ class ConfigSectionStorage(ConfigSectionStorageBase):
         """Store the config data."""
         try:
             #            async with await open_file(self._data_folder/CONFIG_DATA_FILE, mode='w') as stream:
+            self._data_folder.mkdir(parents=True, exist_ok=True)
             with self._config_data_file.open(mode="w") as stream:
                 yaml.safe_dump(self._data, stream)
         except yaml.YAMLError as error:
@@ -224,6 +225,7 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
         """Store the config data."""
         try:
             #            async with await open_file(self._data_folder/CONFIG_DATA_FILE, mode='w') as stream:
+            self._data_folder.mkdir(parents=True, exist_ok=True)
             with self._config_data_file.open(mode="w") as stream:
                 yaml.safe_dump(self._data, stream)
         except yaml.YAMLError as error:
