@@ -43,7 +43,7 @@ repos:
     hooks:
       # Run the pip compile
       - id: pip-compile
-        args: [pyproject.toml, -o, requirements.txt]
+        args: [pyproject.toml, -o, requirements.txt, --extra, dev]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
