@@ -19,7 +19,7 @@ keywords = ["energy assistant", "home assistant"]
 dependencies = [
     "SQLAlchemy==2.0.31",
     "requests==2.32.3",
-    "fastapi==0.111.0",
+    "fastapi==0.111.1",
     "pydantic-settings==2.3.3",
     "pyyaml >= 6.0.1",
     "alembic==1.13.1",
@@ -30,9 +30,9 @@ dependencies = [
     "paho-mqtt==2.1.0",
     "jinja2==3.1.4",
     "colorlog==6.8.2",
-    "emhass==0.10.5",
-    "energy_assistant_frontend==0.0.58",
-    "hass-client==1.1.1"
+    "emhass==0.10.6",
+    "energy_assistant_frontend==0.0.59",
+    "hass-client==1.2.0"
 ]
 requires-python = ">=3.11"
 
@@ -45,7 +45,7 @@ dev = [
   "black==24.4.2",
   "codespell==2.3.0",
   "mypy==1.10.1",
-  "ruff==0.5.1",
+  "ruff==0.5.4",
   "pytest==8.2.2",
   "pytest-asyncio==0.23.7",
   "pytest-aiohttp==1.0.5",

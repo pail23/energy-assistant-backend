@@ -53,4 +53,4 @@ async def write(
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
     if energy_assistant is None:
         raise HTTPException(status_code=500)
-    return await use_case.execute(energy_assistant.config, data, device_id)
+    return await use_case.execute(energy_assistant.config, data, device_id, energy_assistant.home)

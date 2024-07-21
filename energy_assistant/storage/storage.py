@@ -163,7 +163,7 @@ class Database:
                         device.icon,
                         device.power_mode,
                         device.type,
-                        device.config,
+                        device_dto.get_config(),
                     )
                 else:
                     await DeviceDTO.create(
