@@ -90,14 +90,16 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
         device_type_registry,
     )
     device = HomeassistantDevice(
+        uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"),
+        session_storage,
+        device_type_registry,
+    )
+    device.configure(
         {
-            "id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec",
             "name": "Device 1",
             "power": "power_id",
             "energy": "energy_id",
-        },
-        session_storage,
-        device_type_registry,
+        }
     )
     home.add_device(device)
     db = Database()

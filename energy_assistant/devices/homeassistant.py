@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import math
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, tzinfo
 from enum import StrEnum
@@ -472,12 +473,12 @@ class HomeassistantDevice(DeviceWithState):
 
     def __init__(
         self,
-        config: dict,
+        device_id: uuid.UUID,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a generic Homeassistant device."""
-        super().__init__(config, session_storage)
+        super().__init__(device_id, session_storage)
         self._device_type_registry = device_type_registry
         self._nominal_power: float | None = None
         self._nominal_duration: float | None = None

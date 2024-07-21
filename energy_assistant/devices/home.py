@@ -20,7 +20,7 @@ from . import (
     StatesRepository,
     assign_if_available,
 )
-from .config import DeviceConfigMissingParameterError
+from .config import DeviceConfigMissingParameterError, get_config_param
 from .device import Device
 from .heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
 from .homeassistant import HomeassistantDevice
@@ -174,17 +174,18 @@ class Home:
     ) -> None:
         """Create and add a new device."""
         device: Device | None = None
+        device_id = uuid.UUID(get_config_param(config, "id"))
         if device_type == "homeassistant":
-            device = HomeassistantDevice(config, session_storage, device_type_registry)
+            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
         elif device_type == "heat-pump":
-            device = HeatPumpDevice(config, session_storage)
+            device = HeatPumpDevice(device_id, session_storage)
         elif device_type == "sg-ready-heat-pump":
-            device = SGReadyHeatPumpDevice(config, session_storage)
+            device = SGReadyHeatPumpDevice(device_id, session_storage)
         elif device_type == "power-state-device":
             # This is deprecated and will be removed.
-            device = HomeassistantDevice(config, session_storage, device_type_registry)
+            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
         elif device_type == "evcc":
-            device = EvccDevice(config, session_storage)
+            device = EvccDevice(device_id, session_storage)
         else:
             LOGGER.error(f"Unknown device type {device_type} in configuration")
         if device is not None:

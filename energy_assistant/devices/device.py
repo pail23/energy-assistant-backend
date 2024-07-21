@@ -27,20 +27,21 @@ LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 class Device(ABC):
     """A device which tracks energy consumption."""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, device_id: uuid.UUID) -> None:
         """Create a device."""
-        self._id = uuid.UUID(get_config_param(config, "id"))
+        self._id = device_id
         self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshot: EnergySnapshot | None = None
         self._supported_power_modes: set[PowerModes] = {PowerModes.DEVICE_CONTROLLED}
         self._power_mode: PowerModes = PowerModes.DEVICE_CONTROLLED
         self._utility_meters: list[UtilityMeter] = []
-        self._config: dict = config.copy()
+        self._config: dict = {}
         self._name: str = ""
 
     def configure(self, config: dict) -> None:
         """Load the device configuration from the provided data."""
         self._name = get_config_param(config, "name")
+        self._config = config.copy()
 
     @property
     def name(self) -> str:
@@ -162,9 +163,9 @@ class Device(ABC):
 class DeviceWithState(Device):
     """Device with a state."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
         """Create a DeviceWithState instance."""
-        super().__init__(config)
+        super().__init__(device_id)
         self.session_storage: SessionStorage = session_storage
         self.current_session: Session | None = None
         self._store_sessions: bool = False

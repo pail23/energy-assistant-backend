@@ -36,9 +36,9 @@ def numeric_value(value: str | None) -> float | None:
 class HeatPumpDevice(DeviceWithState):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(config, session_storage)
+        super().__init__(device_id, session_storage)
         self._actual_temp: State | None = None
         self._actual_temp_entity_id: str = ""
         self._comfort_target_temperature_entity_id: str | None = None
@@ -221,10 +221,9 @@ class HeatPumpDevice(DeviceWithState):
 class SubHeatPump(DeviceWithState):
     """The heating or the water heating part of the heat pump."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage, name: str) -> None:
+    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage, name: str) -> None:
         """Create a sub heat pump instance."""
-        sub_device_config = {**config, "name": name, "id": uuid.uuid4()}
-        super().__init__(sub_device_config, session_storage)
+        super().__init__(device_id, session_storage)
 
         self._actual_temp_entity_id: str = ""
         self._actual_temp: State | None = None
@@ -332,19 +331,14 @@ class SubHeatPump(DeviceWithState):
 class SGReadyHeatPumpDevice(DeviceWithState):
     """SG Ready heatpump, supporting water and heating temperature."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
         """Create a SG Ready heatpump."""
-        super().__init__(config, session_storage)
+        super().__init__(device_id, session_storage)
 
-        heating_config = config.get("heating")
-        self._heating = SubHeatPump(heating_config, session_storage, "heating") if heating_config is not None else None
+        self._heating = SubHeatPump(device_id, session_storage, "heating")
 
-        water_heating_config = config.get("water")
-        self._water_heating = (
-            SubHeatPump(water_heating_config, session_storage, "water_heating")
-            if water_heating_config is not None
-            else None
-        )
+        self._water_heating = SubHeatPump(device_id, session_storage, "water_heating")
+
         self._nominal_power: float = DEFAULT_NOMINAL_POWER
         self._sg_ready_switch_entity_id: str | None = None
 

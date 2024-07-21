@@ -1,5 +1,7 @@
 """EVCC Devices."""
 
+import uuid
+
 from energy_assistant import Optimizer
 from energy_assistant.devices.analysis import DataBuffer
 from energy_assistant.mqtt import MQTT_CHANNEL
@@ -20,9 +22,9 @@ from .device import DeviceWithState
 class EvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(config, session_storage)
+        super().__init__(device_id, session_storage)
         self._evcc_topic: str = ""
         self._loadpoint_id: int = -1
         self._is_continous: bool = True
