@@ -29,14 +29,18 @@ class Device(ABC):
 
     def __init__(self, config: dict) -> None:
         """Create a device."""
-        self._name = get_config_param(config, "name")
         self._id = uuid.UUID(get_config_param(config, "id"))
         self._consumed_solar_energy = EnergyIntegrator()
         self._energy_snapshot: EnergySnapshot | None = None
-        self._supported_power_modes: list[PowerModes] = [PowerModes.DEVICE_CONTROLLED]
+        self._supported_power_modes: set[PowerModes] = {PowerModes.DEVICE_CONTROLLED}
         self._power_mode: PowerModes = PowerModes.DEVICE_CONTROLLED
         self._utility_meters: list[UtilityMeter] = []
         self._config: dict = config.copy()
+        self._name: str = ""
+
+    def configure(self, config: dict) -> None:
+        """Load the device configuration from the provided data."""
+        self._name = get_config_param(config, "name")
 
     @property
     def name(self) -> str:
@@ -51,7 +55,7 @@ class Device(ABC):
     @property
     def supported_power_modes(self) -> list[PowerModes]:
         """Returns the supported power modes for the device."""
-        return self._supported_power_modes
+        return list(self._supported_power_modes)
 
     @property
     def power_mode(self) -> PowerModes:
@@ -62,7 +66,7 @@ class Device(ABC):
     def power_controllable(self) -> bool:
         """The power mode of the device."""
         return not (
-            len(self._supported_power_modes) == 1 and self._supported_power_modes[0] == PowerModes.DEVICE_CONTROLLED
+            len(self._supported_power_modes) == 1 and PowerModes.DEVICE_CONTROLLED in self._supported_power_modes
         )
 
     @property
@@ -163,6 +167,11 @@ class DeviceWithState(Device):
         super().__init__(config)
         self.session_storage: SessionStorage = session_storage
         self.current_session: Session | None = None
+        self._store_sessions: bool = False
+
+    def configure(self, config: dict) -> None:
+        """Load the device configuration from the provided data."""
+        super().configure(config)
         self._store_sessions = config.get("store_sessions", False)
 
     @property

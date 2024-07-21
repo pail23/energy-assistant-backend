@@ -39,30 +39,41 @@ class HeatPumpDevice(DeviceWithState):
     def __init__(self, config: dict, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
         super().__init__(config, session_storage)
+        self._actual_temp: State | None = None
+        self._actual_temp_entity_id: str = ""
+        self._comfort_target_temperature_entity_id: str | None = None
+        self._state_entity_id: str = ""
+        self._state: State | None = None
+        self._consumed_energy: State | None = None
+        self._icon = "mdi-heat-pump"
+        self._nominal_power: float = DEFAULT_NOMINAL_POWER
+        self._target_temperature_normal: float | None = None
+        self._target_temperature_pv: float | None = None
+        self._consumed_energy_value: StateValue | None = None
+
+    def configure(self, config: dict) -> None:
+        """Load the device configuration from the provided data."""
+        super().configure(config)
         energy_config = config.get("energy")
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
             msg = "energy"
             raise DeviceConfigMissingParameterError(msg)
-        self._actual_temp_entity_id: str = get_config_param(config, "temperature")
-        self._actual_temp: State | None = None
-        self._state: State | None = None
-        self._nominal_power: float = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
+        self._actual_temp_entity_id = get_config_param(config, "temperature")
+        self._nominal_power = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
         self._comfort_target_temperature_entity_id = config.get("comfort_target_temperature")
-        self._target_temperature_normal: float | None = numeric_value(config.get("target_temperature_normal"))
-        self._target_temperature_pv: float | None = numeric_value(config.get("target_temperatrure_pv"))
+        self._target_temperature_normal = numeric_value(config.get("target_temperature_normal"))
+        self._target_temperature_pv = numeric_value(config.get("target_temperatrure_pv"))
         if (
             self._target_temperature_normal is not None
             and self._target_temperature_pv is not None
             and self._comfort_target_temperature_entity_id is not None
         ):
-            self._supported_power_modes.append(PowerModes.PV)
-            self.supported_power_modes.append(PowerModes.OPTIMIZED)
+            self._supported_power_modes.add(PowerModes.PV)
+            self._supported_power_modes.add(PowerModes.OPTIMIZED)
 
-        self._state_entity_id: str = get_config_param(config, "state")
-        self._consumed_energy: State | None = None
-        self._icon = "mdi-heat-pump"
+        self._state_entity_id = get_config_param(config, "state")
 
     @property
     def type(self) -> str:
@@ -77,7 +88,7 @@ class HeatPumpDevice(DeviceWithState):
 
         self._consumed_energy = assign_if_available(
             self._consumed_energy,
-            self._consumed_energy_value.evaluate(state_repository),
+            self._consumed_energy_value.evaluate(state_repository) if self._consumed_energy_value is not None else None,
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
@@ -215,17 +226,25 @@ class SubHeatPump(DeviceWithState):
         sub_device_config = {**config, "name": name, "id": uuid.uuid4()}
         super().__init__(sub_device_config, session_storage)
 
+        self._actual_temp_entity_id: str = ""
+        self._actual_temp: State | None = None
+        self._state: State | None = None
+        self._state_entity_id: str = ""
+        self._consumed_energy: State | None = None
+        self._consumed_energy_value: StateValue | None = None
+
+    def configure(self, config: dict) -> None:
+        """Load the device configuration from the provided data."""
+        sub_device_config = {**config, "name": self.name, "id": uuid.uuid4()}
+        super().configure(sub_device_config)
         energy_config = config.get("energy")
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
         else:
             msg = "energy"
             raise DeviceConfigMissingParameterError(msg)
-        self._actual_temp_entity_id: str = get_config_param(config, "temperature")
-        self._actual_temp: State | None = None
-        self._state: State | None = None
-        self._state_entity_id: str = get_config_param(config, "state")
-        self._consumed_energy: State | None = None
+        self._actual_temp_entity_id = get_config_param(config, "temperature")
+        self._state_entity_id = get_config_param(config, "state")
 
     async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the SGReady Heatpump."""
@@ -235,7 +254,7 @@ class SubHeatPump(DeviceWithState):
         # new_state = self.state == OnOffState.ON
         self._consumed_energy = assign_if_available(
             self._consumed_energy,
-            self._consumed_energy_value.evaluate(state_repository),
+            self._consumed_energy_value.evaluate(state_repository) if self._consumed_energy_value is not None else None,
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         self._actual_temp = assign_if_available(
@@ -326,14 +345,23 @@ class SGReadyHeatPumpDevice(DeviceWithState):
             if water_heating_config is not None
             else None
         )
-
-        self._nominal_power: float = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
-        self._sg_ready_switch_entity_id = config.get("sg_ready")
-        if self._sg_ready_switch_entity_id is not None:
-            self._supported_power_modes.append(PowerModes.PV)
-            self.supported_power_modes.append(PowerModes.OPTIMIZED)
+        self._nominal_power: float = DEFAULT_NOMINAL_POWER
+        self._sg_ready_switch_entity_id: str | None = None
 
         self._icon = "mdi-heat-pump"
+
+    def configure(self, config: dict) -> None:
+        """Load the device configuration from the provided data."""
+        super().configure(config)
+        if self._heating is not None:
+            self._heating.configure(config.get("heating", {}))
+        if self._water_heating is not None:
+            self._water_heating.configure(config.get("water", {}))
+        self._nominal_power = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
+        self._sg_ready_switch_entity_id = config.get("sg_ready")
+        if self._sg_ready_switch_entity_id is not None:
+            self._supported_power_modes.add(PowerModes.PV)
+            self._supported_power_modes.add(PowerModes.OPTIMIZED)
 
     @property
     def type(self) -> str:

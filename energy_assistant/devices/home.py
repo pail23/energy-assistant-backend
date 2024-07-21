@@ -173,19 +173,23 @@ class Home:
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create and add a new device."""
+        device: Device | None = None
         if device_type == "homeassistant":
-            self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
+            device = HomeassistantDevice(config, session_storage, device_type_registry)
         elif device_type == "heat-pump":
-            self.devices.append(HeatPumpDevice(config, session_storage))
+            device = HeatPumpDevice(config, session_storage)
         elif device_type == "sg-ready-heat-pump":
-            self.devices.append(SGReadyHeatPumpDevice(config, session_storage))
+            device = SGReadyHeatPumpDevice(config, session_storage)
         elif device_type == "power-state-device":
             # This is deprecated and will be removed.
-            self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
+            device = HomeassistantDevice(config, session_storage, device_type_registry)
         elif device_type == "evcc":
-            self.devices.append(EvccDevice(config, session_storage))
+            device = EvccDevice(config, session_storage)
         else:
             LOGGER.error(f"Unknown device type {device_type} in configuration")
+        if device is not None:
+            device.configure(config)
+            self.devices.append(device)
 
     def _init_power_variables(self, config: dict) -> None:
         solar_power_config = config.get("solar_power")

@@ -8,7 +8,7 @@ echo "Ruff format..."
 ruff format .
 echo "Ruff check..."
 ruff check . --fix
-echo "Ruff mypy..."
+echo "mypy..."
 mypy energy_assistant --ignore-missing-imports
 echo "codespell..."
 codespell

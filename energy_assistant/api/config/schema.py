@@ -12,5 +12,6 @@ class ConfigModel(BaseModel):
 class ReadConfigResponse(ConfigModel):
     """API Response for reading the configuration."""
 
+
 class ReadDeviceConfigResponse(ConfigModel):
     """API Response for reading the device configuration."""
