@@ -1,5 +1,7 @@
 """EVCC Devices."""
 
+import uuid
+
 from energy_assistant import Optimizer
 from energy_assistant.devices.analysis import DataBuffer
 from energy_assistant.mqtt import MQTT_CHANNEL
@@ -20,13 +22,13 @@ from .device import DeviceWithState
 class EvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
-    def __init__(self, config: dict, session_storage: SessionStorage) -> None:
+    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
-        super().__init__(config, session_storage)
-        self._evcc_topic: str = get_config_param(config, "evcc_topic")
-        self._loadpoint_id: int = int(get_config_param(config, "load_point_id"))
-        self._is_continous: bool = bool(config.get("continuous", True))
-        self._nominal_power: float | None = config.get("nominal_power")
+        super().__init__(device_id, session_storage)
+        self._evcc_topic: str = ""
+        self._loadpoint_id: int = -1
+        self._is_continous: bool = True
+        self._nominal_power: float | None = None
         self._state = OnOffState.UNKNOWN
         self._power: State | None = None
         self._consumed_energy: State | None = None
@@ -34,15 +36,23 @@ class EvccDevice(DeviceWithState):
         self._vehicle_soc: State | None = None
         self._max_current: State | None = None
         self._is_connected: State | None = None
-        self._supported_power_modes = [
+        self._supported_power_modes = {
             PowerModes.DEVICE_CONTROLLED,
             PowerModes.OFF,
             PowerModes.PV,
             PowerModes.MIN_PV,
             PowerModes.FAST,
             PowerModes.OPTIMIZED,
-        ]
+        }
         self._utility_meter = self.add_utility_meter("energy")
+
+    def configure(self, config: dict) -> None:
+        """Load the device configuration from the provided data."""
+        super().configure(config)
+        self._evcc_topic = get_config_param(config, "evcc_topic")
+        self._loadpoint_id = int(get_config_param(config, "load_point_id"))
+        self._is_continous = bool(config.get("continuous", True))
+        self._nominal_power = config.get("nominal_power")
 
     def get_device_topic_id(self, name: str) -> StateId:
         """Get the id of a topic of this load point."""

@@ -1,0 +1,22 @@
+home:
+  name: "my home"
+  solar_power: sensor.solar_power
+  solar_energy: sensor.solar_energy
+  grid_supply_power: sensor.grid_power
+  imported_energy: sensor.energy_imported
+  exported_energy: sensor.energyexported
+  disable_device_control: true
+
+devices:
+  - name: Test Device
+    id: a3a3e2c5-df55-44eb-b75a-a432dcec92a6
+    type: homeassistant
+    power: sensor.device_power
+    energy:
+      value: sensor.device_energy
+      scale: 0.001
+    store_sessions: true
+    output: switch.device_relay_1
+    nominal_power: 800
+    nominal_duration: 7200
+    constant: true

@@ -1,14 +1,7 @@
 """Config helper classes and functions."""
 
 from energy_assistant.devices import Location
-
-
-class DeviceConfigMissingParameterError(Exception):
-    """Device configuration exception."""
-
-    def __init__(self, missing_param: str) -> None:
-        """Create a DeviceConfigError instance."""
-        super().__init__(f"Parameter {missing_param} is missing in the configuration")
+from energy_assistant.storage.config import ConfigStorage, DeviceConfigMissingParameterError
 
 
 def get_config_param(config: dict, param: str) -> str:
@@ -40,34 +33,36 @@ def get_float_param_from_list(config: list, param: str) -> float | None:
 class EnergyAssistantConfig:
     """The energy assistant config."""
 
-    def __init__(self, energy_assistant_config: dict, hass_config: dict) -> None:
+    def __init__(self, energy_assistant_config: ConfigStorage, hass_config: dict) -> None:
         """Create a EnergyAssistantConfig instance."""
-        self._config = {
-            "energy_assistant": energy_assistant_config.copy(),
-            "home_assistant": hass_config,
-        }
-        self._config["emhass"] = energy_assistant_config["emhass"].copy()
-        del self._config["energy_assistant"]["emhass"]
+        self._energy_assistant_config = energy_assistant_config
+        self._hass_config = hass_config
 
     @property
-    def config(self) -> dict:
+    def as_dict(self) -> dict:
         """Get the complete config."""
-        return self._config
+        result = {
+            "energy_assistant": self._energy_assistant_config.as_dict(),
+            "home_assistant": self._hass_config,
+        }
+        result["emhass"] = self._energy_assistant_config.emhass.as_dict()
+        del result["energy_assistant"]["emhass"]
+        return result
 
     @property
-    def energy_assistant_config(self) -> dict:
+    def energy_assistant_config(self) -> ConfigStorage:
         """Get the energy assistant config."""
-        return self._config["energy_assistant"]
+        return self._energy_assistant_config
 
     @property
     def home_assistant_config(self) -> dict:
         """Get the home assistant config."""
-        return self._config["home_assistant"]
+        return self._hass_config
 
     @property
     def emhass_config(self) -> dict:
         """Get the emhass config."""
-        return self._config["emhass"]
+        return self._energy_assistant_config.emhass.as_dict()
 
     @property
     def location(self) -> Location:

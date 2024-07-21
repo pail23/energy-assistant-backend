@@ -11,6 +11,7 @@ from energy_assistant.devices.analysis import DataBuffer
 from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
+from energy_assistant.storage.config import ConfigStorage
 
 from . import (
     HomeEnergySnapshot,
@@ -132,75 +133,77 @@ class Home:
 
     def __init__(
         self,
-        config: dict,
+        config: ConfigStorage,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a home instance."""
-        self._name: str = get_config_param(config, "name")
+        self._name: str = config.home.get_param("name")
 
-        self._home_energy_state = HomeEnergyState(config)
-        self._init_power_variables(config)
+        self._home_energy_state = HomeEnergyState(config.home.as_dict())
+        self._init_power_variables(config.home.as_dict())
 
         self.grid_exported_power_data = DataBuffer()
 
         self._disable_device_control: bool = False
-        disable_control = config.get("disable_device_control")
+        disable_control = config.home.get("disable_device_control")
         if disable_control is not None and disable_control:
             self._disable_device_control = True
 
         self._energy_snapshop: HomeEnergySnapshot | None = None
-        self._init_devices(config, session_storage, device_type_registry)
+        self._init_devices(config.devices.as_list(), session_storage, device_type_registry)
 
     def _init_devices(
         self,
-        config: dict,
+        devices_config: list,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         self.devices = list[Device]()
-        config_devices = config.get("devices")
-        if config_devices is not None:
-            for config_device in config_devices:
-                type = config_device.get("type")
-                self.create_device(type, config_device, session_storage, device_type_registry)
+        if devices_config is not None:
+            for config_device in devices_config:
+                device_type = config_device.get("type")
+                self.create_device(device_type, config_device, session_storage, device_type_registry)
 
     def create_device(
         self,
-        type: str,
+        device_type: str,
         config: dict,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create and add a new device."""
-        if type == "homeassistant":
-            self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
-        elif type == "heat-pump":
-            self.devices.append(HeatPumpDevice(config, session_storage))
-        elif type == "sg-ready-heat-pump":
-            self.devices.append(SGReadyHeatPumpDevice(config, session_storage))
-        elif type == "power-state-device":
+        device: Device | None = None
+        device_id = uuid.UUID(get_config_param(config, "id"))
+        if device_type == "homeassistant":
+            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
+        elif device_type == "heat-pump":
+            device = HeatPumpDevice(device_id, session_storage)
+        elif device_type == "sg-ready-heat-pump":
+            device = SGReadyHeatPumpDevice(device_id, session_storage)
+        elif device_type == "power-state-device":
             # This is deprecated and will be removed.
-            self.devices.append(HomeassistantDevice(config, session_storage, device_type_registry))
-        elif type == "evcc":
-            self.devices.append(EvccDevice(config, session_storage))
+            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
+        elif device_type == "evcc":
+            device = EvccDevice(device_id, session_storage)
         else:
-            LOGGER.error(f"Unknown device type {type} in configuration")
+            LOGGER.error(f"Unknown device type {device_type} in configuration")
+        if device is not None:
+            device.configure(config)
+            self.devices.append(device)
 
     def _init_power_variables(self, config: dict) -> None:
         solar_power_config = config.get("solar_power")
         if solar_power_config is not None:
             self._solar_power_value = StateValue(solar_power_config)
         else:
-            msg = "solar_power"
-            raise DeviceConfigMissingParameterError(msg)
+            raise DeviceConfigMissingParameterError("solar_power")
 
         grid_supply_power_config = config.get("grid_supply_power")
         if grid_supply_power_config is not None:
             self._grid_imported_power_value = StateValue(grid_supply_power_config)
         else:
-            msg = "energy"
-            raise DeviceConfigMissingParameterError(msg)
+            raise DeviceConfigMissingParameterError("energy")
 
         grid_inverted: bool | None = config.get("grid_inverted")
         if grid_inverted is not None:

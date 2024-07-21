@@ -2,6 +2,7 @@
 
 import contextlib
 from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
 
 import pytest
 from httpx import AsyncClient
@@ -11,15 +12,30 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, SessionTransaction
 
 from energy_assistant.db import get_session
+from energy_assistant.devices.config import EnergyAssistantConfig
+from energy_assistant.devices.home import Home
 from energy_assistant.devices.registry import DeviceTypeRegistry
-from energy_assistant.main import app
+from energy_assistant.main import EnergyAssistant, app
 from energy_assistant.models.base import Base
 from energy_assistant.settings import settings
+from energy_assistant.storage.config import ConfigStorage
+from energy_assistant.storage.storage import session_storage
 
 
 @pytest.fixture()
 async def ac() -> AsyncGenerator:
     """Test fixture for a client connection to the backend."""
+    config = ConfigStorage(Path(settings.DATA_FOLDER))
+    config_file = Path(__file__).parent / "config.yaml"
+    await config.initialize(config_file)
+    result = EnergyAssistant()
+    result.config = EnergyAssistantConfig(config, {})
+    home_config = config.home
+    if home_config is not None and home_config.get("name") is not None:
+        home = Home(config, session_storage, DeviceTypeRegistry())
+        result.home = home
+    app.energy_assistant = result  # type: ignore
+
     async with AsyncClient(app=app, base_url="https://test") as c:
         yield c
 

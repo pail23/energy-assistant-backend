@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import math
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, tzinfo
 from enum import StrEnum
@@ -472,13 +473,33 @@ class HomeassistantDevice(DeviceWithState):
 
     def __init__(
         self,
-        config: dict,
+        device_id: uuid.UUID,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a generic Homeassistant device."""
-        super().__init__(config, session_storage)
-        self._power_entity_id: str = get_config_param(config, "power")
+        super().__init__(device_id, session_storage)
+        self._device_type_registry = device_type_registry
+        self._nominal_power: float | None = None
+        self._nominal_duration: float | None = None
+        self._is_constant: bool | None = None
+
+        self._power_entity_id: str = ""
+        self._power: State | None = None
+        self._consumed_energy: State | None = None
+        self._output_state: State | None = None
+        self._output_id: str | None = None
+        self._icon: str = "mdi-home"
+        self._power_data = DataBuffer()
+
+        self._state: str = OnOffState.UNKNOWN
+        self._consumed_energy_value: StateValue | None = None
+        self._device_type: DeviceType | None = None
+
+    def configure(self, config: dict) -> None:
+        """Load the device configuration from the provided data."""
+        super().configure(config)
+        self._power_entity_id = get_config_param(config, "power")
         energy_config = config.get("energy")
         if energy_config is not None:
             self._consumed_energy_value = StateValue(energy_config)
@@ -493,26 +514,18 @@ class HomeassistantDevice(DeviceWithState):
                 f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported.",
             )
 
-        self._output_id: str | None = config.get("output")
-        self._nominal_power: float | None = None
-        self._nominal_duration: float | None = None
-        self._is_constant: bool | None = None
-
-        self._power: State | None = None
-        self._consumed_energy: State | None = None
-        self._output_state: State | None = None
-        self._icon: str = str(config.get("icon", "mdi-home"))
+        self._output_id = config.get("output")
+        self._icon = str(config.get("icon", "mdi-home"))
 
         if self._output_id is not None:
-            self._supported_power_modes.append(PowerModes.PV)
-            self.supported_power_modes.append(PowerModes.OPTIMIZED)
+            self._supported_power_modes.add(PowerModes.PV)
+            self._supported_power_modes.add(PowerModes.OPTIMIZED)
 
-        self._power_data = DataBuffer()
         manufacturer = config.get("manufacturer")
         model = config.get("model")
-        self._device_type: DeviceType | None = None
+
         if model is not None and manufacturer is not None:
-            self._device_type = device_type_registry.get_device_type(manufacturer, model)
+            self._device_type = self._device_type_registry.get_device_type(manufacturer, model)
             self._nominal_power = config.get(
                 "nominal_power",
                 self._device_type.nominal_power if self._device_type else None,
@@ -526,7 +539,6 @@ class HomeassistantDevice(DeviceWithState):
             self._nominal_power = config.get("nominal_power")
             self._nominal_duration = config.get("nominal_duration")
             self._is_constant = config.get("constant")
-
         state_detection: dict = config.get("state", {})
         if self._device_type is None and state_detection:
             state_on = state_detection.get("state_on", {})
@@ -543,11 +555,6 @@ class HomeassistantDevice(DeviceWithState):
                 state_off.get("for", 0),
                 state_off.get("trailing_zeros_for", 10),
             )
-        self._state: str
-        if self.has_state:
-            self._state = OnOffState.UNKNOWN
-        else:
-            self._state = "not supported"
 
     @property
     def type(self) -> str:
@@ -563,7 +570,7 @@ class HomeassistantDevice(DeviceWithState):
         self._power = assign_if_available(self._power, state_repository.get_state(self._power_entity_id))
         self._consumed_energy = assign_if_available(
             self._consumed_energy,
-            self._consumed_energy_value.evaluate(state_repository),
+            self._consumed_energy_value.evaluate(state_repository) if self._consumed_energy_value is not None else None,
         )
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         if self._energy_snapshot is None:

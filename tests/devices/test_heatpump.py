@@ -149,6 +149,7 @@ async def test_init_heatpump(session_storage: SessionStorage, state_repository: 
     """Test initilaizing a heat pump."""
 
     heat_pump = HeatPumpDevice(HEATPUMP_CONFIG, session_storage)
+    heat_pump.configure(HEATPUMP_CONFIG)
     assert heat_pump.icon == "mdi-heat-pump"
 
     await heat_pump.update_state(state_repository, 0.5)
@@ -164,6 +165,7 @@ async def test_init_controllable_heatpump(session_storage: SessionStorage, state
     """Test initilaizing a heat pump."""
 
     heat_pump = HeatPumpDevice(CONTROLLABLE_HEATPUMP_CONFIG, session_storage)
+    heat_pump.configure(CONTROLLABLE_HEATPUMP_CONFIG)
     assert heat_pump.icon == "mdi-heat-pump"
 
     await heat_pump.update_state(state_repository, 0.5)
@@ -183,6 +185,7 @@ async def test_init_sgready_heatpump(
     """Test initilaizing a sg ready heat pump."""
 
     heat_pump = SGReadyHeatPumpDevice(SG_READY_CONFIG, session_storage)
+    heat_pump.configure(SG_READY_CONFIG)
     assert heat_pump.icon == "mdi-heat-pump"
 
     await heat_pump.update_state(state_repository, 0.5)

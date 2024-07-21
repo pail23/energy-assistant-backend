@@ -15,7 +15,6 @@ from typing import Final
 
 import alembic.config
 import pandas as pd
-import yaml
 from anyio import open_file
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
@@ -37,7 +36,8 @@ from energy_assistant.emhass_optimizer import EmhassOptimizer
 from energy_assistant.importer.homeassistant import import_data
 from energy_assistant.mqtt import MqttConnection
 from energy_assistant.settings import settings
-from energy_assistant.storage import Database, get_async_session, session_storage
+from energy_assistant.storage.config import ConfigStorage
+from energy_assistant.storage.storage import Database, get_async_session, session_storage
 from energy_assistant.websocket import get_home_message, ws_manager, ws_router
 
 from .constants import ROOT_LOGGER_NAME
@@ -180,10 +180,10 @@ async def background_task(ea: EnergyAssistant) -> None:
         await asyncio.sleep(30)
 
 
-def create_mqtt_connection(config: dict) -> MqttConnection | None:
+def create_mqtt_connection(config: ConfigStorage) -> MqttConnection | None:
     """Create an mqtt connection based on the config."""
 
-    mqtt_config = config.get("mqtt")
+    mqtt_config = config.mqtt
     if mqtt_config is not None:
         mqtt_host = mqtt_config.get("host")
         mqtt_username = mqtt_config.get("username")
@@ -203,7 +203,7 @@ def subscribe_mqtt_topics(mqtt_connection: MqttConnection, home: Home) -> None:
             mqtt_connection.add_subscription_topic(device.evcc_mqtt_subscription_topic)
 
 
-async def open_hass_connection(config: dict) -> Homeassistant | None:
+async def open_hass_connection(config: ConfigStorage) -> Homeassistant | None:
     """Create a connection to home assistant."""
     token: str | None = None
     url: str | None = None
@@ -222,7 +222,7 @@ async def open_hass_connection(config: dict) -> Homeassistant | None:
         token = None
 
     logging.info("Try to connect to home assistant based on the config file entries...")
-    hass_config = config.get("homeassistant")
+    hass_config = config.homeassistant
     if hass_config is not None:
         demo_mode = hass_config.get("demo_mode")
         url = hass_config.get("url")
@@ -230,12 +230,6 @@ async def open_hass_connection(config: dict) -> Homeassistant | None:
         if url is not None and token is not None:
             hass = Homeassistant(url, token, demo_mode)
             await hass.connect()
-            # info = await hass.get_energy_info()
-            # print(info)
-            # prefs = await hass.get_energy_prefs()
-            # print(prefs)
-            # forecast = await hass.get_solar_forecast()
-            # print(forecast)
             return hass
     return None
 
@@ -315,8 +309,6 @@ async def init_app() -> EnergyAssistant:
     if hass_options_file.is_file():
         async with await open_file(hass_options_file) as _file:
             hass_options = json.loads(await _file.read())
-    #        with open(hass_options_file, "rb") as _file:
-    #            hass_options = json.loads(_file.read())
     else:
         hass_options = {}
 
@@ -342,43 +334,35 @@ async def init_app() -> EnergyAssistant:
 
     logger.info(f"Loading config file {config_file}")
     try:
-        async with await open_file(config_file) as stream:
-            logger.debug("Successfully opened config file %s", config_file)
-            try:
-                config = yaml.safe_load(await stream.read())
-                logger.debug(f"config file {config_file} successfully loaded")
-            except yaml.YAMLError:
-                logger.exception("Failed to parse the config file")
-            except Exception:
-                logger.exception("Failed to parse the config file")
-            else:
-                hass = await open_hass_connection(config)
-                result.hass = hass
-                result.config = EnergyAssistantConfig(config, await hass.get_config() if hass is not None else {})
-                if hass is not None:
-                    hass.read_states()
-                    optimizer = EmhassOptimizer(settings.DATA_FOLDER, result.config, hass)
-                    result.optimizer = optimizer
-                    app.optimizer = optimizer  # type: ignore
+        config = ConfigStorage(Path(settings.DATA_FOLDER))
+        await config.initialize(config_file)
+        hass = await open_hass_connection(config)
+        result.hass = hass
+        result.config = EnergyAssistantConfig(config, await hass.get_config() if hass is not None else {})
+        if hass is not None:
+            hass.read_states()
+            optimizer = EmhassOptimizer(settings.DATA_FOLDER, config, hass, await hass.get_location())
+            result.optimizer = optimizer
+            app.optimizer = optimizer  # type: ignore
 
-                mqtt_connection: MqttConnection | None = create_mqtt_connection(config)
-                result.mqtt = mqtt_connection
+        mqtt_connection: MqttConnection | None = create_mqtt_connection(config)
+        result.mqtt = mqtt_connection
 
-                home_config = config.get("home")
-                if home_config is not None and home_config.get("name") is not None:
-                    home = Home(home_config, session_storage, device_type_registry)
-                    result.home = home
-                    app.home = home  # type: ignore
-                    if mqtt_connection is not None:
-                        subscribe_mqtt_topics(mqtt_connection, home)
+        home_config = config.home
+        if home_config is not None and home_config.get("name") is not None:
+            home = Home(config, session_storage, device_type_registry)
+            result.home = home
+            app.home = home  # type: ignore
+            if mqtt_connection is not None:
+                subscribe_mqtt_topics(mqtt_connection, home)
 
-                    async with async_session() as session:
-                        await db.update_devices(home, session, session_storage, device_type_registry)
+            async with async_session() as session:
+                await db.update_devices(home, session, session_storage, device_type_registry)
 
-                        await db.restore_home_state(home, session)
-                else:
-                    logger.error(f"home not found in config file: {config}")
-                logger.info("Initialization completed")
+                await db.restore_home_state(home, session)
+        else:
+            logger.error(f"home not found in config file: {config}")
+        logger.info("Initialization completed")
     except Exception:
         logger.exception("Initialization of the app failed")
     return result

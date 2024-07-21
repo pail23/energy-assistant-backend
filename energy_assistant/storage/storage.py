@@ -23,7 +23,7 @@ from energy_assistant.models.device import (
 from energy_assistant.models.home import HomeMeasurement
 from energy_assistant.models.sessionlog import SessionLogEntry
 
-from .constants import ROOT_LOGGER_NAME
+from ..constants import ROOT_LOGGER_NAME
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -163,7 +163,7 @@ class Database:
                         device.icon,
                         device.power_mode,
                         device.type,
-                        device.config,
+                        device_dto.get_config(),
                     )
                 else:
                     await DeviceDTO.create(
