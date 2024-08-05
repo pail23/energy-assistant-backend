@@ -25,7 +25,7 @@ beautifulsoup4==4.12.2
     # via emhass
 blinker==1.7.0
     # via flask
-blosc2==2.3.2
+blosc2==2.7.1
     # via tables
 certifi==2023.11.17
     # via
