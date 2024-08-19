@@ -120,7 +120,7 @@ ndindex==1.7
     # via blosc2
 numexpr==2.8.8
     # via tables
-numpy==1.26.4
+numpy==2.1.0
     # via
     #   blosc2
     #   emhass
