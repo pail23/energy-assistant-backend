@@ -17,15 +17,14 @@ classifiers = [
 ]
 keywords = ["energy assistant", "home assistant"]
 dependencies = [
-    "SQLAlchemy==2.0.31",
+    "SQLAlchemy==2.0.34",
     "requests==2.32.3",
-    "fastapi==0.111.1",
-    "pydantic-settings==2.3.3",
-    "pyyaml >= 6.0.1",
-    "alembic==1.13.1",
-    "aiosqlite==0.19.0",
+    "fastapi[standard]==0.114",
+    "pydantic-settings==2.4.0",
+    "pyyaml >= 6.0.2",
+    "alembic==1.13.2",
+    "aiosqlite==0.20.0",
     "python-dotenv",
-    "uvicorn[standard]==0.30.1",
     "apscheduler==3.10.4",
     "paho-mqtt==2.1.0",
     "jinja2==3.1.4",
