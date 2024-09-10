@@ -495,7 +495,7 @@ dependencies = [
     { name = "sqlalchemy" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "black" },
     { name = "bumpver" },
@@ -521,35 +521,39 @@ requires-dist = [
     { name = "aiosqlite", specifier = "==0.20.0" },
     { name = "alembic", specifier = "==1.13.2" },
     { name = "apscheduler", specifier = "==3.10.4" },
-    { name = "black", marker = "extra == 'dev'", specifier = "==24.4.2" },
-    { name = "bumpver", marker = "extra == 'dev'" },
-    { name = "codespell", marker = "extra == 'dev'", specifier = "==2.3.0" },
     { name = "colorlog", specifier = "==6.8.2" },
     { name = "emhass", specifier = "==0.10.6" },
     { name = "energy-assistant-frontend", specifier = "==0.0.59" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.114" },
     { name = "hass-client", specifier = "==1.2.0" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = "==0.27.0" },
-    { name = "isort", marker = "extra == 'dev'" },
     { name = "jinja2", specifier = "==3.1.4" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = "==1.11.2" },
     { name = "paho-mqtt", specifier = "==2.1.0" },
-    { name = "pandas-stubs", marker = "extra == 'dev'" },
-    { name = "pip-tools", marker = "extra == 'dev'" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==3.8.0" },
     { name = "pydantic-settings", specifier = "==2.4.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==8.3.3" },
-    { name = "pytest-aiohttp", marker = "extra == 'dev'", specifier = "==1.0.5" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==0.24.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==5.0.0" },
-    { name = "pytest-env", marker = "extra == 'dev'" },
     { name = "python-dotenv" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = "==2.32.3" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.6.4" },
     { name = "sqlalchemy", specifier = "==2.0.34" },
-    { name = "types-pyyaml", marker = "extra == 'dev'" },
-    { name = "types-requests", marker = "extra == 'dev'" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "black", specifier = "==24.4.2" },
+    { name = "bumpver" },
+    { name = "codespell", specifier = "==2.3.0" },
+    { name = "httpx", specifier = "==0.27.0" },
+    { name = "isort" },
+    { name = "mypy", specifier = "==1.11.2" },
+    { name = "pandas-stubs" },
+    { name = "pip-tools" },
+    { name = "pre-commit", specifier = "==3.8.0" },
+    { name = "pytest", specifier = "==8.3.3" },
+    { name = "pytest-aiohttp", specifier = "==1.0.5" },
+    { name = "pytest-asyncio", specifier = "==0.24.0" },
+    { name = "pytest-cov", specifier = "==5.0.0" },
+    { name = "pytest-env" },
+    { name = "ruff", specifier = "==0.6.4" },
+    { name = "types-pyyaml" },
+    { name = "types-requests" },
 ]
 
 [[package]]
