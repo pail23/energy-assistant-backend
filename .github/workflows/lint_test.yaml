@@ -29,9 +29,9 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: "Run ruff"
-        run: python3 -m ruff check .
+        run: uv run ruff check .
       - name: "run mypy"
-        run: mypy energy_assistant
+        run: uv run mypy energy_assistant
 
   tests:
     runs-on: "ubuntu-latest"
@@ -44,18 +44,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: "Install uv"
-        run: python3 -m pip install uv
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
 
-      - name: "uv pip-compile"
-        run: uv pip compile pyproject.toml -o requirements.txt --extra dev
-
-      - name: "Install requirements"
-        run: uv pip sync requirements.txt --system
+      - name: Install the project
+        run: uv sync --all-extras --dev
 
       - name: Run tests
         run: |
-          pytest \
+          uv run pytest \
             -qq \
             --durations=10 \
             -o console_output_style=count \
