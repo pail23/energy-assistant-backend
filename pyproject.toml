@@ -40,7 +40,6 @@ dev-dependencies = [
   "httpx==0.27.0",
   "bumpver",
   "isort",
-  "pip-tools",
   "black==24.4.2",
   "codespell==2.3.0",
   "mypy==1.11.2",
@@ -53,7 +52,9 @@ dev-dependencies = [
   "pre-commit==3.8.0",
   "types-PyYAML",
   "types-requests",
-  "pandas-stubs"
+  "pandas-stubs",
+  "tomli",
+  "tomli-w"
 ]
 
 [project.scripts]
