@@ -16,17 +16,17 @@ jobs:
     outputs:
       version: ${{ steps.vars.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Get tag
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: "3.11"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@d70817ce85e489f62dba96dc5d8f7a926e48bdd7 # v2
 
       - name: Install the project
         run: uv sync --all-extras --dev
@@ -37,13 +37,13 @@ jobs:
       - name: Build
         run: uv build
       - name: Publish release to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.10.1
+        uses: pypa/gh-action-pypi-publish@0ab0b79471669eb3a4d647e625009c62f9f3b241 # v1.10.1
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2.0.8
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
         with:
           files: |
             dist/*.whl
@@ -61,7 +61,7 @@ jobs:
         run: sleep 60s
         shell: bash
       - name: "Checkout the repository"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332" # v4
 
       - name: Log in to the Container registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
@@ -71,7 +71,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.6.1
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
       - name: Version number for tags
         id: tags
         shell: bash
@@ -88,7 +88,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/energy-assistant-server
