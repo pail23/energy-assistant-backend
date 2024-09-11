@@ -6,12 +6,15 @@ from pathlib import Path
 import tomli
 import tomli_w
 
-with Path("pyproject.toml").open(mode="rb") as f:
-    pyproject = tomli.load(f)
+if len(sys.argv) == 2:
+    with Path("pyproject.toml").open(mode="rb") as f:
+        pyproject = tomli.load(f)
 
-print(f"set version to {sys.argv[1]}")
+    print(f"set version to {sys.argv[1]}")
 
-pyproject["project"]["version"] = sys.argv[1]
+    pyproject["project"]["version"] = sys.argv[1]
 
-with Path("pyproject.toml").open("wb") as f:
-    tomli_w.dump(pyproject, f)
+    with Path("pyproject.toml").open("wb") as f:
+        tomli_w.dump(pyproject, f)
+else:
+    print("Error: setversion requires excactly one argument containing the version to be set.")
