@@ -32,18 +32,8 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Set Python project version from tag
-        shell: python
-        run: |-
-          import tomli
-          import tomli_w
+        run:  uv run ./scripts/setversion.py "${{ steps.vars.outputs.tag }}"
 
-          with open("pyproject.toml", "rb") as f:
-            pyproject = tomli.load(f)
-
-          pyproject["project"]["version"] = "${{ steps.vars.outputs.tag }}"
-
-          with open("pyproject.toml", "wb") as f:
-            tomli_w.dump(pyproject, f)
       - name: Build
         run: uv build
       - name: Publish release to PyPI
