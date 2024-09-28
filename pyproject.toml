@@ -1,11 +1,10 @@
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
 name = "energy_assistant"
-version = "0.0.92"
+dynamic = ["version"]
 description = "Energy Assistant"
 readme = "Readme.md"
 authors = [{ name = "The Energy Assistant Creators", email = "pail23@users.noreply.github.com" }]
@@ -69,6 +68,10 @@ packages = ["energy_assistant"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["energy_assistant"]
+
+[tool.hatch.version]
+#source = "vcs"
+path = "energy_assistant/__init__.py"
 
 [tool.isort]
 # https://github.com/PyCQA/isort/wiki/isort-Settings

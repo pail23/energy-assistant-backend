@@ -3,6 +3,8 @@
 import uuid
 from abc import ABC, abstractmethod
 
+__version__ = "0.1.13"
+
 
 class Optimizer(ABC):
     """Base class for optimizers."""
