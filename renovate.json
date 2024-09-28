@@ -1,4 +1,4 @@
-{
+R{
   "extends": [
     "config:recommended"
   ],
@@ -22,7 +22,7 @@
       "packageRules": [
         {
           "matchManagers": [
-            "docker"
+            "dockerfile"
           ],
           "enabled": false
         }
