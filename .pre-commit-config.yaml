@@ -37,12 +37,6 @@ repos:
   #    - id: pip-compile
   #      args: [--extra, dev]
 
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    # uv version.
-    rev: 0.4.17
-    hooks:
-      # Run the pip compile
-      - id: uv-lock
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
