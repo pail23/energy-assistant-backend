@@ -197,6 +197,11 @@ class OnOffState(StrEnum):
             return cls.OFF
         return cls.UNKNOWN
 
+    @classmethod
+    def from_bool(cls, value: bool) -> OnOffState:
+        """Convert a bool to a OnOffState."""
+        return cls.ON if value else cls.OFF
+
 
 class State:
     """Base class for States."""

@@ -1,12 +1,13 @@
 """Tests for the data analysis classes."""
 
-from datetime import datetime
+from datetime import UTC, datetime
+from math import floor
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 import pytest
 
-from energy_assistant.devices.analysis import DataBuffer, create_timeseries_from_const
+from energy_assistant.devices.analysis import DataBuffer, OnOffDataBuffer, create_timeseries_from_const
 
 time_zone = ZoneInfo("Europe/Berlin")
 
@@ -80,3 +81,14 @@ def test_create_timeseries_from_const() -> None:
     assert not data.hasnans
     assert data.min() == 15
     assert data.max() == 15
+
+
+def test_on_off_data_buffer() -> None:
+    """Test initialization of the on /off data buffer."""
+    start = datetime.now(UTC)
+    data = OnOffDataBuffer()
+    for x in range(4000):
+        data.add_data_point(False, datetime(2023, 1, 10, floor(x / 3600), floor(x / 60) % 60, x % 60, tzinfo=time_zone))
+    assert len(data.data) == 3000
+    delta = datetime.now(UTC) - start
+    print(f"duration is {delta}")

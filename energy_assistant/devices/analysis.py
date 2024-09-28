@@ -11,6 +11,22 @@ import pandas as pd
 MAX_DATA_LEN = 3000  # in case of 30 seconds interval, this is about one day.
 
 
+class OnOffDataBuffer:
+    """Data buffer for OnOff States."""
+
+    def __init__(self) -> None:
+        """Create on/off data buffer instance."""
+        self.data = pd.Series()
+
+    def add_data_point(self, value: bool, time_stamp: datetime | None = None) -> None:
+        """Add a new data point for tracking."""
+        if time_stamp is None:
+            time_stamp = datetime.now(UTC)
+        self.data[time_stamp] = value
+        if len(self.data) > MAX_DATA_LEN:
+            self.data = self.data.tail(MAX_DATA_LEN)
+
+
 @dataclass
 class DataPoint:
     """Data point for the DataBuffer."""
@@ -43,6 +59,8 @@ class DataBuffer:
             now = datetime.now(UTC)
         threshold = now - timedelta(seconds=timespan)
         result = [data_point.value for data_point in self.data if data_point.time_stamp >= threshold]
+        if len(result) == 0:
+            result = [self.data[-1].value]
         if without_trailing_zeros:
             while result[-1] == 0.0:
                 result.pop()
