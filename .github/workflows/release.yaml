@@ -36,11 +36,14 @@ jobs:
       - name: Build
         run: uv build
 
-      - name: Publish release to PyPI
-        uses: pypa/gh-action-pypi-publish@897895f1e160c830e369f9779632ebc134688e1b # v1.10.2
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+      - name: Publish
+        run: uv publish
+
+      #- name: Publish release to PyPI
+      #  uses: pypa/gh-action-pypi-publish@897895f1e160c830e369f9779632ebc134688e1b # v1.10.2
+        #with:
+        #  user: __token__
+        #  password: ${{ secrets.PYPI_TOKEN }}
 
       - name: Upload release assets
         uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8

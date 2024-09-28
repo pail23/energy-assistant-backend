@@ -27,9 +27,9 @@ jobs:
 
       - name: "Run ruff"
         run: uv run ruff check .
+
       - name: "run mypy"
         run: uv run mypy energy_assistant
-
 
       - name: "Generate docu"
         run: uvx mkdocs gh-deploy --force
