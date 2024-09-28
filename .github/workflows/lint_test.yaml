@@ -30,6 +30,10 @@ jobs:
       - name: "run mypy"
         run: uv run mypy energy_assistant
 
+
+      - name: "Generate docu"
+        run: mkdocs gh-deploy --force
+
   tests:
     runs-on: "ubuntu-latest"
     name: Run tests

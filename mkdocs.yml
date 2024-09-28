@@ -1,0 +1,9 @@
+site_name: Energy Assistant
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Devices: device_models.md
+  - Configuration: config_file.md
+  - About: about.md
+
+theme: readthedocs

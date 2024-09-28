@@ -12,6 +12,8 @@ data/
 dist/
 .venv
 
+site/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/

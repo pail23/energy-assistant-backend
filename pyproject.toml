@@ -53,6 +53,7 @@ dev-dependencies = [
   "pandas-stubs",
   "tomli",
   "tomli-w",
+  "mkdocs>=1.6.1",
 ]
 
 [project.scripts]
