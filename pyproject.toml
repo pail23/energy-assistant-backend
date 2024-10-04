@@ -51,8 +51,6 @@ dev-dependencies = [
   "types-PyYAML",
   "types-requests",
   "pandas-stubs",
-  "tomli",
-  "tomli-w",
   "mkdocs>=1.6.1",
 ]
 
