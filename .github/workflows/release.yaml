@@ -16,13 +16,13 @@ jobs:
     outputs:
       version: ${{ steps.vars.outputs.tag }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Get tag
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
 
       - name: Install uv
-        uses: astral-sh/setup-uv@c9aa747934b6867b18bf8f6624a8929c4f76147b # v3
+        uses: astral-sh/setup-uv@3b9817b1bf26186f03ab8277bab9b827ea5cc254 # v3
 
       - name: Set up Python
         run: uv python install 3.11
@@ -64,17 +64,17 @@ jobs:
         run: sleep 60s
         shell: bash
       - name: "Checkout the repository"
-        uses: "actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332" # v4
+        uses: "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683" # v4
 
       - name: Log in to the Container registry
-        uses: docker/login-action@29df2a9f8c71c2dfe7db598180a0460355ec1c00
+        uses: docker/login-action@5d8785b43a795ee002a17dbf1a2235dc1997224b
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8026d2bc3645ea78b0d2544766a1225eb5691f89 # v3.7.0
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
       - name: Version number for tags
         id: tags
         shell: bash
