@@ -83,17 +83,15 @@ class EmhassOptimizer(Optimizer):
             self._hass_entity_prefix = self._emhass_config.get("hass_entity_prefix", DEFAULT_HASS_ENTITY_PREFIX)
             self._power_no_var_loads_id = f"sensor.{self._hass_entity_prefix}_{SENSOR_POWER_NO_VAR_LOADS}"
             params = json.dumps(self._emhass_config)
-            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(
-                self._emhass_path_conf, False, params=params
-            )
+            retrieve_hass_conf, optim_conf, plant_conf = utils.get_yaml_parse(params, self._logger)
             # Patch variables with Energy Assistant Config
             retrieve_hass_conf["hass_url"] = self._hass_url
             retrieve_hass_conf["long_lived_token"] = self._hass_token
-            retrieve_hass_conf["var_PV"] = self._solar_power_id
-            if "var_load" not in retrieve_hass_conf:
-                retrieve_hass_conf["var_load"] = self._power_no_var_loads_id
+            retrieve_hass_conf["sensor_power_photovoltaics"] = self._solar_power_id
+            if "sensor_power_load_no_var_loads" not in retrieve_hass_conf:
+                retrieve_hass_conf["sensor_power_load_no_var_loads"] = self._power_no_var_loads_id
             else:
-                self._power_no_var_loads_id = retrieve_hass_conf["var_load"]
+                self._power_no_var_loads_id = retrieve_hass_conf["sensor_power_load_no_var_loads"]
             retrieve_hass_conf["var_replace_zero"] = [self._solar_power_id]
             retrieve_hass_conf["var_interp"] = [
                 self._solar_power_id,
@@ -101,13 +99,13 @@ class EmhassOptimizer(Optimizer):
             ]
 
             retrieve_hass_conf["time_zone"] = self._location.get_time_zone()
-            retrieve_hass_conf["lat"] = self._location.latitude
-            retrieve_hass_conf["lon"] = self._location.longitude
+            retrieve_hass_conf["Latitude"] = self._location.latitude
+            retrieve_hass_conf["Longitude"] = self._location.longitude
             retrieve_hass_conf["alt"] = self._location.elevation
             if "continual_publish" not in retrieve_hass_conf:
                 retrieve_hass_conf["continual_publish"] = False
 
-            optim_conf["num_def_loads"] = 0
+            optim_conf["number_of_deferrable_loads"] = 0
             if "compute_curtailment" not in plant_conf:
                 plant_conf["compute_curtailment"] = False
 
@@ -121,7 +119,7 @@ class EmhassOptimizer(Optimizer):
             self._RetrieveHass = RetrieveHass(
                 self._hass_url,
                 self._hass_token,
-                retrieve_hass_conf["freq"],
+                retrieve_hass_conf["optimization_time_step"],
                 self._location.get_time_zone(),
                 params,
                 self._emhass_path_conf,
@@ -222,11 +220,11 @@ class EmhassOptimizer(Optimizer):
         var_list = [self._solar_power_id, self._power_no_var_loads_id]
         self._RetrieveHass.get_data(days_list, var_list, minimal_response=False, significant_changes_only=False)
         self._RetrieveHass.prepare_data(
-            self._retrieve_hass_conf["var_load"],
+            self._retrieve_hass_conf["sensor_power_load_no_var_loads"],
             load_negative=self._retrieve_hass_conf["load_negative"],
             set_zero_min=self._retrieve_hass_conf["set_zero_min"],
-            var_replace_zero=self._retrieve_hass_conf["var_replace_zero"],
-            var_interp=self._retrieve_hass_conf["var_interp"],
+            var_replace_zero=self._retrieve_hass_conf["sensor_replace_zero"],
+            var_interp=self._retrieve_hass_conf["sensor_linear_interp"],
         )
         df_input_data = self._RetrieveHass.df_final.copy()
 
@@ -249,16 +247,18 @@ class EmhassOptimizer(Optimizer):
 
     def get_ml_runtime_params(self) -> dict:
         """Get the emhass runtime params for the machine learning load prediction."""
-        freq = self._retrieve_hass_conf["freq"].total_seconds() / 3600
+        freq = self._retrieve_hass_conf["optimization_time_step"].total_seconds() / 3600
 
         runtimeparams: dict = {
-            "num_def_loads": len(self._optimzed_devices),
-            "P_deferrable_nom": [device.nominal_power for device in self._optimzed_devices],
-            "def_total_hours": [max(round(device.duration / 3600), 1) for device in self._optimzed_devices],
-            "def_start_timestep": [device.start_timestep for device in self._optimzed_devices],
-            "def_end_timestep": [device.end_timestep for device in self._optimzed_devices],
-            "treat_def_as_semi_cont": [not device.is_continous for device in self._optimzed_devices],
-            "set_def_constant": [device.is_constant for device in self._optimzed_devices],
+            "number_of_deferrable_loads": len(self._optimzed_devices),
+            "nominal_power_of_deferrable_loads": [device.nominal_power for device in self._optimzed_devices],
+            "operating_hours_of_each_deferrable_load": [
+                max(round(device.duration / 3600), 1) for device in self._optimzed_devices
+            ],
+            "start_timesteps_of_each_deferrable_load": [device.start_timestep for device in self._optimzed_devices],
+            "end_timesteps_of_each_deferrable_load": [device.end_timestep for device in self._optimzed_devices],
+            "treat_deferrable_load_as_semi_cont": [not device.is_continous for device in self._optimzed_devices],
+            "set_deferrable_load_single_constant": [device.is_constant for device in self._optimzed_devices],
             "days_to_retrieve": self._retrieve_hass_conf.get("days_to_retrieve", 10),
             "model_type": LOAD_FORECAST_MODEL_TYPE,
             "var_model": self._power_no_var_loads_id,
@@ -282,7 +282,7 @@ class EmhassOptimizer(Optimizer):
                 df_now = pd.DataFrame()
             return fcst.get_power_from_weather(df_weather, set_mix_forecast, df_now)
         pv_forecast_hourly = await self._hass.get_solar_forecast()
-        freq = self._retrieve_hass_conf["freq"]
+        freq = self._retrieve_hass_conf["optimization_time_step"]
         pv_forecast = pv_forecast_hourly.resample(freq).mean().interpolate()
         start = fcst.forecast_dates[0]
         end = fcst.forecast_dates[-1]
@@ -353,7 +353,7 @@ class EmhassOptimizer(Optimizer):
             )
             p_load_forecast_values = np.array([avg_non_var_power for x in pv_forecast.values])
 
-        freq = self._retrieve_hass_conf["freq"]
+        freq = self._retrieve_hass_conf["optimization_time_step"]
 
         df_input_data_dayahead = pd.DataFrame(
             np.transpose(np.vstack([np.array(pv_forecast.values), p_load_forecast_values])),
@@ -397,7 +397,7 @@ class EmhassOptimizer(Optimizer):
         )
         df_input_data_dayahead = fcst.get_prod_price_forecast(
             df_input_data_dayahead,
-            method=fcst.optim_conf["prod_price_forecast_method"],
+            method=fcst.optim_conf["production_price_forecast_method"],
         )
         self._day_ahead_forecast = opt.perform_dayahead_forecast_optim(
             df_input_data_dayahead,
@@ -472,11 +472,11 @@ class EmhassOptimizer(Optimizer):
         var_list = [self._solar_power_id, self._power_no_var_loads_id]
         self._RetrieveHass.get_data(days_list, var_list, minimal_response=False, significant_changes_only=False)
         self._RetrieveHass.prepare_data(
-            self._retrieve_hass_conf["var_load"],
+            self._retrieve_hass_conf["varsensor_power_load_no_var_loads_load"],
             load_negative=self._retrieve_hass_conf["load_negative"],
             set_zero_min=self._retrieve_hass_conf["set_zero_min"],
-            var_replace_zero=self._retrieve_hass_conf["var_replace_zero"],
-            var_interp=self._retrieve_hass_conf["var_interp"],
+            var_replace_zero=self._retrieve_hass_conf["sensor_replace_zero"],
+            var_interp=self._retrieve_hass_conf["sensor_linear_interp"],
         )
         df_input_data = self._RetrieveHass.df_final.copy()
 
@@ -715,7 +715,7 @@ class EmhassOptimizer(Optimizer):
                 await self.async_dayahead_forecast_optim()
 
         if self._day_ahead_forecast is not None:
-            freq = self._retrieve_hass_conf["freq"]
+            freq = self._retrieve_hass_conf["optimization_time_step"]
             temp_folder.mkdir(parents=True, exist_ok=True)
             pv_df = self._pv.get_data_frame(freq, self._location.get_time_zone(), "pv", temp_folder)
             pv_df.to_csv(temp_folder / "pv_df.csv")

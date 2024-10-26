@@ -19,7 +19,7 @@ dependencies = [
     "SQLAlchemy==2.0.36",
     "requests==2.32.3",
     "fastapi[standard]==0.115.3",
-    "pydantic-settings==2.5.2",
+    "pydantic-settings==2.6.0",
     "pyyaml >= 6.0.2",
     "alembic==1.13.3",
     "aiosqlite==0.20.0",
@@ -28,14 +28,14 @@ dependencies = [
     "paho-mqtt==2.1.0",
     "jinja2==3.1.4",
     "colorlog==6.8.2",
-    "emhass==0.10.6",
+    "emhass==0.11.0",
     "energy_assistant_frontend==0.0.59",
     "hass-client==1.2.0"
 ]
 requires-python = ">=3.11"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "httpx==0.27.2",
   "isort",
   "black==24.10.0",
@@ -53,6 +53,7 @@ dev-dependencies = [
   "pandas-stubs",
   "mkdocs>=1.6.1",
 ]
+
 
 [project.scripts]
 eass = "energy_assistant.main:main"
@@ -87,6 +88,7 @@ combine_as_imports = true
 
 
 [tool.codespell]
+skip = './site'
 ignore-words-list = "hass"
 count=true
 

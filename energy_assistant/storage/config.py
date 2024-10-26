@@ -116,16 +116,18 @@ class ConfigSectionStorage(ConfigSectionStorageBase):
         except FileNotFoundError as error:
             LOGGER.exception("File %s not found", str(config_file))
             raise ConfigFileError from error
-        try:
-            async with await open_file(self._config_data_file) as stream:
-                LOGGER.debug("Successfully opened config data file %s", config_file)
-                self._data = yaml.safe_load(await stream.read())
-                LOGGER.debug("config file %s successfully loaded", config_file)
-        except yaml.YAMLError as error:
-            LOGGER.exception("Failed to parse the config file")
-            raise ConfigFileError from error
-        except FileNotFoundError:
-            self._data = {}
+        self._data = {}
+        if self._config_data_file.exists():
+            try:
+                async with await open_file(self._config_data_file) as stream:
+                    LOGGER.debug("Successfully opened config data file %s", config_file)
+                    self._data = yaml.safe_load(await stream.read())
+                    LOGGER.debug("config file %s successfully loaded", config_file)
+            except yaml.YAMLError as error:
+                LOGGER.exception("Failed to parse the config file")
+                raise ConfigFileError from error
+            except FileNotFoundError:
+                self._data = {}
         self._merge_data()
 
     def _merge_data(self) -> None:
@@ -191,16 +193,18 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
         except FileNotFoundError as error:
             LOGGER.exception("File %s not found", str(config_file))
             raise ConfigFileError from error
-        try:
-            async with await open_file(self._config_data_file) as stream:
-                LOGGER.debug("Successfully opened config data file %s", config_file)
-                self._data = yaml.safe_load(await stream.read())
-                LOGGER.debug("config file %s successfully loaded", config_file)
-        except yaml.YAMLError as error:
-            LOGGER.exception("Failed to parse the config file")
-            raise ConfigFileError from error
-        except FileNotFoundError:
-            self._data = []
+        self._data = []
+        if self._config_data_file.exists():
+            try:
+                async with await open_file(self._config_data_file) as stream:
+                    LOGGER.debug("Successfully opened config data file %s", config_file)
+                    self._data = yaml.safe_load(await stream.read())
+                    LOGGER.debug("config file %s successfully loaded", config_file)
+            except yaml.YAMLError as error:
+                LOGGER.exception("Failed to parse the config file")
+                raise ConfigFileError from error
+            except FileNotFoundError:
+                self._data = []
         self._merge_data()
 
     def _find_device_in_data(self, device_id: str) -> dict:

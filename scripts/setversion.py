@@ -17,4 +17,4 @@ if len(sys.argv) == 2:
     with Path("pyproject.toml").open("wb") as f:
         tomli_w.dump(pyproject, f)
 else:
-    print("Error: setversion requires excactly one argument containing the version to be set.")
+    print("Error: setversion requires exactly one argument containing the version to be set.")
