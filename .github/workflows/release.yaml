@@ -22,7 +22,7 @@ jobs:
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
 
       - name: Install uv
-        uses: astral-sh/setup-uv@2e657c127d5b1635d5a8e3fa40e0ac50a5bf6992 # v3
+        uses: astral-sh/setup-uv@e779db74266a80753577425b0f4ee823649f251d # v3
 
       - name: Set up Python
         run: uv python install 3.11
