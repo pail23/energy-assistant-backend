@@ -5,7 +5,7 @@ import uuid
 from energy_assistant import Optimizer
 from energy_assistant.constants import POWER_HYSTERESIS
 from energy_assistant.devices import OnOffState, PowerModes, StateId, StatesRepository
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL
 
 
@@ -25,7 +25,7 @@ class OnOffController:
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power_data: DataBuffer,
+        grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
         output_state = state_repository.get_state(self._output_id)

@@ -16,7 +16,7 @@ from . import (
     StateId,
     StatesRepository,
 )
-from .analysis import DataBuffer
+from .analysis import FloatDataBuffer
 from .config import DeviceConfigMissingParameterError, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
 
@@ -105,7 +105,7 @@ class HeatPumpDevice(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power_data: DataBuffer,
+        grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
         if (
@@ -313,7 +313,7 @@ class SubHeatPump(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power_data: DataBuffer,
+        grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
         raise NotImplementedError
@@ -384,7 +384,7 @@ class SGReadyHeatPumpDevice(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power_data: DataBuffer,
+        grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
         if self._sg_ready_switch_entity_id is not None:

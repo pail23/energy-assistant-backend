@@ -7,7 +7,7 @@ import pytest
 
 from energy_assistant import Optimizer
 from energy_assistant.devices import PowerModes, Session, SessionStorage, State, StateId, StatesRepository
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
 
 
@@ -199,7 +199,7 @@ async def test_init_sgready_heatpump(
         "heatpump_state": "off",
     }
 
-    data_buffer = DataBuffer()
+    data_buffer = FloatDataBuffer()
     for x in range(20):
         d = datetime.now(UTC) - timedelta(minutes=x)
         data_buffer.add_data_point(x * 1000, d)

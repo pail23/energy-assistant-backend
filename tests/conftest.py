@@ -5,7 +5,7 @@ from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -36,7 +36,8 @@ async def ac() -> AsyncGenerator:
         result.home = home
     app.energy_assistant = result  # type: ignore
 
-    async with AsyncClient(app=app, base_url="https://test") as c:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="https://test") as c:
         yield c
 
 

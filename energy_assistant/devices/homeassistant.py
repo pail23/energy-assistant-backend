@@ -23,7 +23,7 @@ from energy_assistant.constants import (
     POWER_HYSTERESIS,
     ROOT_LOGGER_NAME,
 )
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.registry import DeviceType, DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
 
@@ -490,7 +490,7 @@ class HomeassistantDevice(DeviceWithState):
         self._output_state: State | None = None
         self._output_id: str | None = None
         self._icon: str = "mdi-home"
-        self._power_data = DataBuffer()
+        self._power_data = FloatDataBuffer()
 
         self._state: str = OnOffState.UNKNOWN
         self._consumed_energy_value: StateValue | None = None
@@ -604,7 +604,7 @@ class HomeassistantDevice(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power_data: DataBuffer,
+        grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
         if self._output_id is not None:

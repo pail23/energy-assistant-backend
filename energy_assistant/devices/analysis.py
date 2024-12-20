@@ -5,55 +5,43 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, tzinfo
 from statistics import mean
+from typing import Generic, TypeVar
 
 import pandas as pd
 
 MAX_DATA_LEN = 3000  # in case of 30 seconds interval, this is about one day.
 
 
-class OnOffDataBuffer:
-    """Data buffer for OnOff States."""
-
-    def __init__(self) -> None:
-        """Create on/off data buffer instance."""
-        self.data = pd.Series()
-
-    def add_data_point(self, value: bool, time_stamp: datetime | None = None) -> None:
-        """Add a new data point for tracking."""
-        if time_stamp is None:
-            time_stamp = datetime.now(UTC)
-        self.data[time_stamp] = value
-        if len(self.data) > MAX_DATA_LEN:
-            self.data = self.data.tail(MAX_DATA_LEN)
+T = TypeVar("T")
 
 
 @dataclass
-class DataPoint:
+class DataPoint(Generic[T]):
     """Data point for the DataBuffer."""
 
-    value: float
+    value: T
     time_stamp: datetime
 
 
-class DataBuffer:
+class DataBuffer(Generic[T]):
     """Data buffer for analysis."""
 
     def __init__(self) -> None:
         """Create a DataBuffer instance."""
         self.data: deque = deque([], MAX_DATA_LEN)
 
-    def add_data_point(self, value: float, time_stamp: datetime | None = None) -> None:
+    def add_data_point(self, value: T, time_stamp: datetime | None = None) -> None:
         """Add a new data point for tracking."""
         if time_stamp is None:
             time_stamp = datetime.now(UTC)
-        self.data.append(DataPoint(value, time_stamp))
+        self.data.append(DataPoint[T](value, time_stamp))
 
     def get_data_for(
         self,
         timespan: float,
         now: datetime | None = None,
         without_trailing_zeros: bool = False,
-    ) -> list[float]:
+    ) -> list[T]:
         """Extract data for the last timespan seconds."""
         if now is None:
             now = datetime.now(UTC)
@@ -65,6 +53,33 @@ class DataBuffer:
             while result[-1] == 0.0:
                 result.pop()
         return result
+
+    def get_data_frame(
+        self,
+        freq: pd.Timedelta,
+        time_zone: tzinfo,
+        value_name: str,
+        folder: pathlib.Path | None = None,
+    ) -> pd.DataFrame:
+        """Get a pandas data frame from from the available data."""
+        data = [(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
+        result = pd.DataFrame.from_records(data, index="timestamp", columns=["timestamp", value_name])
+        if folder is not None:
+            result.to_csv(folder / f"{value_name}.csv")
+        if not result.empty:
+            result.index = result.index.tz_convert(time_zone)  # type: ignore
+            return result.resample(freq).mean()
+        return result
+
+
+class OnOffDataBuffer(DataBuffer[bool]):
+    """Data buffer for OnOff States."""
+
+    pass
+
+
+class FloatDataBuffer(DataBuffer[float]):
+    """Data buffer for float values."""
 
     def get_average_for(self, timespan: float, now: datetime | None = None) -> float:
         """Calculate the average over the last timespan seconds."""
@@ -107,22 +122,6 @@ class DataBuffer:
                 return False
             return max(data) <= upper
         return False
-
-    def get_data_frame(
-        self,
-        freq: pd.Timedelta,
-        time_zone: tzinfo,
-        value_name: str,
-        folder: pathlib.Path,
-    ) -> pd.DataFrame:
-        """Get a pandas data frame from from the available data."""
-        data = [(pd.to_datetime(d.time_stamp, utc=True), d.value) for d in self.data]
-        result = pd.DataFrame.from_records(data, index="timestamp", columns=["timestamp", value_name])
-        result.to_csv(folder / f"{value_name}.csv")
-        if not result.empty:
-            result.index = result.index.tz_convert(time_zone)  # type: ignore
-            return result.resample(freq).mean()
-        return result
 
 
 def create_timeseries_from_const(

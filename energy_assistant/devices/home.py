@@ -7,7 +7,7 @@ import uuid
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
@@ -143,7 +143,7 @@ class Home:
         self._home_energy_state = HomeEnergyState(config.home.as_dict())
         self._init_power_variables(config.home.as_dict())
 
-        self.grid_exported_power_data = DataBuffer()
+        self.grid_exported_power_data = FloatDataBuffer()
 
         self._disable_device_control: bool = False
         disable_control = config.home.get("disable_device_control")

@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.utility_meter import UtilityMeter
 
 from . import (
@@ -118,7 +118,7 @@ class Device(ABC):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power_data: DataBuffer,
+        grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
 

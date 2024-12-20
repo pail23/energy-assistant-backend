@@ -3,7 +3,7 @@
 import uuid
 
 from energy_assistant import Optimizer
-from energy_assistant.devices.analysis import DataBuffer
+from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.mqtt import MQTT_CHANNEL
 
 from . import (
@@ -98,7 +98,7 @@ class EvccDevice(DeviceWithState):
         self,
         state_repository: StatesRepository,
         optimizer: Optimizer,
-        grid_exported_power_data: DataBuffer,
+        grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
         new_state = ""

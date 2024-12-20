@@ -20,7 +20,7 @@ from sklearn.metrics import r2_score  # type: ignore
 
 from energy_assistant import Optimizer
 from energy_assistant.devices import LoadInfo, Location, StateId, StatesRepository
-from energy_assistant.devices.analysis import DataBuffer, create_timeseries_from_const
+from energy_assistant.devices.analysis import FloatDataBuffer, create_timeseries_from_const
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, Homeassistant
 from energy_assistant.models.forecast import ForecastSchema, ForecastSerieSchema
@@ -135,8 +135,8 @@ class EmhassOptimizer(Optimizer):
         self._day_ahead_forecast: pd.DataFrame | None = None
         self._optimzed_devices: list = []
         self._projected_load_devices: list[LoadInfo] = []
-        self._pv: DataBuffer = DataBuffer()
-        self._no_var_loads: DataBuffer = DataBuffer()
+        self._pv: FloatDataBuffer = FloatDataBuffer()
+        self._no_var_loads: FloatDataBuffer = FloatDataBuffer()
 
     def update_repository_states(self, home: Home, state_repository: StatesRepository) -> None:
         """Calculate the power of the non variable/non controllable loads."""
