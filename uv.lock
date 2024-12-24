@@ -419,7 +419,7 @@ wheels = [
 
 [[package]]
 name = "emhass"
-version = "0.11.3"
+version = "0.11.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -439,9 +439,9 @@ dependencies = [
     { name = "tables" },
     { name = "waitress" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/f8/cc685b1bf28a3305a1bbfe1a1060def04f9b9d5c752ef4c0c61fac9cbdf7/emhass-0.11.3.tar.gz", hash = "sha256:6f6a053a82c972ddfe97e3a405f7f7d2b727ade7c9a47e7605f4093a69cd3247", size = 2470346 }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/e1/3f25f31b70071df2623560b3e721e7d768d3c925b54569991887da3fe753/emhass-0.11.4.tar.gz", hash = "sha256:a3c0069f04aa855441131910c3464e9603054605be74d45592f67d42eac29b96", size = 2535259 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/88/347be02ec80c8e598375fd2f04693e18b9fd48607e5c793bc62ce3a049b8/emhass-0.11.3-py3-none-any.whl", hash = "sha256:b8389f6c582b890fff9907843ab383ded4f50b86b5abcd7dd47a2d66e59078f4", size = 1987350 },
+    { url = "https://files.pythonhosted.org/packages/5c/ab/68e653b39864958ccb72218a18a5aed1ded61bb5c6532ba5f8bf0307d64a/emhass-0.11.4-py3-none-any.whl", hash = "sha256:c5b830d97fe97105fb78ce1f70fe9250eeff6884e73b8c454ba7dff3b07410b5", size = 1987426 },
 ]
 
 [[package]]
@@ -492,7 +492,7 @@ requires-dist = [
     { name = "alembic", specifier = "==1.14.0" },
     { name = "apscheduler", specifier = "==3.11.0" },
     { name = "colorlog", specifier = "==6.9.0" },
-    { name = "emhass", specifier = "==0.11.3" },
+    { name = "emhass", specifier = "==0.11.4" },
     { name = "energy-assistant-frontend", specifier = "==0.0.59" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.115.6" },
     { name = "hass-client", specifier = "==1.2.0" },
