@@ -493,7 +493,7 @@ requires-dist = [
     { name = "apscheduler", specifier = "==3.11.0" },
     { name = "colorlog", specifier = "==6.9.0" },
     { name = "emhass", specifier = "==0.11.4" },
-    { name = "energy-assistant-frontend", specifier = "==0.0.59" },
+    { name = "energy-assistant-frontend", specifier = "==0.0.60" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.115.6" },
     { name = "hass-client", specifier = "==1.2.0" },
     { name = "jinja2", specifier = "==3.1.5" },
@@ -527,11 +527,11 @@ dev = [
 
 [[package]]
 name = "energy-assistant-frontend"
-version = "0.0.59"
+version = "0.0.60"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/13/2b/bfd864d607c4d0d7c71c614f762b9eac42e7a5bf9240205c8da9f9f39078/energy-assistant-frontend-0.0.59.tar.gz", hash = "sha256:ebd71f1068c59f627b887e61f944f4346127841c6051ea85fdff4631bcc30e20", size = 3434321 }
+sdist = { url = "https://files.pythonhosted.org/packages/89/8f/525e678d1bfc5b81f0055b0680197790d699a5d1aad558bddaede44ea768/energy-assistant-frontend-0.0.60.tar.gz", hash = "sha256:c3c0ada52caded4fc64460896f8a128188efb29b7f237d04e6312c9ff9243580", size = 3435465 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/6a/38cfee95b09ea5e531bc16721c3c5ba5c007270fb0862f87bc35a88c2700/energy_assistant_frontend-0.0.59-py3-none-any.whl", hash = "sha256:8f91bea61dc90018886b01a2fa533db3c334a0627ed576ccf22d6e85550c398d", size = 3458765 },
+    { url = "https://files.pythonhosted.org/packages/78/45/107487fdc5afae5251ddc054338df5318874e9c679f110a39c3238b8b18f/energy_assistant_frontend-0.0.60-py3-none-any.whl", hash = "sha256:1b3a956e82adc005d3ba1e674f7f10acb4bbd411930e3a53407bf67db29f361c", size = 3458939 },
 ]
 
 [[package]]
