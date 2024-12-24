@@ -72,9 +72,12 @@ class EmhassOptimizer(Optimizer):
             self._solar_power_id = home_config.get("solar_power")
         self._emhass_config: dict | None = config.emhass.as_dict()
 
+        root_path = pathlib.Path(emhass.__file__).parent
         self._emhass_path_conf = {}
         self._emhass_path_conf["data_path"] = self._data_folder
-        self._emhass_path_conf["root_path"] = pathlib.Path(emhass.__file__).parent
+        self._emhass_path_conf["root_path"] = root_path
+        self._emhass_path_conf["associations_path"] = root_path / "data/associations.csv"
+        self._emhass_path_conf["defaults_path"] = root_path / "data/config_defaults.json"
 
         self._power_no_var_loads_id = f"sensor.{DEFAULT_HASS_ENTITY_PREFIX}_{SENSOR_POWER_NO_VAR_LOADS}"
         if self._emhass_config is not None:
@@ -198,8 +201,8 @@ class EmhassOptimizer(Optimizer):
         )  # type: ignore
         fcst = Forecast(
             self._retrieve_hass_conf,
-            self._optim_conf,
-            self._plant_conf,
+            optim_conf,
+            plant_conf,
             params,
             self._emhass_path_conf,
             self._logger,
@@ -207,8 +210,8 @@ class EmhassOptimizer(Optimizer):
         )
         opt = Optimization(
             self._retrieve_hass_conf,
-            self._optim_conf,
-            self._plant_conf,
+            optim_conf,
+            plant_conf,
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._cost_fun,
@@ -309,7 +312,7 @@ class EmhassOptimizer(Optimizer):
             self._logger.warning("Falling back to the naive load forecaster.")
 
         # Treat runtimeparams
-        params: str = utils.treat_runtimeparams(
+        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
             json.dumps(self.get_ml_runtime_params()),
             json.dumps(self._emhass_config),
             self._retrieve_hass_conf,
@@ -317,11 +320,12 @@ class EmhassOptimizer(Optimizer):
             self._plant_conf,
             "dayahead-optim",
             self._logger,
-        )[0]
+            self._emhass_path_conf,
+        )
         fcst = Forecast(
             self._retrieve_hass_conf,
-            self._optim_conf,
-            self._plant_conf,
+            optim_conf,
+            plant_conf,
             params,
             self._emhass_path_conf,
             self._logger,
@@ -329,8 +333,8 @@ class EmhassOptimizer(Optimizer):
         )
         opt = Optimization(
             self._retrieve_hass_conf,
-            self._optim_conf,
-            self._plant_conf,
+            optim_conf,
+            plant_conf,
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._cost_fun,
@@ -449,8 +453,8 @@ class EmhassOptimizer(Optimizer):
         )  # type: ignore
         fcst = Forecast(
             self._retrieve_hass_conf,
-            self._optim_conf,
-            self._plant_conf,
+            optim_conf,
+            plant_conf,
             params,
             self._emhass_path_conf,
             self._logger,
@@ -458,8 +462,8 @@ class EmhassOptimizer(Optimizer):
         )
         opt = Optimization(
             self._retrieve_hass_conf,
-            self._optim_conf,
-            self._plant_conf,
+            optim_conf,
+            plant_conf,
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._cost_fun,

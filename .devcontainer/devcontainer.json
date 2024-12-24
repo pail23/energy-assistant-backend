@@ -3,7 +3,7 @@
 {
   "name": "Energy Assistant",
   // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -44,7 +44,7 @@
     "APP_CONFIG_FILE": "develop"
   },
   "remoteEnv": {
-      "PATH": "${containerEnv:PATH}:/home/vscode/.cargo/bin/"
+      "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin"
   }
 
 }
