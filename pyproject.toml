@@ -28,7 +28,7 @@ dependencies = [
     "paho-mqtt==2.1.0",
     "jinja2==3.1.5",
     "colorlog==6.9.0",
-    "emhass==0.11.4",
+    "emhass==0.12.0",
     "energy_assistant_frontend==0.0.60",
     "hass-client==1.2.0"
 ]
