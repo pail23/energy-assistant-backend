@@ -177,7 +177,7 @@ class EmhassOptimizer(Optimizer):
         )
         state_repository.set_state(
             StateId(id=f"sensor.{self._hass_entity_prefix}_self_sufficiency", channel=HOMEASSISTANT_CHANNEL),
-            str(home.self_sufficiency * 100),
+            str(round(home.self_sufficiency * 100)),
             {
                 "unit_of_measurement": "%",
                 "state_class": "measurement",
@@ -185,7 +185,7 @@ class EmhassOptimizer(Optimizer):
         )
         state_repository.set_state(
             StateId(id=f"sensor.{self._hass_entity_prefix}_self_consumption", channel=HOMEASSISTANT_CHANNEL),
-            str(home.self_consumption * 100),
+            str(round(home.self_consumption * 100)),
             {
                 "unit_of_measurement": "%",
                 "state_class": "measurement",
