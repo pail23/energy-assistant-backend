@@ -170,6 +170,27 @@ class EmhassOptimizer(Optimizer):
             str(self._get_forecast_value("P_Load")),
             attributes,
         )
+        state_repository.set_state(
+            StateId(id=f"sensor.{self._hass_entity_prefix}_home_consumption", channel=HOMEASSISTANT_CHANNEL),
+            str(home.home_consumption_power),
+            attributes,
+        )
+        state_repository.set_state(
+            StateId(id=f"sensor.{self._hass_entity_prefix}_self_sufficiency", channel=HOMEASSISTANT_CHANNEL),
+            str(home.self_sufficiency),
+            {
+                "unit_of_measurement": "%",
+                "state_class": "measurement",
+            },
+        )
+        state_repository.set_state(
+            StateId(id=f"sensor.{self._hass_entity_prefix}_self_consumption", channel=HOMEASSISTANT_CHANNEL),
+            str(home.self_consumption),
+            {
+                "unit_of_measurement": "%",
+                "state_class": "measurement",
+            },
+        )
 
     def perfect_forecast_optim(self, save_data_to_file: bool = True, debug: bool = False) -> pd.DataFrame:
         """Perform a call to the perfect forecast optimization routine.
