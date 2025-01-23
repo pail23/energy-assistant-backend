@@ -18,7 +18,7 @@ keywords = ["energy assistant", "home assistant"]
 dependencies = [
     "SQLAlchemy==2.0.37",
     "requests==2.32.3",
-    "fastapi[standard]==0.115.6",
+    "fastapi[standard]==0.115.7",
     "pydantic-settings==2.7.1",
     "pyyaml >= 6.0.2",
     "alembic==1.14.1",
