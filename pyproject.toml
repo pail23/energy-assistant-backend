@@ -39,7 +39,7 @@ dev = [
   "httpx==0.28.1",
   "isort",
   "black==24.10.0",
-  "codespell==2.4.0",
+  "codespell==2.4.1",
   "mypy==1.14.1",
   "ruff==0.9.3",
   "pytest==8.3.4",
