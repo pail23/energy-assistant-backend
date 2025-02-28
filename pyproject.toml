@@ -41,7 +41,7 @@ dev = [
   "black==25.1.0",
   "codespell==2.4.1",
   "mypy==1.15.0",
-  "ruff==0.9.8",
+  "ruff==0.9.9",
   "pytest==8.3.4",
   "pytest-asyncio==0.25.3",
   "pytest-aiohttp==1.1.0",
