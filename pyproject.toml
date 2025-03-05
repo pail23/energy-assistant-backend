@@ -21,7 +21,7 @@ dependencies = [
     "fastapi[standard]==0.115.11",
     "pydantic-settings==2.8.1",
     "pyyaml >= 6.0.2",
-    "alembic==1.14.1",
+    "alembic==1.15.1",
     "aiosqlite==0.21.0",
     "python-dotenv",
     "apscheduler==3.11.0",
