@@ -23,9 +23,9 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@c7f87aa956e4c323abf06d5dec078e358f6b4d04 # v6
-
-      - name: Set up Python
-        run: uv python install 3.11
+        with:
+          python-version: 3.12
+          activate-environment: true
 
       - name: Install the project
         run: uv sync --all-extras --dev
@@ -46,7 +46,7 @@ jobs:
         #  password: ${{ secrets.PYPI_TOKEN }}
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2.2.2 
+        uses: softprops/action-gh-release@v2.2.2
         with:
           files: |
             dist/*.whl
