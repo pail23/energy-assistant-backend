@@ -91,6 +91,7 @@ class EmhassOptimizer(Optimizer):
             retrieve_hass_conf["hass_url"] = self._hass_url
             retrieve_hass_conf["long_lived_token"] = self._hass_token
             retrieve_hass_conf["sensor_power_photovoltaics"] = self._solar_power_id
+            retrieve_hass_conf["sensor_power_photovoltaics_forecast"] = "sensor.p_pv_forecast"
             if "sensor_power_load_no_var_loads" not in retrieve_hass_conf:
                 retrieve_hass_conf["sensor_power_load_no_var_loads"] = self._power_no_var_loads_id
             else:
