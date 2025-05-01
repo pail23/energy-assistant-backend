@@ -3,9 +3,11 @@
 import logging
 import uuid
 
+from energy_assistant_frontend import __version__ as front_end_version
 from fastapi import HTTPException
 
-from energy_assistant.api.config.schema import ConfigModel
+from energy_assistant import __version__
+from energy_assistant.api.config.schema import ConfigModel, VersionModel
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.db import AsyncSession
 from energy_assistant.devices.config import EnergyAssistantConfig
@@ -25,6 +27,18 @@ class ReadConfiguration:
     async def execute(self, config: EnergyAssistantConfig) -> ConfigModel:
         """Execute the read configuration use case."""
         return ConfigModel.model_validate({"config": config.as_dict})
+
+
+class ReadVersion:
+    """Read the version use case."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Create a read version use case."""
+        self.async_session = session
+
+    async def execute(self) -> VersionModel:
+        """Execute the read configuration use case."""
+        return VersionModel.model_validate({"version": __version__, "ui_version": front_end_version})
 
 
 class ReadDeviceConfiguration:

@@ -22,6 +22,7 @@
         "github.vscode-pull-request-github",
         "ryanluker.vscode-coverage-gutters",
         "ms-python.vscode-pylance",
+        "sourcery.sourcery",
         "charliermarsh.ruff"
       ],
       "settings": {

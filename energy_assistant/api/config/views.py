@@ -5,8 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
 
-from .schema import ConfigModel, ReadConfigResponse, ReadDeviceConfigResponse
-from .use_cases import ReadConfiguration, ReadDeviceConfiguration, WriteDeviceConfiguration
+from .schema import ConfigModel, ReadConfigResponse, ReadDeviceConfigResponse, ReadVersionResponse, VersionModel
+from .use_cases import ReadConfiguration, ReadDeviceConfiguration, ReadVersion, WriteDeviceConfiguration
 
 router = APIRouter(prefix="/config")
 
@@ -21,6 +21,16 @@ async def read_configuration(
     if energy_assistant is None:
         raise HTTPException(status_code=500)
     return await use_case.execute(energy_assistant.config)
+
+
+@router.get("/version", response_model=ReadVersionResponse)
+async def read_version(
+    request: Request,
+    use_case: Annotated[ReadVersion, Depends(ReadVersion)],
+) -> VersionModel:
+    """Rest end point for read all devices."""
+
+    return await use_case.execute()
 
 
 @router.get(
