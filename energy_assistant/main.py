@@ -18,6 +18,7 @@ import pandas as pd
 from anyio import open_file
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
+from energy_assistant_frontend import __version__ as frontend_version
 from energy_assistant_frontend import where as locate_frontend
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from energy_assistant import __version__
 from energy_assistant.api.main import router as api_router
 from energy_assistant.devices import StatesMultipleRepositories, StatesRepository
 from energy_assistant.devices.config import EnergyAssistantConfig
@@ -318,7 +320,7 @@ async def init_app() -> EnergyAssistant:
 
     config_file = hass_options.get("config_file", settings.CONFIG_FILE)
 
-    logger.info("Hello from Energy Assistant")
+    logger.info(f"Starting Energy Assistant version {__version__} with frontend version {frontend_version}")
 
     for option in hass_options:
         logging.info(f"{option}={hass_options[option]}")
