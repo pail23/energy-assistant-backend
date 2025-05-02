@@ -8,7 +8,7 @@ import uuid
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
-from energy_assistant.devices.evcc import EvccDevice
+from energy_assistant.devices.evcc import HomeassistantEvccDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
 from energy_assistant.storage.config import ConfigStorage
@@ -185,7 +185,7 @@ class Home:
             # This is deprecated and will be removed.
             device = HomeassistantDevice(device_id, session_storage, device_type_registry)
         elif device_type == "evcc":
-            device = EvccDevice(device_id, session_storage)
+            device = HomeassistantEvccDevice(device_id, session_storage)
         else:
             LOGGER.error(f"Unknown device type {device_type} in configuration")
         if device is not None:

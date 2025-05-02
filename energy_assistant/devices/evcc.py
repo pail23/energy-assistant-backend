@@ -4,7 +4,7 @@ import uuid
 
 from energy_assistant import Optimizer
 from energy_assistant.devices.analysis import FloatDataBuffer
-from energy_assistant.mqtt import MQTT_CHANNEL
+from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL
 
 from . import (
     LoadInfo,
@@ -19,14 +19,14 @@ from .config import get_config_param
 from .device import DeviceWithState
 
 
-class EvccDevice(DeviceWithState):
+class HomeassistantEvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
     def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
         """Create a Stiebel Eltron heatpump."""
         super().__init__(device_id, session_storage)
         self._evcc_topic: str = ""
-        self._loadpoint_id: int = -1
+        self._loadpoint_name: str = ""
         self._is_continous: bool = True
         self._nominal_power: float | None = None
         self._state = OnOffState.UNKNOWN
@@ -50,44 +50,44 @@ class EvccDevice(DeviceWithState):
         """Load the device configuration from the provided data."""
         super().configure(config)
         self._evcc_topic = get_config_param(config, "evcc_topic")
-        self._loadpoint_id = int(get_config_param(config, "load_point_id"))
+        self._loadpoint_name = get_config_param(config, "load_point_name")
         self._is_continous = bool(config.get("continuous", True))
         self._nominal_power = config.get("nominal_power")
-
-    def get_device_topic_id(self, name: str) -> StateId:
-        """Get the id of a topic of this load point."""
-        return StateId(
-            id=f"{self._evcc_topic}/loadpoints/{self._loadpoint_id}/{name}",
-            channel=MQTT_CHANNEL,
-        )
 
     @property
     def type(self) -> str:
         """The device type."""
         return "evcc"
 
+    def get_device_topic_id(self, name: str, entity_type: str = "sensor") -> StateId:
+        """Get the id of a topic of this load point."""
+        return StateId(
+            id=f"{entity_type}.evcc_{self._loadpoint_name}_{name}",
+            channel=HOMEASSISTANT_CHANNEL,
+        )
+
     async def update_state(self, state_repository: StatesRepository, self_sufficiency: float) -> None:
         """Update the state of the Stiebel Eltron device."""
         old_state = self.state == OnOffState.ON
-        charging = state_repository.get_state(self.get_device_topic_id("charging"))
+        charging = state_repository.get_state(self.get_device_topic_id("charging", "binary_sensor"))
         if charging is not None:
             self._state = OnOffState.ON if charging.value == "true" else OnOffState.OFF
         else:
             self._state = OnOffState.UNKNOWN
         new_state = self.state == OnOffState.ON
 
-        self._consumed_energy = state_repository.get_state(self.get_device_topic_id("chargeTotalImport"))
+        self._consumed_energy = state_repository.get_state(self.get_device_topic_id("charge_total_import"))
         if self.consumed_energy == 0:
-            state = state_repository.get_state(self.get_device_topic_id("sessionEnergy"))
+            state = state_repository.get_state(self.get_device_topic_id("session_energy"))
             if state is not None:
                 self._consumed_energy = self._utility_meter.update_energy_state(state)
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
-        self._power = state_repository.get_state(self.get_device_topic_id("chargePower"))
-        self._mode = state_repository.get_state(self.get_device_topic_id("mode"))
-        self._vehicle_soc = state_repository.get_state(self.get_device_topic_id("vehicleSoc"))
-        self._vehicle_capacity = state_repository.get_state(self.get_device_topic_id("vehicleCapacity"))
-        self._max_current = state_repository.get_state(self.get_device_topic_id("maxCurrent"))
-        self._is_connected = state_repository.get_state(self.get_device_topic_id("connected"))
+        self._power = state_repository.get_state(self.get_device_topic_id("charge_power"))
+        self._mode = state_repository.get_state(self.get_device_topic_id("mode", "select"))
+        self._vehicle_soc = state_repository.get_state(self.get_device_topic_id("vehicle_soc"))
+        self._vehicle_capacity = state_repository.get_state(self.get_device_topic_id("vehicle_capacity"))
+        self._max_current = state_repository.get_state(self.get_device_topic_id("max_current", "select"))
+        self._is_connected = state_repository.get_state(self.get_device_topic_id("connected", "binary_sensor"))
 
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)
@@ -115,11 +115,6 @@ class EvccDevice(DeviceWithState):
             new_state = "pv"
         if new_state != self._mode:
             state_repository.set_state(self.get_device_topic_id("mode/set"), new_state)
-
-    @property
-    def evcc_mqtt_subscription_topic(self) -> str:
-        """Get the evvc base topic for the subscription."""
-        return f"{self._evcc_topic}/#"
 
     @property
     def consumed_energy(self) -> float:
