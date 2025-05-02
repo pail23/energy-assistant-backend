@@ -30,7 +30,6 @@ from energy_assistant import __version__
 from energy_assistant.api.main import router as api_router
 from energy_assistant.devices import StatesMultipleRepositories, StatesRepository
 from energy_assistant.devices.config import EnergyAssistantConfig
-from energy_assistant.devices.evcc import EvccDevice
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.devices.registry import DeviceTypeRegistry
@@ -199,14 +198,6 @@ def create_mqtt_connection(config: ConfigStorage) -> MqttConnection | None:
     return None
 
 
-def subscribe_mqtt_topics(mqtt_connection: MqttConnection, home: Home) -> None:
-    """Subscribe the mqtt based devices on the mqtt connection."""
-
-    for device in home.devices:
-        if isinstance(device, EvccDevice):
-            mqtt_connection.add_subscription_topic(device.evcc_mqtt_subscription_topic)
-
-
 async def open_hass_connection(config: ConfigStorage) -> Homeassistant | None:
     """Create a connection to home assistant."""
     token: str | None = None
@@ -359,8 +350,6 @@ async def init_app() -> EnergyAssistant:
             home = Home(config, session_storage, device_type_registry)
             result.home = home
             app.home = home  # type: ignore
-            if mqtt_connection is not None:
-                subscribe_mqtt_topics(mqtt_connection, home)
 
             async with async_session() as session:
                 await db.update_devices(home, session, session_storage, device_type_registry)

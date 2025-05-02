@@ -146,7 +146,7 @@ SG_READY_CONFIG = {
 
 @pytest.mark.asyncio()
 async def test_init_heatpump(session_storage: SessionStorage, state_repository: StatesRepository) -> None:
-    """Test initilaizing a heat pump."""
+    """Test initializing a heat pump."""
 
     heat_pump = HeatPumpDevice(HEATPUMP_CONFIG, session_storage)
     heat_pump.configure(HEATPUMP_CONFIG)
@@ -162,7 +162,7 @@ async def test_init_heatpump(session_storage: SessionStorage, state_repository: 
 
 @pytest.mark.asyncio()
 async def test_init_controllable_heatpump(session_storage: SessionStorage, state_repository: StatesRepository) -> None:
-    """Test initilaizing a heat pump."""
+    """Test initializing a heat pump."""
 
     heat_pump = HeatPumpDevice(CONTROLLABLE_HEATPUMP_CONFIG, session_storage)
     heat_pump.configure(CONTROLLABLE_HEATPUMP_CONFIG)
@@ -182,7 +182,7 @@ async def test_init_sgready_heatpump(
     state_repository: StatesRepository,
     optimizer: Optimizer,
 ) -> None:
-    """Test initilaizing a sg ready heat pump."""
+    """Test initializing a sg ready heat pump."""
 
     heat_pump = SGReadyHeatPumpDevice(SG_READY_CONFIG, session_storage)
     heat_pump.configure(SG_READY_CONFIG)
