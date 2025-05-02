@@ -6,12 +6,13 @@ import random
 import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
 
+from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices import State, StatesSingleRepository
 
 MQTT_CHANNEL = "mqtt"
 
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 
 def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> None:  # type: ignore
@@ -21,7 +22,7 @@ def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> None
 
 def on_connect(client: mqtt.Client, userdata, flags, rc, properties) -> None:  # type: ignore
     """Handle connecting to the mqtt server."""
-    LOGGER.info("Connected to mqtt with result code " + str(rc))
+    LOGGER.info(f"Connected to mqtt with result code {rc}")
     userdata.subscribe_topics()
 
 

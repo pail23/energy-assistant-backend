@@ -1,8 +1,10 @@
 """EVCC Devices."""
 
+import logging
 import uuid
 
 from energy_assistant import Optimizer
+from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL
 
@@ -17,6 +19,8 @@ from . import (
 )
 from .config import get_config_param
 from .device import DeviceWithState
+
+LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 
 class HomeassistantEvccDevice(DeviceWithState):
@@ -49,6 +53,7 @@ class HomeassistantEvccDevice(DeviceWithState):
     def configure(self, config: dict) -> None:
         """Load the device configuration from the provided data."""
         super().configure(config)
+        LOGGER.debug(f"Configure EVCC device {self._name} with config: {config}")
         self._evcc_topic = get_config_param(config, "evcc_topic")
         self._loadpoint_name = get_config_param(config, "load_point_name")
         self._is_continous = bool(config.get("continuous", True))
