@@ -128,6 +128,7 @@ async def async_handle_state_update(
     time_zone: tzinfo,
 ) -> None:
     """Read the values from home assistant and process the update."""
+    logger = logging.getLogger(ROOT_LOGGER_NAME)
     try:
         await state_repository.async_read_states()
 
@@ -136,7 +137,7 @@ async def async_handle_state_update(
             await ea.home.update_power_consumption(state_repository, ea.optimizer)
             ea.optimizer.update_repository_states(ea.home, state_repository)
         else:
-            logging.error("The variable optimizer is None in async_handle_state_update")
+            logger.error("The variable optimizer is None in async_handle_state_update")
         await state_repository.async_write_states()
         if ea.db:
             if ea.home:
@@ -145,13 +146,13 @@ async def async_handle_state_update(
                     ea.db.store_home_state(ea.home, session, time_zone),
                 )
             else:
-                logging.error("The variable home is None in async_handle_state_update")
+                logger.error("The variable home is None in async_handle_state_update")
         else:
-            logging.error("The variable db is None in async_handle_state_update")
+            logger.error("The variable db is None in async_handle_state_update")
         if ea.optimizer is not None and ea.home is not None:
             await ea.optimizer.async_update_devices(ea.home)
     except Exception:
-        logging.exception("error during sending refresh")
+        logger.exception("error during sending refresh")
 
 
 async def background_task(ea: EnergyAssistant) -> None:
@@ -165,6 +166,7 @@ async def background_task(ea: EnergyAssistant) -> None:
     if ea.mqtt is not None:
         repositories.append(ea.mqtt)
     state_repository = StatesMultipleRepositories(repositories)
+    logger = logging.getLogger(ROOT_LOGGER_NAME)
     while not ea.should_stop:
         # delta_t = datetime.now().timestamp()
         # print("Start refresh from home assistant")
@@ -177,7 +179,7 @@ async def background_task(ea: EnergyAssistant) -> None:
             async with async_session() as session:
                 await async_handle_state_update(ea, state_repository, session, time_zone)
         except Exception:
-            logging.exception("error in the background task")
+            logger.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
         await asyncio.sleep(30)
 
@@ -209,21 +211,22 @@ async def open_hass_connection(config: ConfigStorage) -> Homeassistant | None:
     """Create a connection to home assistant."""
     token: str | None = None
     url: str | None = None
+    logger = logging.getLogger(ROOT_LOGGER_NAME)
     try:
         token = os.getenv("SUPERVISOR_TOKEN")
         if token is not None:
-            logging.info(f"suvervisor token detected. len={len(token)}")
+            logger.info(f"suvervisor token detected. len={len(token)}")
             url = "http://supervisor/core"
 
             hass = Homeassistant(url, token, False)
             await hass.connect()
             return hass
     except Exception:
-        logging.exception("Error while trying to connect to the homeassistant supervisor api")
+        logger.exception("Error while trying to connect to the homeassistant supervisor api")
         url = None
         token = None
 
-    logging.info("Try to connect to home assistant based on the config file entries...")
+    logger.info("Try to connect to home assistant based on the config file entries...")
     hass_config = config.homeassistant
     if hass_config is not None:
         demo_mode = hass_config.get("demo_mode")
@@ -316,14 +319,15 @@ async def init_app() -> EnergyAssistant:
 
     log_level = hass_options.get("log_level", "info").upper()
 
-    logger = setup_logger(settings.LOG_FILE, log_level)
+    setup_logger(settings.LOG_FILE, log_level)
+    logger = logging.getLogger(ROOT_LOGGER_NAME)
 
     config_file = hass_options.get("config_file", settings.CONFIG_FILE)
 
     logger.info(f"Starting Energy Assistant version {__version__} with frontend version {frontend_version}")
 
     for option in hass_options:
-        logging.info(f"{option}={hass_options[option]}")
+        logger.info(f"{option}={hass_options[option]}")
 
     async_session = await get_async_session()
     db = Database()
@@ -382,13 +386,14 @@ async def optimize(optimizer: EmhassOptimizer) -> None:
 
 async def async_daily_optimize(ea: EnergyAssistant) -> None:
     """Optimize once a day."""
+    logger = logging.getLogger(ROOT_LOGGER_NAME)
     try:
         optimizer = ea.optimizer
         if optimizer is not None:
-            logging.info("Start optimizer run")
+            logger.info("Start optimizer run")
             await optimizer.async_dayahead_forecast_optim()
     except Exception:
-        logging.exception("Daily optimization run failed")
+        logger.exception("Daily optimization run failed")
 
 
 @app.get("/check", include_in_schema=False)
