@@ -106,20 +106,21 @@ class HomeassistantEvccDevice(DeviceWithState):
         grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
-        new_state = ""
-        if self.power_mode == PowerModes.OFF:
-            new_state = "off"
-        elif self.power_mode == PowerModes.PV:
-            new_state = "pv"
-        elif self.power_mode == PowerModes.MIN_PV:
-            new_state = "minpv"
-        elif self.power_mode == PowerModes.FAST:
-            new_state = "now"
-        elif self.power_mode == PowerModes.OPTIMIZED:
-            # TODO: Implement Optimized with emhass
-            new_state = "pv"
-        if new_state != self._mode:
-            state_repository.set_state(self.get_device_topic_id("mode/set"), new_state)
+        if self.power_mode != PowerModes.DEVICE_CONTROLLED:
+            new_state = ""
+            if self.power_mode == PowerModes.OFF:
+                new_state = "off"
+            elif self.power_mode == PowerModes.PV:
+                new_state = "pv"
+            elif self.power_mode == PowerModes.MIN_PV:
+                new_state = "minpv"
+            elif self.power_mode == PowerModes.FAST:
+                new_state = "now"
+            elif self.power_mode == PowerModes.OPTIMIZED:
+                # TODO: Implement Optimized with emhass
+                new_state = "pv"
+            if new_state != self._mode:
+                state_repository.set_state(self.get_device_topic_id("mode"), new_state)
 
     @property
     def consumed_energy(self) -> float:
