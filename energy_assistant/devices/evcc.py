@@ -53,7 +53,7 @@ class HomeassistantEvccDevice(DeviceWithState):
     def configure(self, config: dict) -> None:
         """Load the device configuration from the provided data."""
         super().configure(config)
-        LOGGER.info(f"Configure EVCC device {self._name} with config: {config}")
+        LOGGER.debug(f"Configure EVCC device {self._name} with config: {config}")
         self._evcc_topic = get_config_param(config, "evcc_topic")
         self._loadpoint_name = get_config_param(config, "load_point_name")
         self._is_continous = bool(config.get("continuous", True))
