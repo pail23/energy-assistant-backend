@@ -2,6 +2,10 @@ ARG PYTHON_VERSION="3.12"
 
 
 FROM python:${PYTHON_VERSION}
+COPY --from=ghcr.io/astral-sh/uv /uv /uvx /bin/
+ENV PATH=/root/.local/bin:$PATH
+ENV APP_CONFIG_FILE=local
+
 WORKDIR /
 
 # Required to persist build arg
@@ -9,15 +13,9 @@ ARG TARGETPLATFORM
 ARG EASS_VERSION
 
 COPY ./energy_assistant.yaml.dist /config/energy_assistant.yaml
-#COPY ./requirements.txt .
-#COPY ./pyproject.toml .
-#COPY ./alembic.ini .
-#COPY ./app ./app
-#COPY ./*.whl .
-#COPY ./migrations ./migrations
-#COPY ./client ./client
 
-RUN pip install energy-assistant==${EASS_VERSION} && mkdir /data
+
+RUN uv tool install --index-strategy unsafe-best-match energy-assistant==${EASS_VERSION} && mkdir /data
 
 
 # Set some labels for the Home Assistant add-on
@@ -37,5 +35,4 @@ LABEL \
 VOLUME [ "/data" ]
 
 EXPOSE 5000
-ENV APP_CONFIG_FILE=local
 CMD eass
