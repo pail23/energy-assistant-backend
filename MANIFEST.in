@@ -1,7 +1,0 @@
-include *.txt
-include Readme.md
-include LICENSE
-include alembic.ini
-graft energy_assistant
-recursive-exclude * *.py[co]
-recursive-exclude * *.DS_Store

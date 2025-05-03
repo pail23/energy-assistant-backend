@@ -10,7 +10,6 @@ readme = "Readme.md"
 authors = [{ name = "The Energy Assistant Creators", email = "pail23@users.noreply.github.com" }]
 license = { file = "LICENSE" }
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.12",
 ]
