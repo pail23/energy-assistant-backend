@@ -39,7 +39,7 @@ dev = [
   "isort",
   "black==25.1.0",
   "codespell==2.4.1",
-  "mypy==1.15.0",
+  "mypy==1.17.0",
   "ruff==0.11.13",
   "pytest==8.4.1",
   "pytest-asyncio==1.1.0",
