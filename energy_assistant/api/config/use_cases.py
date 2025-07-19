@@ -77,7 +77,7 @@ class WriteDeviceConfiguration:
 
             device_name = data.get("name", persisted_device.name)
             device_icon = data.get("icon", persisted_device.icon)
-            device_type = data.get("type", persisted_device.type)
+            device_type = data.get("type", persisted_device.type or "")
             await persisted_device.update(
                 session, device_name, device_icon, persisted_device.power_mode, device_type, data
             )

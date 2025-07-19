@@ -15,6 +15,7 @@ from typing import Final
 
 import alembic.config
 import pandas as pd
+import uvicorn
 from anyio import open_file
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from colorlog import ColoredFormatter
@@ -398,7 +399,6 @@ app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 def main() -> None:
     """Start energy assistant."""
-    import uvicorn
 
     try:
         alembic_config = Path(__file__).parent / "alembic.ini"

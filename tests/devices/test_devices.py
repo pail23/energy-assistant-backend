@@ -11,6 +11,7 @@ from energy_assistant.devices import EnergyIntegrator, PowerModes
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
+from energy_assistant.models.device import Device, DeviceMeasurement
 from energy_assistant.models.home import HomeMeasurement
 from energy_assistant.settings import settings
 from energy_assistant.storage.config import ConfigStorage
@@ -19,8 +20,6 @@ from energy_assistant.storage.storage import Database, session_storage
 
 async def setup_data(session: AsyncSession) -> None:
     """Set up the data in the database."""
-    from energy_assistant.models.device import Device, DeviceMeasurement
-    from energy_assistant.models.home import HomeMeasurement
 
     device1 = Device(
         id=uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"),

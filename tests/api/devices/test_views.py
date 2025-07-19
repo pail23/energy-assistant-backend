@@ -9,16 +9,15 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from energy_assistant.devices import PowerModes
+from energy_assistant.models.device import Device, DeviceMeasurement
+from energy_assistant.models.home import HomeMeasurement
+from energy_assistant.models.sessionlog import SessionLogEntry
 
 time_zone = ZoneInfo("Europe/Berlin")
 
 
 async def setup_data(session: AsyncSession) -> None:
     """Set up the data in the database."""
-    from energy_assistant.models.device import Device, DeviceMeasurement
-    from energy_assistant.models.home import HomeMeasurement
-    from energy_assistant.models.sessionlog import SessionLogEntry
-
     device = Device(
         id=uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"),
         name="Device 1",
