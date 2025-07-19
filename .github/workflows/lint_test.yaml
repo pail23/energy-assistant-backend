@@ -17,7 +17,7 @@ jobs:
         uses: "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683" # v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6
+        uses: astral-sh/setup-uv@7edac99f961f18b581bbd960d59d049f04c0002f # v6
         with:
           python-version: 3.12
           activate-environment: true
@@ -42,7 +42,7 @@ jobs:
         uses: "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683" # v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6
+        uses: astral-sh/setup-uv@7edac99f961f18b581bbd960d59d049f04c0002f # v6
         with:
           python-version: 3.12
           activate-environment: true
@@ -64,7 +64,7 @@ jobs:
           APP_CONFIG_FILE: test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           # directory: ./coverage/reports/

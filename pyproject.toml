@@ -15,12 +15,12 @@ classifiers = [
 ]
 keywords = ["energy assistant", "home assistant"]
 dependencies = [
-    "SQLAlchemy==2.0.40",
-    "requests==2.32.3",
-    "fastapi[standard]==0.115.12",
-    "pydantic-settings==2.9.1",
+    "SQLAlchemy==2.0.41",
+    "requests==2.32.4",
+    "fastapi[standard]==0.116.1",
+    "pydantic-settings==2.10.1",
     "pyyaml >= 6.0.2",
-    "alembic==1.15.2",
+    "alembic==1.16.4",
     "aiosqlite==0.21.0",
     "python-dotenv",
     "apscheduler==3.11.0",
@@ -44,7 +44,7 @@ dev = [
   "pytest==8.3.5",
   "pytest-asyncio==0.26.0",
   "pytest-aiohttp==1.1.0",
-  "pytest-cov==6.1.1",
+  "pytest-cov==6.2.1",
   "pytest-env",
   "pre-commit==4.2.0",
   "types-PyYAML",
