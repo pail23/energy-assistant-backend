@@ -32,6 +32,7 @@ class DeviceType:
     nominal_duration: float
     constant: bool
     state_on_threshold: float
+    state_on_for: float
     state_off_threshold: float
     state_off_upper: float
     state_off_lower: float
@@ -104,6 +105,7 @@ class DeviceTypeRegistry:
                                 nominal_duration=nominal_duration,
                                 constant=constant,
                                 state_on_threshold=state_on_threshold,
+                                state_on_for=0,
                                 state_off_threshold=state_off_threshold,
                                 state_off_upper=state_off_upper,
                                 state_off_lower=state_off_lower,

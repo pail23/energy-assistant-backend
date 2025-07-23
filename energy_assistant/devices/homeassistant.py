@@ -496,6 +496,11 @@ class HomeassistantDevice(DeviceWithState):
         self._consumed_energy_value: StateValue | None = None
         self._device_type: DeviceType | None = None
 
+        self._max_on_per_day: float = 24 * 60 * 60  # seconds
+        self._min_on_duration: float = 0.0
+        self._switch_off_delay: float = 0.0
+        self._switch_on_delay: float = 0.0
+
     def configure(self, config: dict) -> None:
         """Load the device configuration from the provided data."""
         super().configure(config)
@@ -536,25 +541,52 @@ class HomeassistantDevice(DeviceWithState):
             )
             self._is_constant = config.get("constant", self._device_type.constant if self._device_type else None)
         else:
-            self._nominal_power = config.get("nominal_power")
+            nominal_power = config.get("nominal_power")
+            if nominal_power is not None:
+                self._nominal_power = float(nominal_power)
             self._nominal_duration = config.get("nominal_duration")
             self._is_constant = config.get("constant")
-        state_detection: dict = config.get("state", {})
-        if self._device_type is None and state_detection:
-            state_on = state_detection.get("state_on", {})
-            state_off = state_detection.get("state_off", {})
-            self._device_type = DeviceType(
-                str(config.get("icon", "mdi:lightning-bolt")),
-                self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER,
-                (self._nominal_duration if self._nominal_duration is not None else DEFAULT_NOMINAL_DURATION),
-                self._is_constant if self._is_constant is not None else False,
-                state_on.get("threshold", 2),
-                state_off.get("threshold", 0),
-                state_off.get("upper", 0),
-                state_off.get("lower", 0),
-                state_off.get("for", 0),
-                state_off.get("trailing_zeros_for", 10),
-            )
+        self._max_on_per_day = config.get("max_on_per_day", 24 * 60 * 60)  # seconds
+        self._min_on_duration = config.get("min_on_duration", 0.0)
+        self._switch_off_delay = config.get("switch_off_delay", 0.0)
+        self._switch_on_delay = config.get("switch_on_delay", 0.0)
+        if self._device_type is None:
+            if config.get("state", "") == "default":
+                # use the default device type
+                self._device_type = DeviceType(
+                    icon=str(config.get("icon", "mdi:lightning-bolt")),
+                    nominal_power=self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER,
+                    nominal_duration=self._nominal_duration
+                    if self._nominal_duration is not None
+                    else DEFAULT_NOMINAL_DURATION,
+                    constant=self._is_constant if self._is_constant is not None else False,
+                    state_on_threshold=2.0,
+                    state_off_threshold=1.0,
+                    state_off_upper=2.0,
+                    state_off_lower=0.0,
+                    state_off_for=self._min_on_duration + self._switch_off_delay,
+                    state_on_for=self._switch_on_delay,
+                    trailing_zeros_for=10,
+                )
+            elif state_detection := config.get("state", {}):
+                state_on = state_detection.get("state_on", {})
+                state_off = state_detection.get("state_off", {})
+                self._device_type = DeviceType(
+                    str(config.get("icon", "mdi:lightning-bolt")),
+                    self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER,
+                    (self._nominal_duration if self._nominal_duration is not None else DEFAULT_NOMINAL_DURATION),
+                    self._is_constant if self._is_constant is not None else False,
+                    state_on.get("threshold", 2),
+                    max(state_on.get("for", self._switch_on_delay), self._switch_on_delay),
+                    state_off.get("threshold", 0),
+                    state_off.get("upper", 2.0),
+                    state_off.get("lower", 0),
+                    max(
+                        state_off.get("for", self._min_on_duration + self._switch_off_delay),
+                        self._min_on_duration + self._switch_off_delay,
+                    ),
+                    state_off.get("trailing_zeros_for", 10),
+                )
 
     @property
     def type(self) -> str:
