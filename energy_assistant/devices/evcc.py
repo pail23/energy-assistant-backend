@@ -137,8 +137,14 @@ class HomeassistantEvccDevice(DeviceWithState):
         """Current power consumption of the device."""
         if self._power is None:
             return 0.0
-        if isinstance(self._power, HomeassistantState) and self._power.unit == "kW":
-            return self._power.numeric_value * 1000
+        if isinstance(self._power, HomeassistantState):
+            unit = getattr(self._power, "unit", None)
+            if unit == "kW":
+                return self._power.numeric_value * 1000
+            elif unit == "W":
+                return self._power.numeric_value
+            else:
+                raise ValueError(f"Unsupported power unit: {unit!r}")
         return self._power.numeric_value
 
     @property
