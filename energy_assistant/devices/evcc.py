@@ -6,7 +6,7 @@ import uuid
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
-from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL
+from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState, UnavailableUnitError
 
 from . import (
     LoadInfo,
@@ -27,7 +27,7 @@ class HomeassistantEvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
     def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
-        """Create a Stiebel Eltron heatpump."""
+        """Create an evcc device."""
         super().__init__(device_id, session_storage)
         self._evcc_topic: str = ""
         self._loadpoint_name: str = ""
@@ -135,7 +135,16 @@ class HomeassistantEvccDevice(DeviceWithState):
     @property
     def power(self) -> float:
         """Current power consumption of the device."""
-        return self._power.numeric_value if self._power else 0.0
+        if self._power is None:
+            return 0.0
+        if isinstance(self._power, HomeassistantState):
+            unit = str(getattr(self._power, "unit", ""))
+            if unit == "kW":
+                return self._power.numeric_value * 1000
+            if unit == "W":
+                return self._power.numeric_value
+            raise UnavailableUnitError(unit)
+        return self._power.numeric_value
 
     @property
     def mode(self) -> str:
