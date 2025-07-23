@@ -48,6 +48,15 @@ UNAVAILABLE = "unavailable"
 HOMEASSISTANT_CHANNEL = "ha"
 
 
+class UnavailableUnitError(ValueError):
+    """Error raised when a unit is unavailable."""
+
+    def __init__(self, unit: str) -> None:
+        """Create an UnavailableUnitError instance."""
+        super().__init__(f"Unit {unit!r} is not available.")
+        self.unit = unit
+
+
 class HomeassistantState(State):
     """Abstract base class for states."""
 

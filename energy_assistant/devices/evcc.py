@@ -6,7 +6,7 @@ import uuid
 from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
-from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState
+from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState, UnavailableUnitError
 
 from . import (
     LoadInfo,
@@ -138,13 +138,12 @@ class HomeassistantEvccDevice(DeviceWithState):
         if self._power is None:
             return 0.0
         if isinstance(self._power, HomeassistantState):
-            unit = getattr(self._power, "unit", None)
+            unit = str(getattr(self._power, "unit", ""))
             if unit == "kW":
                 return self._power.numeric_value * 1000
-            elif unit == "W":
+            if unit == "W":
                 return self._power.numeric_value
-            else:
-                raise ValueError(f"Unsupported power unit: {unit!r}")
+            raise UnavailableUnitError(unit)
         return self._power.numeric_value
 
     @property
