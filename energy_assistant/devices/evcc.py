@@ -27,7 +27,7 @@ class HomeassistantEvccDevice(DeviceWithState):
     """Evcc load points as devices."""
 
     def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
-        """Create a evcc device."""
+        """Create an evcc device."""
         super().__init__(device_id, session_storage)
         self._evcc_topic: str = ""
         self._loadpoint_name: str = ""
