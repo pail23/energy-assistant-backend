@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from datetime import UTC, datetime
 
 from energy_assistant import Optimizer
 from energy_assistant.constants import (
@@ -181,36 +182,44 @@ class HomeassistantDevice(DeviceWithState):
         grid_exported_power_data: FloatDataBuffer,
     ) -> None:
         """Update the device based on the current pv availability."""
-        if self._output_id is not None:
-            state: bool = self._output_state.value == "on" if self._output_state is not None else False
-            new_state = state
-            if self.power_mode == PowerModes.PV:
-                if state:
-                    max_grid_power = grid_exported_power_data.get_max_for(self._switch_off_delay)
-                    if (
-                        max_grid_power < self.nominal_power * (1 - POWER_HYSTERESIS)
-                        and self._output_states.duration_in_state(True).total_seconds() > self._min_on_duration
-                    ):
-                        new_state = False
-                else:
-                    # If the device is off, we check if the average power is below the nominal power
-                    # to turn it on again.
-                    min_grid_power = grid_exported_power_data.get_min_for(self._switch_on_delay)
-                    if min_grid_power > self.nominal_power * (1 + POWER_HYSTERESIS):
-                        new_state = True
+        if self._output_id is None:
+            return
+        state: bool = self._output_state.value == "on" if self._output_state is not None else False
+        new_state = state
+        if self.power_mode == PowerModes.PV:
+            midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+            if state:
+                max_grid_power = grid_exported_power_data.get_max_for(self._switch_off_delay)
+                if (
+                    max_grid_power < self.nominal_power * (1 - POWER_HYSTERESIS)
+                    and self._output_states.duration_in_state(True).total_seconds() > self._min_on_duration
+                ) or self._output_states.total_duration_in_state_since(
+                    True, midnight
+                ).total_seconds() > self._max_on_per_day:
+                    new_state = False
+            else:
+                # If the device is off, we check if the average power is below the nominal power
+                # to turn it on again.
+                min_grid_power = grid_exported_power_data.get_min_for(self._switch_on_delay)
+                if (
+                    min_grid_power > self.nominal_power * (1 + POWER_HYSTERESIS)
+                    and self._output_states.total_duration_in_state_since(True, midnight).total_seconds()
+                    < self._max_on_per_day
+                ):
+                    new_state = True
 
-            elif self.power_mode == PowerModes.OPTIMIZED:
-                power = optimizer.get_optimized_power(self._id)
-                new_state = power > 0
-            if state != new_state:
-                state_repository.set_state(
-                    StateId(
-                        id=self._output_id,
-                        channel=HOMEASSISTANT_CHANNEL,
-                    ),
-                    "on" if new_state else "off",
-                )
-                self._output_states.add_data_point(new_state)
+        elif self.power_mode == PowerModes.OPTIMIZED:
+            power = optimizer.get_optimized_power(self._id)
+            new_state = power > 0
+        if state != new_state:
+            state_repository.set_state(
+                StateId(
+                    id=self._output_id,
+                    channel=HOMEASSISTANT_CHANNEL,
+                ),
+                "on" if new_state else "off",
+            )
+            self._output_states.add_data_point(new_state)
 
     @property
     def consumed_energy(self) -> float:
