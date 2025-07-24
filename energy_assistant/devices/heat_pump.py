@@ -15,10 +15,11 @@ from . import (
     State,
     StateId,
     StatesRepository,
+    assign_if_available,
 )
 from .analysis import FloatDataBuffer
 from .config import DeviceConfigMissingParameterError, get_config_param
-from .homeassistant import HOMEASSISTANT_CHANNEL, assign_if_available
+from .homeassistant import HOMEASSISTANT_CHANNEL
 
 DEFAULT_NOMINAL_POWER = 5000
 
