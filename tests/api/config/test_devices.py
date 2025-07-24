@@ -150,3 +150,23 @@ async def test_device_config_read(ac: AsyncClient, session: AsyncSession) -> Non
             "constant": True,
         }
     }
+
+
+@pytest.mark.asyncio()
+async def test_device_control(ac: AsyncClient, session: AsyncSession) -> None:
+    """Read all devices."""
+    # setup
+    await setup_data(session)
+
+    # execute
+    response = await ac.get("/api/config/device_control")
+    assert response.status_code == 200
+    assert response.json() == {"disable_device_control": True}
+
+    response = await ac.put("/api/config/device_control?disable_device_control=false")
+    assert response.status_code == 200
+    assert response.json() == {"disable_device_control": False}
+
+    response = await ac.get("/api/config/device_control")
+    assert response.status_code == 200
+    assert response.json() == {"disable_device_control": False}

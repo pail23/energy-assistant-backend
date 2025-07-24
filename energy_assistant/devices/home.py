@@ -292,6 +292,15 @@ class Home:
             return min(self.solar_self_consumption_power / solar_power, 1.0)
         return 0
 
+    @property
+    def disable_device_control(self) -> bool:
+        """Disable device control."""
+        return self._disable_device_control
+
+    def set_disable_device_control(self, disable: bool) -> None:
+        """Set the disable device control flag."""
+        self._disable_device_control = disable
+
     async def update_state(self, state_repository: StatesRepository) -> None:
         """Update the state of the home."""
         self._solar_production_power = assign_if_available(

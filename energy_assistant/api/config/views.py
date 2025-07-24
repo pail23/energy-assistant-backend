@@ -5,8 +5,23 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
 
-from .schema import ConfigModel, ReadConfigResponse, ReadDeviceConfigResponse, ReadVersionResponse, VersionModel
-from .use_cases import ReadConfiguration, ReadDeviceConfiguration, ReadVersion, WriteDeviceConfiguration
+from .schema import (
+    ConfigModel,
+    DeviceControlModel,
+    ReadConfigResponse,
+    ReadDeviceConfigResponse,
+    ReadDeviceControlResponse,
+    ReadVersionResponse,
+    VersionModel,
+)
+from .use_cases import (
+    ReadConfiguration,
+    ReadDeviceConfiguration,
+    ReadDeviceControl,
+    ReadVersion,
+    WriteDeviceConfiguration,
+    WriteDeviceControl,
+)
 
 router = APIRouter(prefix="/config")
 
@@ -31,6 +46,32 @@ async def read_version(
     """Rest end point for read all devices."""
 
     return await use_case.execute()
+
+
+@router.get("/device_control", response_model=ReadDeviceControlResponse)
+async def read_device_control(
+    request: Request,
+    use_case: Annotated[ReadDeviceControl, Depends(ReadDeviceControl)],
+) -> DeviceControlModel:
+    """Rest end point for read all devices."""
+    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
+    if energy_assistant is None:
+        raise HTTPException(status_code=500)
+    return await use_case.execute(energy_assistant.home)
+
+
+@router.put("/device_control", response_model=ReadDeviceControlResponse)
+async def write_device_control(
+    request: Request,
+    disable_device_control: bool,
+    use_case: Annotated[WriteDeviceControl, Depends(WriteDeviceControl)],
+) -> DeviceControlModel:
+    """Rest end point for write device control."""
+    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
+    if energy_assistant is None:
+        raise HTTPException(status_code=500)
+
+    return await use_case.execute(disable_device_control, energy_assistant.home)
 
 
 @router.get(

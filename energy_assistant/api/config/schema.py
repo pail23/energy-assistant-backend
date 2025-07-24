@@ -26,3 +26,13 @@ class VersionModel(BaseModel):
 
 class ReadVersionResponse(VersionModel):
     """API Response for reading the version."""
+
+
+class DeviceControlModel(BaseModel):
+    """Schema for the device control."""
+
+    disable_device_control: bool
+
+
+class ReadDeviceControlResponse(DeviceControlModel):
+    """API Response for reading the device control."""
