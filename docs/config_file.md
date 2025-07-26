@@ -80,9 +80,9 @@ This is a list of the devices to monitored and managed by the Energy Assistant.
 ### `evcc` type
 
 This is a device (e.g. a charger) managed by Evcc. You need to configure a MQTT connection for the Evcc connect.
+In order to use evcc in Energy Assistant, the [evcc component](https://github.com/marq24/ha-evcc) must be used in Home Assistant.
 
-- `evcc_topic`: The mqtt topic configured in the [Evcc MQTT Configuration](https://docs.evcc.io/docs/reference/configuration/mqtt).
-- `load_point_id`: The Evcc id of the load point (typically the ids are just numbers from 1..x)
+- `load_point_name`: The Evcc name of the load point. This needs to be part of the home assistant entity id (e.g. my load point &rarr; my_load_point)
 
 ### `homeassistant` type
 

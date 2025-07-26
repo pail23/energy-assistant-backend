@@ -29,7 +29,6 @@ class HomeassistantEvccDevice(DeviceWithState):
     def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
         """Create an evcc device."""
         super().__init__(device_id, session_storage)
-        self._evcc_topic: str = ""
         self._loadpoint_name: str = ""
         self._is_continous: bool = True
         self._nominal_power: float | None = None
@@ -54,7 +53,6 @@ class HomeassistantEvccDevice(DeviceWithState):
         """Load the device configuration from the provided data."""
         super().configure(config)
         LOGGER.debug(f"Configure EVCC device {self._name} with config: {config}")
-        self._evcc_topic = get_config_param(config, "evcc_topic")
         self._loadpoint_name = get_config_param(config, "load_point_name")
         self._is_continous = bool(config.get("continuous", True))
         self._nominal_power = config.get("nominal_power")
