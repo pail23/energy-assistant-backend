@@ -27,7 +27,7 @@ from energy_assistant.devices.device import DeviceWithState
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState
 from energy_assistant.devices.registry import DeviceType, DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
-from energy_assistant.storage.config import DeviceConfigMissingParameterError
+from energy_assistant.storage.config import DeviceConfigMissingParameterError, DeviceConfigStorage
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -39,11 +39,13 @@ class HomeassistantDevice(DeviceWithState):
         self,
         device_id: uuid.UUID,
         session_storage: SessionStorage,
+        config_storeage: DeviceConfigStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a generic Home Assistant device."""
         super().__init__(device_id, session_storage)
         self._device_type_registry = device_type_registry
+        self._config_storage = config_storeage
         self._nominal_power: float | None = None
         self._nominal_duration: float | None = None
         self._is_constant: bool | None = None
@@ -90,6 +92,25 @@ class HomeassistantDevice(DeviceWithState):
         if self._output_id is not None:
             self._supported_power_modes.add(PowerModes.PV)
             self._supported_power_modes.add(PowerModes.OPTIMIZED)
+            self._config_storage.set_default_values(
+                self.id,
+                {
+                    "nominal_power": 300.0,
+                    "nominal_duration": 60.0,
+                    "switch_on_delay": 300.0,
+                    "switch_off_delay": 300.0,
+                    "min_on_duration": 60.0,
+                    "max_on_per_day": 24 * 60 * 60,  # seconds
+                },
+            )
+        else:
+            self._config_storage.set_default_values(
+                self.id,
+                {
+                    "nominal_power": 300.0,
+                    "nominal_duration": 60.0,
+                },
+            )
 
         manufacturer = config.get("manufacturer")
         model = config.get("model")
