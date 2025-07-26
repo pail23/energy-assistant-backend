@@ -7,7 +7,7 @@ from energy_assistant_frontend import __version__ as front_end_version
 from fastapi import HTTPException
 
 from energy_assistant import __version__
-from energy_assistant.api.config.schema import ConfigModel, VersionModel
+from energy_assistant.api.config.schema import ConfigModel, DeviceControlModel, VersionModel
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.db import AsyncSession
 from energy_assistant.devices.config import EnergyAssistantConfig
@@ -39,6 +39,31 @@ class ReadVersion:
     async def execute(self) -> VersionModel:
         """Execute the read configuration use case."""
         return VersionModel.model_validate({"version": __version__, "ui_version": front_end_version})
+
+
+class ReadDeviceControl:
+    """Read the device control use case."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Create a read device control use case."""
+        self.async_session = session
+
+    async def execute(self, home: Home) -> DeviceControlModel:
+        """Execute the read configuration use case."""
+        return DeviceControlModel.model_validate({"disable_device_control": home.disable_device_control})
+
+
+class WriteDeviceControl:
+    """Write the device control use case."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Create a write device control use case."""
+        self.async_session = session
+
+    async def execute(self, disable_device_control: bool, home: Home) -> DeviceControlModel:
+        """Execute the write configuration use case."""
+        home.set_disable_device_control(disable_device_control)
+        return DeviceControlModel.model_validate({"disable_device_control": home.disable_device_control})
 
 
 class ReadDeviceConfiguration:

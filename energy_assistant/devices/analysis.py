@@ -75,7 +75,32 @@ class DataBuffer(Generic[T]):
 class OnOffDataBuffer(DataBuffer[bool]):
     """Data buffer for OnOff States."""
 
-    pass
+    def duration_in_state(self, state: bool, now: datetime | None = None) -> timedelta:
+        """Calculate the duration in the given state."""
+        if now is None:
+            now = datetime.now(UTC)
+        duration = timedelta(0)
+        for data_point in reversed(self.data):
+            if data_point.value != state:
+                return duration if duration.total_seconds() > 0 else timedelta(0)
+            duration = now - data_point.time_stamp
+        return duration if duration.total_seconds() > 0 else timedelta(0)
+
+    def total_duration_in_state_since(self, state: bool, since: datetime, now: datetime | None = None) -> timedelta:
+        """Calculate the total duration in the given state since the given time."""
+        if now is None:
+            now = datetime.now(UTC)
+        duration = timedelta(0)
+        last_time_stamp: datetime | None = None
+        for data_point in self.data:
+            if data_point.time_stamp < since:
+                continue
+            if data_point.time_stamp > now:
+                break
+            if last_time_stamp is not None:
+                duration += data_point.time_stamp - last_time_stamp
+            last_time_stamp = data_point.time_stamp if data_point.value == state else None
+        return duration
 
 
 class FloatDataBuffer(DataBuffer[float]):

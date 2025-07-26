@@ -9,6 +9,7 @@ from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.evcc import HomeassistantEvccDevice
+from energy_assistant.devices.homeassistant_device import HomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
 from energy_assistant.storage.config import ConfigStorage
@@ -23,7 +24,6 @@ from . import (
 from .config import DeviceConfigMissingParameterError, get_config_param
 from .device import Device
 from .heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
-from .homeassistant import HomeassistantDevice
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -175,17 +175,14 @@ class Home:
         """Create and add a new device."""
         device: Device | None = None
         device_id = uuid.UUID(get_config_param(config, "id"))
-        if device_type == "homeassistant":
-            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
+        if device_type == "evcc":
+            device = HomeassistantEvccDevice(device_id, session_storage)
         elif device_type == "heat-pump":
             device = HeatPumpDevice(device_id, session_storage)
+        elif device_type in {"homeassistant", "power-state-device"}:
+            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
         elif device_type == "sg-ready-heat-pump":
             device = SGReadyHeatPumpDevice(device_id, session_storage)
-        elif device_type == "power-state-device":
-            # This is deprecated and will be removed.
-            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
-        elif device_type == "evcc":
-            device = HomeassistantEvccDevice(device_id, session_storage)
         else:
             LOGGER.error(f"Unknown device type {device_type} in configuration")
         if device is not None:
@@ -294,6 +291,15 @@ class Home:
         if solar_power > 0:
             return min(self.solar_self_consumption_power / solar_power, 1.0)
         return 0
+
+    @property
+    def disable_device_control(self) -> bool:
+        """Disable device control."""
+        return self._disable_device_control
+
+    def set_disable_device_control(self, disable: bool) -> None:
+        """Set the disable device control flag."""
+        self._disable_device_control = disable
 
     async def update_state(self, state_repository: StatesRepository) -> None:
         """Update the state of the home."""

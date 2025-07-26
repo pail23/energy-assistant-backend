@@ -94,6 +94,69 @@ def test_on_off_data_buffer() -> None:
     print(f"duration is {delta}")
 
 
+def test_duration_in_state() -> None:
+    """Test calculating the duration in a given state."""
+    data_buffer = OnOffDataBuffer()
+
+    now = datetime(2023, 1, 10, 10, 10, 20, tzinfo=time_zone)
+    for x in range(12):
+        data_buffer.add_data_point(x % 4 == 0, datetime(2023, 1, 10, 10, 10, x, tzinfo=time_zone))
+    duration = data_buffer.duration_in_state(True, now)
+    assert duration.total_seconds() == 0
+
+    duration = data_buffer.duration_in_state(False, now)
+    assert duration.total_seconds() == 11
+
+    # Test with no data points in the state
+    duration = data_buffer.duration_in_state(True, datetime(2023, 1, 10, 10, 10, 0, tzinfo=time_zone))
+    assert duration.total_seconds() == 0
+
+    duration = data_buffer.duration_in_state(False, datetime(2023, 1, 10, 10, 10, 0, tzinfo=time_zone))
+    assert duration.total_seconds() == 0
+
+    # Test with no data points at all
+    empty_buffer = OnOffDataBuffer()
+    duration = empty_buffer.duration_in_state(True, now)
+    assert duration.total_seconds() == 0
+
+    duration = empty_buffer.duration_in_state(False, now)
+    assert duration.total_seconds() == 0
+
+    # Test with a single data point
+    single_point_buffer = OnOffDataBuffer()
+    single_point_buffer.add_data_point(True, datetime(2023, 1, 10, 10, 10, 0, tzinfo=time_zone))
+    duration = single_point_buffer.duration_in_state(True, now)
+    assert duration.total_seconds() == (now - datetime(2023, 1, 10, 10, 10, 0, tzinfo=time_zone)).total_seconds()
+
+    duration = single_point_buffer.duration_in_state(False, now)
+    assert duration.total_seconds() == 0
+
+    # Test with a single data point in the False state
+    single_point_buffer = OnOffDataBuffer()
+    single_point_buffer.add_data_point(False, datetime(2023, 1, 10, 10, 10, 0, tzinfo=time_zone))
+    duration = single_point_buffer.duration_in_state(False, now)
+    assert duration.total_seconds() == (now - datetime(2023, 1, 10, 10, 10, 0, tzinfo=time_zone)).total_seconds()
+
+    duration = single_point_buffer.duration_in_state(True, now)
+    assert duration.total_seconds() == 0
+
+
+def test_total_duration_in_state_since() -> None:
+    """Test calculating the total duration in a given state since a specific time."""
+    data_buffer = OnOffDataBuffer()
+
+    now = datetime(2023, 1, 10, 10, 10, 20, tzinfo=time_zone)
+    since = datetime(2023, 1, 10, 10, 10, 5, tzinfo=time_zone)
+    for x in range(12):
+        data_buffer.add_data_point(x % 4 == 0, datetime(2023, 1, 10, 10, 10, x, tzinfo=time_zone))
+
+    duration = data_buffer.total_duration_in_state_since(True, since, now)
+    assert duration.total_seconds() == 1
+
+    duration = data_buffer.total_duration_in_state_since(False, since, now)
+    assert duration.total_seconds() == 5
+
+
 @pytest.fixture()
 def data_buffer() -> DataBuffer[int]:
     """Create a DataBuffer test fixture."""

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from energy_assistant.devices import EnergyIntegrator, PowerModes
 from energy_assistant.devices.home import Home
-from energy_assistant.devices.homeassistant import HomeassistantDevice
+from energy_assistant.devices.homeassistant_device import HomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.models.device import Device, DeviceMeasurement
 from energy_assistant.models.home import HomeMeasurement
