@@ -165,10 +165,10 @@ class HomeassistantDevice(DeviceWithState):
                             self._device_type.state_off_for,
                             without_trailing_zeros=True,
                         )
-                        max = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(
+                        max_value = self._device_type.trailing_zeros_for > 0 and self._power_data.get_max_for(
                             self._device_type.trailing_zeros_for,
                         )
-                        if is_between or max <= self._device_type.state_off_threshold:
+                        if is_between or max_value <= self._device_type.state_off_threshold:
                             self._state = OnOffState.OFF
                     elif self.state == OnOffState.UNKNOWN:
                         self._state = OnOffState.OFF
