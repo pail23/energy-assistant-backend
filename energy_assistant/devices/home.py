@@ -139,6 +139,8 @@ class Home:
     ) -> None:
         """Create a home instance."""
         self._name: str = config.home.get_param("name")
+        self._session_storage = session_storage
+        self._device_type_registry = device_type_registry
 
         self._home_energy_state = HomeEnergyState(config.home.as_dict())
         self._init_power_variables(config.home.as_dict())
@@ -188,6 +190,19 @@ class Home:
         if device is not None:
             device.configure(config)
             self.devices.append(device)
+
+    def create_new_device(self, device_type: str, device_name: str, icon: str, device_id: uuid.UUID) -> None:
+        """Create a new device."""
+        self.create_device(
+            device_type,
+            {
+                "id": str(device_id),
+                "name": "New Device",
+                "icon": "mdi-home",
+            },
+            self._session_storage,
+            self._device_type_registry,
+        )
 
     def _init_power_variables(self, config: dict) -> None:
         solar_power_config = config.get("solar_power")

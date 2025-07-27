@@ -116,3 +116,24 @@ async def test_devices_delete(ac: AsyncClient, session: AsyncSession) -> None:
     print(response.content)
     assert response.status_code == 200
     assert response.json() == {"device_measurements": []}
+
+
+@pytest.mark.asyncio
+async def test_create_device(ac: AsyncClient, session: AsyncSession) -> None:
+    """Test creating a new device."""
+    # Act
+    response = await ac.post("/api/devices", json={"device_type": "dishwasher"})
+
+    # Assert
+    assert response.status_code == 201
+    response_data = response.json()
+    assert "device_id" in response_data
+    device_id = response_data["device_id"]
+
+    # Verify the device was created in the database
+    created_device = await Device.read_by_id(session, uuid.UUID(device_id))
+    assert created_device is not None
+    assert created_device.name == "New dishwasher"
+    assert created_device.type == "dishwasher"
+    assert created_device.icon == "mdi-home-automation"
+    assert created_device.power_mode == "auto"

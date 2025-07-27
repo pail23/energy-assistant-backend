@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, Path, Request
 from energy_assistant.models.schema import DeviceSchema
 
 from .schema import (
+    CreateDeviceRequest,
+    CreateDeviceResponse,
     ReadAllDevicesResponse,
     ReadDeviceMeasurementsResponse,
     ReadDeviceResponse,
@@ -15,6 +17,7 @@ from .schema import (
     UpdateDevicePowerModeResponse,
 )
 from .use_cases import (
+    CreateDevice,
     DeleteDevice,
     ReadAllDevices,
     ReadDevice,
@@ -42,6 +45,20 @@ async def read_all(
             )
         ],
     )
+
+
+@router.post("", response_model=CreateDeviceResponse, status_code=201)
+async def create(
+    request: Request,
+    data: CreateDeviceRequest,
+    use_case: Annotated[CreateDevice, Depends(CreateDevice)],
+) -> CreateDeviceResponse:
+    """REST end point for creating a new device."""
+    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
+    device_id = await use_case.execute(
+        data.device_type, energy_assistant.home if energy_assistant is not None else None
+    )
+    return CreateDeviceResponse(device_id=str(device_id))
 
 
 @router.get(

@@ -140,3 +140,33 @@ class DeleteDevice:
             await Device.delete(session, device)
             if home is not None:
                 home.remove_device(device_id)
+
+
+class CreateDevice:
+    """Create a device use case."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        """Create a create device use case."""
+        self.async_session = session
+
+    async def execute(self, device_type: str, home: Home | None) -> uuid.UUID:
+        """Execute the create device use case."""
+        if home is None:
+            raise HTTPException(status_code=500, detail="Home is not available")
+        device_id = uuid.uuid4()
+
+        async with self.async_session.begin() as session:
+            await Device.create(
+                session=session,
+                id=device_id,
+                name=f"New {device_type}",
+                icon="mdi-home-automation",
+                power_mode="auto",
+                type=device_type,
+                config={},
+            )
+            await session.flush()
+
+            home.create_new_device(device_type, f"New {device_type}", "mdi-home-automation", device_id)
+
+            return device_id

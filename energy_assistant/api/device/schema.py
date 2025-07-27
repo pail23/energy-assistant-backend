@@ -29,3 +29,15 @@ class UpdateDevicePowerModeRequest(BaseModel):
 
 class UpdateDevicePowerModeResponse(DeviceSchema):
     """API Response for setting the power mode."""
+
+
+class CreateDeviceRequest(BaseModel):
+    """API Request for creating a device."""
+
+    device_type: str
+
+
+class CreateDeviceResponse(BaseModel):
+    """API Response for creating a device."""
+
+    device_id: str
