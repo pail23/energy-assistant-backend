@@ -6,6 +6,7 @@ from energy_assistant import Optimizer
 from energy_assistant.constants import POWER_HYSTERESIS
 from energy_assistant.devices.device import DeviceWithState
 from energy_assistant.devices.state_value import StateValue
+from energy_assistant.storage.config import DeviceConfigStorage
 
 from . import (
     LoadInfo,
@@ -22,6 +23,7 @@ from .config import DeviceConfigMissingParameterError, get_config_param
 from .homeassistant import HOMEASSISTANT_CHANNEL
 
 DEFAULT_NOMINAL_POWER = 5000
+DEFAULT_NOMINAL_DURATION = 1800
 
 
 def numeric_value(value: str | None) -> float | None:
@@ -37,9 +39,12 @@ def numeric_value(value: str | None) -> float | None:
 class HeatPumpDevice(DeviceWithState):
     """Stiebel Eltron heatpump. This can be either a water heating part or a heating part."""
 
-    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
+    def __init__(
+        self, device_id: uuid.UUID, session_storage: SessionStorage, config_storage: DeviceConfigStorage
+    ) -> None:
         """Create a Stiebel Eltron heatpump."""
         super().__init__(device_id, session_storage)
+        self._config_storage = config_storage
         self._actual_temp: State | None = None
         self._actual_temp_entity_id: str = ""
         self._comfort_target_temperature_entity_id: str | None = None
@@ -332,9 +337,12 @@ class SubHeatPump(DeviceWithState):
 class SGReadyHeatPumpDevice(DeviceWithState):
     """SG Ready heatpump, supporting water and heating temperature."""
 
-    def __init__(self, device_id: uuid.UUID, session_storage: SessionStorage) -> None:
+    def __init__(
+        self, device_id: uuid.UUID, session_storage: SessionStorage, config_storage: DeviceConfigStorage
+    ) -> None:
         """Create a SG Ready heatpump."""
         super().__init__(device_id, session_storage)
+        self._config_storage = config_storage
 
         self._heating = SubHeatPump(device_id, session_storage, "heating")
 
@@ -353,10 +361,18 @@ class SGReadyHeatPumpDevice(DeviceWithState):
         if self._water_heating is not None:
             self._water_heating.configure(config.get("water", {}))
         self._nominal_power = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
+        self._nominal_duration = config.get("nominal_duration", DEFAULT_NOMINAL_DURATION)
         self._sg_ready_switch_entity_id = config.get("output")
         if self._sg_ready_switch_entity_id is not None:
             self._supported_power_modes.add(PowerModes.PV)
             self._supported_power_modes.add(PowerModes.OPTIMIZED)
+        self._config_storage.set_default_values(
+            self.id,
+            {
+                "nominal_power": self._nominal_power or DEFAULT_NOMINAL_POWER,
+                "nominal_duration": self._nominal_duration or DEFAULT_NOMINAL_DURATION,
+            },
+        )
 
     @property
     def type(self) -> str:
@@ -428,7 +444,7 @@ class SGReadyHeatPumpDevice(DeviceWithState):
             return LoadInfo(
                 device_id=self.id,
                 nominal_power=self._nominal_power,
-                duration=1800,  # 0.5h -> TODO: make this configurable
+                duration=self._nominal_duration,
                 is_continous=False,
                 is_deferrable=True,
             )

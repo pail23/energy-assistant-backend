@@ -170,7 +170,7 @@ class Home:
         if device_type == "evcc":
             device = HomeassistantEvccDevice(device_id, self._session_storage)
         elif device_type == "heat-pump":
-            device = HeatPumpDevice(device_id, self._session_storage)
+            device = HeatPumpDevice(device_id, self._session_storage, self._config_storage.devices)
         elif device_type == "readonly-homeassistant":
             device = ReadOnlyHomeassistantDevice(
                 device_id, self._session_storage, self._config_storage.devices, self._device_type_registry
@@ -180,7 +180,7 @@ class Home:
                 device_id, self._session_storage, self._config_storage.devices, self._device_type_registry
             )
         elif device_type == "sg-ready-heat-pump":
-            device = SGReadyHeatPumpDevice(device_id, self._session_storage)
+            device = SGReadyHeatPumpDevice(device_id, self._session_storage, self._config_storage.devices)
         else:
             LOGGER.error(f"Unknown device type {device_type} in configuration")
         if device is not None:
