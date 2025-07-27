@@ -24,10 +24,9 @@ from energy_assistant.devices import (
 from energy_assistant.devices.analysis import FloatDataBuffer, OnOffDataBuffer
 from energy_assistant.devices.config import get_config_param
 from energy_assistant.devices.device import DeviceWithState
-from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState
+from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState, convert_to_kwh
 from energy_assistant.devices.registry import DeviceType, DeviceTypeRegistry
-from energy_assistant.devices.state_value import StateValue
-from energy_assistant.storage.config import DeviceConfigMissingParameterError, DeviceConfigStorage
+from energy_assistant.storage.config import DeviceConfigStorage
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -60,7 +59,7 @@ class HomeassistantDevice(DeviceWithState):
         self._output_states = OnOffDataBuffer()
 
         self._state: str = OnOffState.UNKNOWN
-        self._consumed_energy_value: StateValue | None = None
+        self._consumed_energy_entity_id: str = ""
         self._device_type: DeviceType | None = None
 
         self._max_on_per_day: float = 24 * 60 * 60  # seconds
@@ -72,19 +71,7 @@ class HomeassistantDevice(DeviceWithState):
         """Load the device configuration from the provided data."""
         super().configure(config)
         self._power_entity_id = get_config_param(config, "power")
-        energy_config = config.get("energy")
-        if energy_config is not None:
-            self._consumed_energy_value = StateValue(energy_config)
-        else:
-            msg = "energy"
-            raise DeviceConfigMissingParameterError(msg)
-
-        energy_scale: float | None = config.get("energy_scale")
-        if energy_scale is not None:
-            self._consumed_energy_value.set_scale(energy_scale)
-            LOGGER.warning(
-                f"Homeassistant device with id {self.id} is configured with energy_scale. This is deprecated and will no longer be supported.",
-            )
+        self._consumed_energy_entity_id = get_config_param(config, "energy")
 
         self._output_id = config.get("output")
         self._icon = str(config.get("icon", "mdi-home"))
@@ -165,9 +152,9 @@ class HomeassistantDevice(DeviceWithState):
             self._output_state = None
         self._power = assign_if_available(self._power, state_repository.get_state(self._power_entity_id))
         self._consumed_energy = assign_if_available(
-            self._consumed_energy,
-            self._consumed_energy_value.evaluate(state_repository) if self._consumed_energy_value is not None else None,
+            self._consumed_energy, convert_to_kwh(state_repository.get_state(self._consumed_energy_entity_id))
         )
+
         self._consumed_solar_energy.add_measurement(self.consumed_energy, self_sufficiency)
         if self._energy_snapshot is None:
             self.set_snapshot(self.consumed_solar_energy, self.consumed_energy)

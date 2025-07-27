@@ -67,6 +67,24 @@ class HomeassistantState(State):
         return ""
 
 
+def convert_to_kwh(state: State | None) -> HomeassistantState | None:
+    """Convert the state to kWh."""
+    if state is None:
+        return None
+
+    if isinstance(state, HomeassistantState):
+        unit = str(getattr(state, "unit", ""))
+        attributes = (state.attributes or {}).copy()
+        attributes["unit_of_measurement"] = "kWh"
+
+        if unit == "Wh":
+            return HomeassistantState(state.id, str(state.numeric_value / 1000), attributes)
+        if unit == "kWh":
+            return HomeassistantState(state.id, str(state.numeric_value), attributes)
+        raise UnavailableUnitError(unit)
+    return HomeassistantState(state.id, str(state.numeric_value), state.attributes)
+
+
 @dataclass
 class HistoryState:
     """Represents a history of a state."""
