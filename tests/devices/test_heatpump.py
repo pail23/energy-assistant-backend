@@ -140,7 +140,7 @@ SG_READY_CONFIG = {
         "temperature": "sensor.water_heating_temperature",
     },
     "nominal_power": 1500,
-    "sg_ready": "switch.sg_ready",
+    "output": "switch.sg_ready",
 }
 
 

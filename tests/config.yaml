@@ -12,9 +12,7 @@ devices:
     id: 1a8ac2d6-5695-427a-a3c5-ef567b34e5ec
     type: homeassistant
     power: sensor.device_power
-    energy:
-      value: sensor.device_energy
-      scale: 0.001
+    energy: sensor.device_energy
     store_sessions: true
     output: switch.device_relay_1
     nominal_power: 800

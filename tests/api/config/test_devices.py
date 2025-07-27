@@ -90,6 +90,7 @@ async def test_device_config_read_all(ac: AsyncClient, session: AsyncSession) ->
         "/api/config",
     )
     assert response.status_code == 200
+
     assert response.json() == {
         "config": {
             "energy_assistant": {
@@ -110,12 +111,16 @@ async def test_device_config_read_all(ac: AsyncClient, session: AsyncSession) ->
                         "id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec",
                         "type": "homeassistant",
                         "power": "sensor.device_power",
-                        "energy": {"value": "sensor.device_energy", "scale": 0.001},
+                        "energy": "sensor.device_energy",
                         "store_sessions": True,
                         "output": "switch.device_relay_1",
                         "nominal_power": 800,
                         "nominal_duration": 7200,
                         "constant": True,
+                        "max_on_per_day": 86400,
+                        "min_on_duration": 60.0,
+                        "switch_off_delay": 300.0,
+                        "switch_on_delay": 300.0,
                     }
                 ],
             },
@@ -142,12 +147,16 @@ async def test_device_config_read(ac: AsyncClient, session: AsyncSession) -> Non
             "id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec",
             "type": "homeassistant",
             "power": "sensor.device_power",
-            "energy": {"value": "sensor.device_energy", "scale": 0.001},
+            "energy": "sensor.device_energy",
             "store_sessions": True,
             "output": "switch.device_relay_1",
             "nominal_power": 800,
             "nominal_duration": 7200,
             "constant": True,
+            "max_on_per_day": 86400,
+            "min_on_duration": 60.0,
+            "switch_off_delay": 300.0,
+            "switch_on_delay": 300.0,
         }
     }
 

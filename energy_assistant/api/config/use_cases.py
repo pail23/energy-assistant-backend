@@ -104,7 +104,7 @@ class WriteDeviceConfiguration:
             device_icon = data.get("icon", persisted_device.icon)
             device_type = data.get("type", persisted_device.type or "")
             await persisted_device.update(
-                session, device_name, device_icon, persisted_device.power_mode, device_type, data
+                session, device_name, device_icon, persisted_device.power_mode, device_type, new_configuration
             )
             device.configure(new_configuration)
             return ConfigModel.model_validate({"config": new_configuration})
