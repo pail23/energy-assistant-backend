@@ -88,9 +88,12 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
         session_storage,
         device_type_registry,
     )
+    device_id = uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec")  # Device 1
+    config.devices.add_device(device_id)
     device = HomeassistantDevice(
-        uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec"),
+        device_id,
         session_storage,
+        config.devices,
         device_type_registry,
     )
     device.configure(
@@ -98,6 +101,8 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
             "name": "Device 1",
             "power": "power_id",
             "energy": "energy_id",
+            "output": "output_id",
+            "icon": "mdi-home",
         }
     )
     home.add_device(device)

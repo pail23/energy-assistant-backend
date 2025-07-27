@@ -38,13 +38,13 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
         self,
         device_id: uuid.UUID,
         session_storage: SessionStorage,
-        config_storeage: DeviceConfigStorage,
+        config_storage: DeviceConfigStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a generic Home Assistant device."""
         super().__init__(device_id, session_storage)
         self._device_type_registry = device_type_registry
-        self._config_storage = config_storeage
+        self._config_storage = config_storage
         self._nominal_power: float | None = None
         self._nominal_duration: float | None = None
         self._is_constant: bool | None = None
@@ -240,11 +240,11 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
         self,
         device_id: uuid.UUID,
         session_storage: SessionStorage,
-        config_storeage: DeviceConfigStorage,
+        config_storage: DeviceConfigStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a generic Home Assistant device."""
-        super().__init__(device_id, session_storage, config_storeage, device_type_registry)
+        super().__init__(device_id, session_storage, config_storage, device_type_registry)
         self._output_state: State | None = None
         self._output_id: str | None = None
         self._output_states = OnOffDataBuffer()
