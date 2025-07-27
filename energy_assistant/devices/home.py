@@ -9,7 +9,7 @@ from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.evcc import HomeassistantEvccDevice
-from energy_assistant.devices.homeassistant_device import HomeassistantDevice
+from energy_assistant.devices.homeassistant_device import HomeassistantDevice, ReadOnlyHomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
 from energy_assistant.storage.config import ConfigStorage
@@ -180,7 +180,11 @@ class Home:
             device = HomeassistantEvccDevice(device_id, session_storage)
         elif device_type == "heat-pump":
             device = HeatPumpDevice(device_id, session_storage)
-        elif device_type in {"homeassistant", "power-state-device"}:
+        elif device_type == "readonly-homeassistant":
+            device = ReadOnlyHomeassistantDevice(
+                device_id, session_storage, self._config_storage.devices, device_type_registry
+            )
+        elif device_type == "homeassistant":
             device = HomeassistantDevice(device_id, session_storage, self._config_storage.devices, device_type_registry)
         elif device_type == "sg-ready-heat-pump":
             device = SGReadyHeatPumpDevice(device_id, session_storage)
