@@ -62,13 +62,7 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
     def configure(self, config: dict) -> None:
         """Load the device configuration from the provided data."""
         super().configure(config)
-        self._config_storage.set_default_values(
-            self.id,
-            {
-                "nominal_power": 300.0,
-                "nominal_duration": 60.0,
-            },
-        )
+
         self._power_entity_id = get_config_param(config, "power")
         self._consumed_energy_entity_id = get_config_param(config, "energy")
 
@@ -94,6 +88,14 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
                 self._nominal_power = float(nominal_power)
             self._nominal_duration = config.get("nominal_duration")
             self._is_constant = config.get("constant")
+
+        self._config_storage.set_default_values(
+            self.id,
+            {
+                "nominal_power": self._nominal_power or 300.0,
+                "nominal_duration": self._nominal_duration or 60.0,
+            },
+        )
         if self._device_type is None and (state_detection := config.get("state", {})):
             state_on = state_detection.get("state_on", {})
             state_off = state_detection.get("state_off", {})

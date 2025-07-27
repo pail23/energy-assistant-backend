@@ -285,15 +285,10 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
         if not self.has_device_config(device_id):
             raise DeviceNotFoundError
 
-        for device in self._data:
-            if device.get("id") == str(device_id):
-                for key, value in default_values.items():
-                    if get_dict_value(device, key) is None:
-                        # only set the value if it is not already set
-                        set_dict_value(device, key, value)
-                self._merge_data()
-                self.store()
-                return
+        for key, value in default_values.items():
+            if self.get(device_id, key) is None:
+                # only set the value if it is not already set
+                self.set(device_id, key, value)
 
     def as_list(self) -> list:
         """Get the configuration data as a list."""

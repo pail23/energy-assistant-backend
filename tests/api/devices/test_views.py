@@ -122,7 +122,22 @@ async def test_devices_delete(ac: AsyncClient, session: AsyncSession) -> None:
 async def test_create_device(ac: AsyncClient, session: AsyncSession) -> None:
     """Test creating a new device."""
     # Act
-    response = await ac.post("/api/devices", json={"device_type": "dishwasher"})
+    response = await ac.post(
+        "/api/devices",
+        json={
+            "device_type": "homeassistant",
+            "device_name": "New dishwasher",
+            "config": {
+                "icon": "mdi-home-automation",
+                "power": "sensor.dishwasher_power",
+                "energy": "sensor.dishwasher_energy",
+                "output": "switch.dishwasher_relay",
+                "nominal_power": 2000,
+                "nominal_duration": 3600,
+                "constant": True,
+            },
+        },
+    )
 
     # Assert
     assert response.status_code == 201
@@ -134,6 +149,24 @@ async def test_create_device(ac: AsyncClient, session: AsyncSession) -> None:
     created_device = await Device.read_by_id(session, uuid.UUID(device_id))
     assert created_device is not None
     assert created_device.name == "New dishwasher"
-    assert created_device.type == "dishwasher"
+    assert created_device.type == "homeassistant"
     assert created_device.icon == "mdi-home-automation"
-    assert created_device.power_mode == "auto"
+    assert created_device.power_mode == "device_controlled"
+
+    response = await ac.get(
+        f"/api/config/device/{device_id}",
+    )
+
+    assert response.status_code == 200
+    cfg = response.json()
+    assert "config" in cfg
+    assert cfg["config"]["name"] == "New dishwasher"
+    assert cfg["config"]["id"] == device_id
+    assert cfg["config"]["type"] == "homeassistant"
+    assert cfg["config"]["icon"] == "mdi-home-automation"
+    assert cfg["config"]["power"] == "sensor.dishwasher_power"
+    assert cfg["config"]["energy"] == "sensor.dishwasher_energy"
+    assert cfg["config"]["output"] == "switch.dishwasher_relay"
+    assert cfg["config"]["nominal_power"] == 2000
+    assert cfg["config"]["nominal_duration"] == 3600
+    assert cfg["config"]["constant"] is True

@@ -56,7 +56,7 @@ async def create(
     """REST end point for creating a new device."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
     device_id = await use_case.execute(
-        data.device_type, energy_assistant.home if energy_assistant is not None else None
+        data.device_type, data.device_name, data.config, energy_assistant.home if energy_assistant is not None else None
     )
     return CreateDeviceResponse(device_id=str(device_id))
 

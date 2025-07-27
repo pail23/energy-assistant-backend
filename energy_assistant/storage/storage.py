@@ -183,7 +183,7 @@ class Database:
         all_devices = DeviceDTO.read_all(session)
         async for device_dto in all_devices:
             if home.get_device(device_dto.id) is None and device_dto.type is not None:
-                home.create_device(device_dto.type, device_dto.get_config(), session_storage, device_type_registry)
+                home.create_device(device_dto.type, device_dto.get_config())
 
     async def create_or_update_utility_meter(
         self,

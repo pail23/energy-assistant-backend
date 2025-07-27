@@ -35,6 +35,8 @@ class CreateDeviceRequest(BaseModel):
     """API Request for creating a device."""
 
     device_type: str
+    device_name: str
+    config: dict
 
 
 class CreateDeviceResponse(BaseModel):

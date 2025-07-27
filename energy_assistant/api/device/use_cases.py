@@ -149,24 +149,30 @@ class CreateDevice:
         """Create a create device use case."""
         self.async_session = session
 
-    async def execute(self, device_type: str, home: Home | None) -> uuid.UUID:
+    async def execute(self, device_type: str, device_name: str, config: dict, home: Home | None) -> uuid.UUID:
         """Execute the create device use case."""
         if home is None:
             raise HTTPException(status_code=500, detail="Home is not available")
         device_id = uuid.uuid4()
+        config["id"] = str(device_id)
+        config["name"] = device_name
+        config["type"] = device_type
 
+        if "icon" not in config:
+            config["icon"] = "mdi-home-automation"
+        icon = config.get("icon", "mdi-home-automation")
         async with self.async_session.begin() as session:
             await Device.create(
                 session=session,
                 id=device_id,
-                name=f"New {device_type}",
-                icon="mdi-home-automation",
-                power_mode="auto",
+                name=device_name,
+                icon=icon,
+                power_mode=PowerModes.DEVICE_CONTROLLED.value,
                 type=device_type,
-                config={},
+                config=config,
             )
             await session.flush()
 
-            home.create_new_device(device_type, f"New {device_type}", "mdi-home-automation", device_id)
+            home.create_new_device(device_type, device_name, config, device_id)
 
             return device_id

@@ -353,7 +353,7 @@ class SGReadyHeatPumpDevice(DeviceWithState):
         if self._water_heating is not None:
             self._water_heating.configure(config.get("water", {}))
         self._nominal_power = config.get("nominal_power", DEFAULT_NOMINAL_POWER)
-        self._sg_ready_switch_entity_id = config.get("sg_ready")
+        self._sg_ready_switch_entity_id = config.get("output")
         if self._sg_ready_switch_entity_id is not None:
             self._supported_power_modes.add(PowerModes.PV)
             self._supported_power_modes.add(PowerModes.OPTIMIZED)

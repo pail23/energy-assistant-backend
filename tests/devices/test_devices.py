@@ -114,5 +114,3 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
     assert home.consumed_solar_energy == 100
     assert home.devices[1].consumed_solar_energy == 2
     assert home.devices[1].consumed_energy == 4
-
-    assert True

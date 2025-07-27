@@ -100,7 +100,7 @@ async def write(
     device_id: Annotated[uuid.UUID, Path(..., description="")],
     use_case: Annotated[WriteDeviceConfiguration, Depends(WriteDeviceConfiguration)],
 ) -> ConfigModel:
-    """REST end point for read a device configuration."""
+    """REST end point for writing a device configuration."""
     energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
     if energy_assistant is None:
         raise HTTPException(status_code=500)
