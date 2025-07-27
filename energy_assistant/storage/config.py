@@ -207,6 +207,15 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
                 self._data = []
         self._merge_data()
 
+    def add_device(self, device_id: uuid.UUID) -> None:
+        """Add a device to the config storage."""
+        if not self.has_device_config(device_id):
+            device = {"id": str(device_id)}
+            self._config.append(device)
+            self._data.append(device)
+            self._merge_data()
+            self.store()
+
     def _find_device_in_data(self, device_id: str) -> dict:
         for device in self._data:
             if device.get("id") == device_id:
@@ -270,6 +279,21 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
 
         self._merge_data()
         self.store()
+
+    def set_default_values(self, device_id: uuid.UUID, default_values: dict) -> None:
+        """Set default values for a device configuration."""
+        if not self.has_device_config(device_id):
+            raise DeviceNotFoundError
+
+        for device in self._data:
+            if device.get("id") == str(device_id):
+                for key, value in default_values.items():
+                    if get_dict_value(device, key) is None:
+                        # only set the value if it is not already set
+                        set_dict_value(device, key, value)
+                self._merge_data()
+                self.store()
+                return
 
     def as_list(self) -> list:
         """Get the configuration data as a list."""

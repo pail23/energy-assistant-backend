@@ -31,7 +31,7 @@ UNAVAILABLE = "unavailable"
 HOMEASSISTANT_CHANNEL = "ha"
 
 
-class UnavailableUnitError(ValueError):
+class InvalidUnitError(ValueError):
     """Error raised when a unit is unavailable."""
 
     def __init__(self, unit: str) -> None:
@@ -65,6 +65,24 @@ class HomeassistantState(State):
         if self._attributes is not None:
             return str(self._attributes.get("unit_of_measurement"))
         return ""
+
+
+def convert_to_kwh(state: State | None) -> HomeassistantState | None:
+    """Convert the state to kWh."""
+    if state is None:
+        return None
+
+    if isinstance(state, HomeassistantState):
+        unit = str(getattr(state, "unit", ""))
+        attributes = (state.attributes or {}).copy()
+        attributes["unit_of_measurement"] = "kWh"
+
+        if unit == "Wh":
+            return HomeassistantState(state.id, str(state.numeric_value / 1000), attributes)
+        if unit == "kWh":
+            return HomeassistantState(state.id, str(state.numeric_value), attributes)
+        raise InvalidUnitError(unit)
+    return HomeassistantState(state.id, str(state.numeric_value), state.attributes)
 
 
 @dataclass

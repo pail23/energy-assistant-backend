@@ -9,7 +9,7 @@ from energy_assistant import Optimizer
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.evcc import HomeassistantEvccDevice
-from energy_assistant.devices.homeassistant_device import HomeassistantDevice
+from energy_assistant.devices.homeassistant_device import HomeassistantDevice, ReadOnlyHomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
 from energy_assistant.storage.config import ConfigStorage
@@ -141,6 +141,7 @@ class Home:
         self._name: str = config.home.get_param("name")
         self._session_storage = session_storage
         self._device_type_registry = device_type_registry
+        self._config_storage: ConfigStorage = config
 
         self._home_energy_state = HomeEnergyState(config.home.as_dict())
         self._init_power_variables(config.home.as_dict())
@@ -153,17 +154,17 @@ class Home:
             self._disable_device_control = True
 
         self._energy_snapshop: HomeEnergySnapshot | None = None
-        self._init_devices(config.devices.as_list(), session_storage, device_type_registry)
+        self._init_devices(config, session_storage, device_type_registry)
 
     def _init_devices(
         self,
-        devices_config: list,
+        config: ConfigStorage,
         session_storage: SessionStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         self.devices = list[Device]()
-        if devices_config is not None:
-            for config_device in devices_config:
+        if self._config_storage is not None:
+            for config_device in self._config_storage.devices.as_list():
                 device_type = config_device.get("type")
                 self.create_device(device_type, config_device, session_storage, device_type_registry)
 
@@ -181,8 +182,12 @@ class Home:
             device = HomeassistantEvccDevice(device_id, session_storage)
         elif device_type == "heat-pump":
             device = HeatPumpDevice(device_id, session_storage)
-        elif device_type in {"homeassistant", "power-state-device"}:
-            device = HomeassistantDevice(device_id, session_storage, device_type_registry)
+        elif device_type == "readonly-homeassistant":
+            device = ReadOnlyHomeassistantDevice(
+                device_id, session_storage, self._config_storage.devices, device_type_registry
+            )
+        elif device_type == "homeassistant":
+            device = HomeassistantDevice(device_id, session_storage, self._config_storage.devices, device_type_registry)
         elif device_type == "sg-ready-heat-pump":
             device = SGReadyHeatPumpDevice(device_id, session_storage)
         else:
