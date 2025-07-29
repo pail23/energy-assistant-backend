@@ -44,14 +44,12 @@ class MockStateReposity(StatesRepository):
 
     def __init__(self) -> None:
         """Create a MockStateRepository instance."""
-        self.write_states: dict = {}
+        self._write_states: dict = {}
 
     def get_state(self, id: StateId | str) -> State | None:
         """Get a state from the repository."""
         _id = id if isinstance(id, str) else id.id
-        if _id.startswith("switch"):
-            return State(_id, "off")
-        return State(_id, "123")
+        return State(_id, "off") if _id.startswith("switch") else State(_id, "123")
 
     def get_numeric_states(self) -> dict[str, float]:
         """Get a states from the repository."""
@@ -64,7 +62,7 @@ class MockStateReposity(StatesRepository):
     def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
         _id = id if isinstance(id, str) else id.id
-        self.write_states[_id] = value
+        self._write_states[_id] = value
 
     @property
     def channel(self) -> str:
@@ -228,5 +226,5 @@ async def test_init_sgready_heatpump(
     assert data_buffer.average() == 9500
     heat_pump.set_power_mode(PowerModes.PV)
     await heat_pump.update_power_consumption(state_repository, optimizer, data_buffer)
-    assert state_repository.write_states["switch.sg_ready"] == "on"
+    assert state_repository._write_states["switch.sg_ready"] == "on"
     assert data_buffer.average() == 9500
