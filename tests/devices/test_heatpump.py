@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -9,6 +10,8 @@ from energy_assistant import Optimizer
 from energy_assistant.devices import PowerModes, Session, SessionStorage, State, StateId, StatesRepository
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
+from energy_assistant.settings import settings
+from energy_assistant.storage.config import ConfigStorage
 
 
 class SessionStorageMock(SessionStorage):
@@ -56,7 +59,7 @@ class MockStateReposity(StatesRepository):
 
     def get_template_states(self) -> dict:
         """Get a states from the repository."""
-        raise NotImplementedError
+        return {}
 
     def set_state(self, id: StateId, value: str, attributes: dict | None = None) -> None:
         """Set a state in the repository."""
@@ -105,9 +108,11 @@ def optimizer() -> Optimizer:
     return OptimizerMock()
 
 
+DEVICE_ID: str = "39a6c904-3266-450a-aeba-851915ba8249"
+
 HEATPUMP_CONFIG = {
     "name": "my heatpump",
-    "id": uuid.UUID("39a6c904-3266-450a-aeba-851915ba8249"),
+    "id": DEVICE_ID,
     "state": "binary_sensor.heating_state",
     "energy": "sensor.heating_energy",
     "temperature": "sensor.heating_temperature",
@@ -116,7 +121,7 @@ HEATPUMP_CONFIG = {
 
 CONTROLLABLE_HEATPUMP_CONFIG = {
     "name": "my heatpump",
-    "id": uuid.UUID("39a6c904-3266-450a-aeba-851915ba8249"),
+    "id": DEVICE_ID,
     "state": "binary_sensor.heating_state",
     "energy": "sensor.heating_energy",
     "temperature": "sensor.heating_temperature",
@@ -128,7 +133,7 @@ CONTROLLABLE_HEATPUMP_CONFIG = {
 
 SG_READY_CONFIG = {
     "name": "my heatpump",
-    "id": uuid.UUID("3b7367fc-fb4c-4670-acde-16b4af9329f4"),
+    "id": DEVICE_ID,
     "heating": {
         "state": "binary_sensor.heating_state",
         "energy": "sensor.heating_energy",
@@ -148,8 +153,14 @@ SG_READY_CONFIG = {
 async def test_init_heatpump(session_storage: SessionStorage, state_repository: StatesRepository) -> None:
     """Test initializing a heat pump."""
 
-    heat_pump = HeatPumpDevice(HEATPUMP_CONFIG, session_storage)
-    heat_pump.configure(HEATPUMP_CONFIG)
+    config = ConfigStorage(Path(settings.DATA_FOLDER))
+    config.delete_config_file()
+
+    device_id = uuid.UUID(DEVICE_ID)
+    config.devices.add_device(device_id, HEATPUMP_CONFIG)
+
+    heat_pump = HeatPumpDevice(device_id, session_storage, config.devices)
+    heat_pump.configure(config.devices.get_device_config(device_id))
     assert heat_pump.icon == "mdi-heat-pump"
 
     await heat_pump.update_state(state_repository, 0.5)
@@ -163,9 +174,14 @@ async def test_init_heatpump(session_storage: SessionStorage, state_repository: 
 @pytest.mark.asyncio()
 async def test_init_controllable_heatpump(session_storage: SessionStorage, state_repository: StatesRepository) -> None:
     """Test initializing a heat pump."""
+    config = ConfigStorage(Path(settings.DATA_FOLDER))
+    config.delete_config_file()
 
-    heat_pump = HeatPumpDevice(CONTROLLABLE_HEATPUMP_CONFIG, session_storage)
-    heat_pump.configure(CONTROLLABLE_HEATPUMP_CONFIG)
+    device_id = uuid.UUID(DEVICE_ID)
+    config.devices.add_device(device_id, CONTROLLABLE_HEATPUMP_CONFIG)
+
+    heat_pump = HeatPumpDevice(device_id, session_storage, config.devices)
+    heat_pump.configure(config.devices.get_device_config(device_id))
     assert heat_pump.icon == "mdi-heat-pump"
 
     await heat_pump.update_state(state_repository, 0.5)
@@ -183,9 +199,14 @@ async def test_init_sgready_heatpump(
     optimizer: Optimizer,
 ) -> None:
     """Test initializing a sg ready heat pump."""
+    config = ConfigStorage(Path(settings.DATA_FOLDER))
+    config.delete_config_file()
 
-    heat_pump = SGReadyHeatPumpDevice(SG_READY_CONFIG, session_storage)
-    heat_pump.configure(SG_READY_CONFIG)
+    device_id = uuid.UUID(DEVICE_ID)
+    config.devices.add_device(device_id, SG_READY_CONFIG)
+
+    heat_pump = SGReadyHeatPumpDevice(device_id, session_storage, config.devices)
+    heat_pump.configure(config.devices.get_device_config(device_id))
     assert heat_pump.icon == "mdi-heat-pump"
 
     await heat_pump.update_state(state_repository, 0.5)

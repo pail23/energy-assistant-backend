@@ -207,12 +207,13 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
                 self._data = []
         self._merge_data()
 
-    def add_device(self, device_id: uuid.UUID) -> None:
+    def add_device(self, device_id: uuid.UUID, config: dict | None = None) -> None:
         """Add a device to the config storage."""
         if not self.has_device_config(device_id):
-            device = {"id": str(device_id)}
-            self._config.append(device)
-            self._data.append(device)
+            if config is None:
+                config = {"id": str(device_id)}
+            self._config.append(config)
+            self._data.append(config)
             self._merge_data()
             self.store()
 
