@@ -47,7 +47,7 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
         self._config_storage = config_storage
         self._nominal_power: float | None = None
         self._nominal_duration: float | None = None
-        self._is_constant: bool | None = None
+        self._is_constant: bool = False
 
         self._power_entity_id: str = ""
         self._power: State | None = None
@@ -81,13 +81,13 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
                 "nominal_duration",
                 self._device_type.nominal_duration if self._device_type else None,
             )
-            self._is_constant = config.get("constant", self._device_type.constant if self._device_type else None)
+            self._is_constant = config.get("constant", self._device_type.constant if self._device_type else False)
         else:
             nominal_power = config.get("nominal_power")
             if nominal_power is not None:
                 self._nominal_power = float(nominal_power)
             self._nominal_duration = config.get("nominal_duration")
-            self._is_constant = config.get("constant")
+            self._is_constant = config.get("constant", False)
 
         self._config_storage.set_default_values(
             self.id,
@@ -103,7 +103,7 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
                 str(config.get("icon", "mdi:lightning-bolt")),
                 self._nominal_power if self._nominal_power is not None else DEFAULT_NOMINAL_POWER,
                 (self._nominal_duration if self._nominal_duration is not None else DEFAULT_NOMINAL_DURATION),
-                self._is_constant if self._is_constant is not None else False,
+                self._is_constant,
                 state_on.get("threshold", 2),
                 state_off.get("threshold", 0),
                 state_off.get("upper", 2.0),
@@ -218,7 +218,7 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
                     nominal_power=self._nominal_power,
                     duration=self._nominal_duration,
                     is_continous=False,
-                    is_constant=self._is_constant if self._is_constant is not None else False,
+                    is_constant=self._is_constant,
                     is_deferrable=True,
                 )
 
@@ -228,7 +228,7 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
                     nominal_power=self._nominal_power,
                     duration=self._nominal_duration - self.session_duration,
                     is_continous=False,
-                    is_constant=self._is_constant if self._is_constant is not None else False,
+                    is_constant=self._is_constant,
                     is_deferrable=False,
                 )
 

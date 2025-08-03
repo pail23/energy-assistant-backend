@@ -54,7 +54,6 @@ class HomeassistantEvccDevice(DeviceWithState):
         super().configure(config)
         LOGGER.debug(f"Configure EVCC device {self._name} with config: {config}")
         self._loadpoint_name = get_config_param(config, "load_point_name")
-        self._is_continous = bool(config.get("continuous", True))
         self._nominal_power = config.get("nominal_power")
 
     @property
