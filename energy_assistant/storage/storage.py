@@ -22,6 +22,7 @@ from energy_assistant.models.device import (
 )
 from energy_assistant.models.home import HomeMeasurement
 from energy_assistant.models.sessionlog import SessionLogEntry
+from energy_assistant.storage.config import DeviceConfigMissingParameterError
 
 from ..constants import ROOT_LOGGER_NAME
 
@@ -151,39 +152,29 @@ class Database:
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Update the devices table in the db based on the configuration."""
-        for device in home.devices:
-            try:
-                device_dto = await DeviceDTO.read_by_id(session, device.id)
-                if device_dto is not None:
-                    if device_dto.power_mode is not None:
-                        device.set_power_mode(PowerModes[device_dto.power_mode.upper()])
-                    await device_dto.update(
-                        session,
-                        device.name,
-                        device.icon,
-                        device.power_mode,
-                        device.type,
-                        device_dto.get_config(),
-                    )
-                else:
-                    await DeviceDTO.create(
-                        session,
-                        device.id,
-                        device.name,
-                        device.icon,
-                        device.power_mode,
-                        device.type,
-                        device.config,
-                    )
-                await session.flush()
-                await session.commit()
-
-            except Exception:
-                LOGGER.exception("Error while udpateing the devices of home")
         all_devices = DeviceDTO.read_all(session)
         async for device_dto in all_devices:
-            if home.get_device(device_dto.id) is None and device_dto.type is not None:
-                home.create_device(device_dto.type, device_dto.get_config())
+            device = home.get_device(device_dto.id)
+            try:
+                if device is None and device_dto.type is not None:
+                    device = home.create_device(device_dto.id, device_dto.type, device_dto.get_config())
+                if device_dto.power_mode is not None and device is not None:
+                    device.set_power_mode(PowerModes[device_dto.power_mode.upper()])
+                    if device_dto.type is not None:
+                        await device_dto.update(
+                            session,
+                            device_dto.name,
+                            device_dto.icon,
+                            device_dto.power_mode,
+                            device_dto.type,
+                            device.config,
+                        )
+            except DeviceConfigMissingParameterError:
+                LOGGER.exception(f"Device {device_dto.name} of type {device_dto.type} is missing a required parameter")
+            except Exception:
+                LOGGER.exception(f"Error while creating device {device_dto.id} of type {device_dto.type}")
+        await session.flush()
+        await session.commit()
 
     async def create_or_update_utility_meter(
         self,

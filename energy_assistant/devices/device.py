@@ -75,6 +75,10 @@ class Device(ABC):
         """Return the config dictionary."""
         return self._config
 
+    def get_default_config(self) -> dict:
+        """Get the default configuration for the device."""
+        return {}
+
     def set_power_mode(self, power_mode: PowerModes) -> None:
         """Set the power mode of the device."""
         self._power_mode = power_mode

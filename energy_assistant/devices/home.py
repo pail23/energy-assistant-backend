@@ -21,7 +21,7 @@ from . import (
     StatesRepository,
     assign_if_available,
 )
-from .config import DeviceConfigMissingParameterError, get_config_param
+from .config import DeviceConfigMissingParameterError
 from .device import Device
 from .heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
 
@@ -138,6 +138,7 @@ class Home:
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a home instance."""
+        self.devices = list[Device]()
         self._name: str = config.home.get_param("name")
         self._session_storage = session_storage
         self._device_type_registry = device_type_registry
@@ -154,47 +155,30 @@ class Home:
             self._disable_device_control = True
 
         self._energy_snapshop: HomeEnergySnapshot | None = None
-        self._init_devices()
 
-    def _init_devices(self) -> None:
-        self.devices = list[Device]()
-        if self._config_storage is not None:
-            for config_device in self._config_storage.devices.as_list():
-                device_type = config_device.get("type")
-                self.create_device(device_type, config_device)
-
-    def create_device(self, device_type: str, config: dict) -> None:
+    def create_device(self, device_id: uuid.UUID, device_type: str, config: dict) -> Device | None:
         """Create and add a new device."""
         device: Device | None = None
-        device_id = uuid.UUID(get_config_param(config, "id"))
         if device_type == "evcc":
             device = HomeassistantEvccDevice(device_id, self._session_storage)
         elif device_type == "heat-pump":
-            device = HeatPumpDevice(device_id, self._session_storage, self._config_storage.devices)
+            device = HeatPumpDevice(device_id, self._session_storage)
         elif device_type == "readonly-homeassistant":
-            device = ReadOnlyHomeassistantDevice(
-                device_id, self._session_storage, self._config_storage.devices, self._device_type_registry
-            )
+            device = ReadOnlyHomeassistantDevice(device_id, self._session_storage, self._device_type_registry)
         elif device_type == "homeassistant":
-            device = HomeassistantDevice(
-                device_id, self._session_storage, self._config_storage.devices, self._device_type_registry
-            )
+            device = HomeassistantDevice(device_id, self._session_storage, self._device_type_registry)
         elif device_type == "sg-ready-heat-pump":
-            device = SGReadyHeatPumpDevice(device_id, self._session_storage, self._config_storage.devices)
+            device = SGReadyHeatPumpDevice(device_id, self._session_storage)
         else:
             LOGGER.error(f"Unknown device type {device_type} in configuration")
         if device is not None:
+            default_config = device.get_default_config()
+            default_config["id"] = str(device_id)
+            default_config["type"] = device_type
+            config = {**default_config, **config}
             device.configure(config)
             self.devices.append(device)
-
-    def create_new_device(self, device_type: str, device_name: str, config: dict, device_id: uuid.UUID) -> None:
-        """Create a new device."""
-        self._config_storage.devices.add_device(device_id)
-        config["id"] = str(device_id)
-        config["name"] = device_name
-        config["type"] = device_type
-        self._config_storage.devices.set_default_values(device_id, config)
-        self.create_device(device_type, config)
+        return device
 
     def _init_power_variables(self, config: dict) -> None:
         solar_power_config = config.get("solar_power")

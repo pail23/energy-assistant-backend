@@ -1,5 +1,6 @@
 """Tests for the configuration api."""
 
+import json
 import uuid
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
@@ -26,6 +27,24 @@ async def setup_data(session: AsyncSession) -> None:
         name="Device 1",
         icon="mdi-home",
         power_mode=PowerModes.DEVICE_CONTROLLED,
+        config=json.dumps(
+            {
+                "name": "Test Device",
+                "id": str(DEVICE_ID),
+                "type": "homeassistant",
+                "power": "sensor.device_power",
+                "energy": "sensor.device_energy",
+                "store_sessions": True,
+                "output": "switch.device_relay_1",
+                "nominal_power": 800,
+                "nominal_duration": 7200,
+                "constant": True,
+                "max_on_per_day": 86400,
+                "min_on_duration": 60.0,
+                "switch_off_delay": 300.0,
+                "switch_on_delay": 300.0,
+            }
+        ),
     )
     session.add(device)
     await session.flush()
@@ -105,24 +124,6 @@ async def test_device_config_read_all(ac: AsyncClient, session: AsyncSession) ->
                     "exported_energy": "sensor.energyexported",
                     "disable_device_control": True,
                 },
-                "devices": [
-                    {
-                        "name": "Test Device",
-                        "id": "1a8ac2d6-5695-427a-a3c5-ef567b34e5ec",
-                        "type": "homeassistant",
-                        "power": "sensor.device_power",
-                        "energy": "sensor.device_energy",
-                        "store_sessions": True,
-                        "output": "switch.device_relay_1",
-                        "nominal_power": 800,
-                        "nominal_duration": 7200,
-                        "constant": True,
-                        "max_on_per_day": 86400,
-                        "min_on_duration": 60.0,
-                        "switch_off_delay": 300.0,
-                        "switch_on_delay": 300.0,
-                    }
-                ],
             },
             "home_assistant": {},
             "emhass": {},

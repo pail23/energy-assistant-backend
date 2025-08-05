@@ -26,7 +26,6 @@ from energy_assistant.devices.config import get_config_param
 from energy_assistant.devices.device import DeviceWithState
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState, convert_to_kwh
 from energy_assistant.devices.registry import DeviceType, DeviceTypeRegistry
-from energy_assistant.storage.config import DeviceConfigStorage
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
@@ -38,13 +37,11 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
         self,
         device_id: uuid.UUID,
         session_storage: SessionStorage,
-        config_storage: DeviceConfigStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a generic Home Assistant device."""
         super().__init__(device_id, session_storage)
         self._device_type_registry = device_type_registry
-        self._config_storage = config_storage
         self._nominal_power: float | None = None
         self._nominal_duration: float | None = None
         self._is_constant: bool = False
@@ -89,13 +86,6 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
             self._nominal_duration = config.get("nominal_duration")
             self._is_constant = config.get("constant", False)
 
-        self._config_storage.set_default_values(
-            self.id,
-            {
-                "nominal_power": self._nominal_power or 300.0,
-                "nominal_duration": self._nominal_duration or 60.0,
-            },
-        )
         if self._device_type is None and (state_detection := config.get("state", {})):
             state_on = state_detection.get("state_on", {})
             state_off = state_detection.get("state_off", {})
@@ -111,6 +101,13 @@ class ReadOnlyHomeassistantDevice(DeviceWithState):
                 state_off.get("for", 0),
                 state_off.get("trailing_zeros_for", 10),
             )
+
+    def get_default_config(self) -> dict:
+        """Get the default configuration for the device."""
+        return {
+            "nominal_power": 300.0,
+            "nominal_duration": 60.0,
+        }
 
     @property
     def type(self) -> str:
@@ -242,11 +239,10 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
         self,
         device_id: uuid.UUID,
         session_storage: SessionStorage,
-        config_storage: DeviceConfigStorage,
         device_type_registry: DeviceTypeRegistry,
     ) -> None:
         """Create a generic Home Assistant device."""
-        super().__init__(device_id, session_storage, config_storage, device_type_registry)
+        super().__init__(device_id, session_storage, device_type_registry)
         self._output_state: State | None = None
         self._output_id: str | None = None
         self._output_states = OnOffDataBuffer()
@@ -262,19 +258,20 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
 
         self._supported_power_modes.add(PowerModes.PV)
         self._supported_power_modes.add(PowerModes.OPTIMIZED)
-        self._config_storage.set_default_values(
-            self.id,
-            {
-                "switch_on_delay": 300.0,
-                "switch_off_delay": 300.0,
-                "min_on_duration": 60.0,
-                "max_on_per_day": 24 * 60 * 60,  # seconds
-            },
-        )
+
         self._max_on_per_day = config.get("max_on_per_day", 24 * 60 * 60)  # seconds
         self._min_on_duration = config.get("min_on_duration", 60.0)  # seconds
         self._switch_off_delay = config.get("switch_off_delay", 300.0)  # seconds
         self._switch_on_delay = config.get("switch_on_delay", 300.0)  # seconds
+
+    def get_default_config(self) -> dict:
+        """Get the default configuration for the device."""
+        return {
+            "switch_on_delay": 300.0,
+            "switch_off_delay": 300.0,
+            "min_on_duration": 60.0,
+            "max_on_per_day": 24 * 60 * 60,  # seconds
+        }
 
     @property
     def type(self) -> str:

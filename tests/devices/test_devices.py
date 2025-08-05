@@ -89,11 +89,9 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
         device_type_registry,
     )
     device_id = uuid.UUID("1a8ac2d6-5695-427a-a3c5-ef567b34e5ec")  # Device 1
-    config.devices.add_device(device_id)
     device = HomeassistantDevice(
         device_id,
         session_storage,
-        config.devices,
         device_type_registry,
     )
     device.configure(
@@ -112,5 +110,5 @@ async def test_load(session: AsyncSession, device_type_registry: DeviceTypeRegis
     await db.restore_home_state(home, session)
     assert home.consumed_energy == 202
     assert home.consumed_solar_energy == 100
-    assert home.devices[1].consumed_solar_energy == 2
-    assert home.devices[1].consumed_energy == 4
+    assert home.devices[0].consumed_solar_energy == 2
+    assert home.devices[0].consumed_energy == 4

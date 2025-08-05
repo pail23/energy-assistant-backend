@@ -193,6 +193,7 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
         except FileNotFoundError as error:
             LOGGER.exception("File %s not found", str(config_file))
             raise ConfigFileError from error
+
         self._data = []
         if self._config_data_file.exists():
             try:
@@ -205,6 +206,8 @@ class DeviceConfigStorage(ConfigSectionStorageBase):
                 raise ConfigFileError from error
             except FileNotFoundError:
                 self._data = []
+        self._config = []
+        self._data = []
         self._merge_data()
 
     def add_device(self, device_id: uuid.UUID, config: dict | None = None) -> None:
@@ -304,7 +307,6 @@ class ConfigStorage:
         self._mqtt = ConfigSectionStorage(data_folder, "mqtt")
         self._homeassistant = ConfigSectionStorage(data_folder, "homeassistant")
         self._home = ConfigSectionStorage(data_folder, "home")
-        self._devices = DeviceConfigStorage(data_folder)
         self._emhass = ConfigSectionStorage(data_folder, "emhass")
 
     async def initialize(self, config_file: Path) -> None:
@@ -312,7 +314,6 @@ class ConfigStorage:
         await self._mqtt.initialize(config_file)
         await self._homeassistant.initialize(config_file)
         await self._home.initialize(config_file)
-        await self._devices.initialize(config_file)
         await self._emhass.initialize(config_file)
 
     @property
@@ -331,11 +332,6 @@ class ConfigStorage:
         return self._home
 
     @property
-    def devices(self) -> DeviceConfigStorage:
-        """Return the configuration storage for devices."""
-        return self._devices
-
-    @property
     def emhass(self) -> ConfigSectionStorage:
         """Return the configuration storage for emhss."""
         return self._emhass
@@ -345,7 +341,6 @@ class ConfigStorage:
         self._mqtt.delete_config_file()
         self._homeassistant.delete_config_file()
         self._home.delete_config_file()
-        self._devices.delete_config_file()
         self._emhass.delete_config_file()
 
     def as_dict(self) -> dict:
@@ -354,6 +349,5 @@ class ConfigStorage:
             "mqtt": self._mqtt.as_dict(),
             "homeassistant": self._homeassistant.as_dict(),
             "home": self._home.as_dict(),
-            "devices": self._devices.as_list(),
             "emhass": self._emhass.as_dict(),
         }

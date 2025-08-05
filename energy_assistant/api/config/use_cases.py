@@ -75,9 +75,11 @@ class ReadDeviceConfiguration:
 
     async def execute(self, config: EnergyAssistantConfig, device_id: uuid.UUID) -> ConfigModel:
         """Execute the read configuration use case."""
-        return ConfigModel.model_validate(
-            {"config": config.energy_assistant_config.devices.get_device_config(device_id)}
-        )
+        async with self.async_session.begin() as session:
+            persisted_device = await Device.read_by_id(session, device_id)
+            if persisted_device is None:
+                raise HTTPException(status_code=404)
+            return ConfigModel.model_validate({"config": persisted_device.get_config()})
 
 
 class WriteDeviceConfiguration:
@@ -92,19 +94,19 @@ class WriteDeviceConfiguration:
         async with self.async_session.begin() as session:
             device = home.get_device(device_id)
             persisted_device = await Device.read_by_id(session, device_id)
-            if device is None or persisted_device is None:
+            if persisted_device is None:
                 raise HTTPException(status_code=404)
 
+            new_config = device.config if device is not None else {}
             for key, value in data.items():
-                config.energy_assistant_config.devices.set(device_id, key, value)
-
-            new_configuration = config.energy_assistant_config.devices.get_device_config(device_id)
+                new_config[key] = value
 
             device_name = data.get("name", persisted_device.name)
             device_icon = data.get("icon", persisted_device.icon)
-            device_type = data.get("type", persisted_device.type or "")
+            device_type = persisted_device.type or ""
             await persisted_device.update(
-                session, device_name, device_icon, persisted_device.power_mode, device_type, new_configuration
+                session, device_name, device_icon, persisted_device.power_mode, device_type, new_config
             )
-            device.configure(new_configuration)
-            return ConfigModel.model_validate({"config": new_configuration})
+            if device is not None:
+                device.configure(new_config)
+            return ConfigModel.model_validate({"config": new_config})

@@ -173,6 +173,6 @@ class CreateDevice:
             )
             await session.flush()
 
-            home.create_new_device(device_type, device_name, config, device_id)
+            home.create_device(device_id, device_type, config)
 
             return device_id
