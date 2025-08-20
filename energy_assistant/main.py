@@ -34,9 +34,9 @@ from energy_assistant.devices.config import EnergyAssistantConfig
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.devices.registry import DeviceTypeRegistry
-from energy_assistant.emhass_optimizer import EmhassOptimizer
 from energy_assistant.importer.homeassistant import import_data
 from energy_assistant.mqtt import MqttConnection
+from energy_assistant.optimizer import EmhassOptimizer
 from energy_assistant.settings import settings
 from energy_assistant.storage.config import ConfigStorage
 from energy_assistant.storage.storage import Database, get_async_session, session_storage

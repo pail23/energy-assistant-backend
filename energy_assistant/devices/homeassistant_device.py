@@ -4,7 +4,6 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from energy_assistant import Optimizer
 from energy_assistant.constants import (
     DEFAULT_NOMINAL_DURATION,
     DEFAULT_NOMINAL_POWER,
@@ -26,6 +25,7 @@ from energy_assistant.devices.config import get_config_param
 from energy_assistant.devices.device import DeviceWithState
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL, HomeassistantState, convert_to_kwh
 from energy_assistant.devices.registry import DeviceType, DeviceTypeRegistry
+from energy_assistant.optimizer.base import Optimizer
 
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 

@@ -2,10 +2,10 @@
 
 import uuid
 
-from energy_assistant import Optimizer
 from energy_assistant.constants import POWER_HYSTERESIS
 from energy_assistant.devices.device import DeviceWithState
 from energy_assistant.devices.state_value import StateValue
+from energy_assistant.optimizer.base import Optimizer
 
 from . import (
     LoadInfo,
