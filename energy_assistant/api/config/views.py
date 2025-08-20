@@ -7,10 +7,13 @@ from fastapi import APIRouter, Depends, Path, Request
 
 from ..base import get_energy_assistant
 from .schema import (
+    ConfigModel,
+    DeviceControlModel,
     ReadConfigResponse,
     ReadDeviceConfigResponse,
     ReadDeviceControlResponse,
     ReadVersionResponse,
+    VersionModel,
 )
 from .use_cases import (
     ReadConfiguration,
@@ -28,7 +31,7 @@ router = APIRouter(prefix="/config")
 async def read_configuration(
     request: Request,
     use_case: Annotated[ReadConfiguration, Depends(ReadConfiguration)],
-) -> ReadConfigResponse:
+) -> ConfigModel:
     """Get the configuration."""
     energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.config)
@@ -38,7 +41,7 @@ async def read_configuration(
 async def read_version(
     request: Request,
     use_case: Annotated[ReadVersion, Depends(ReadVersion)],
-) -> ReadVersionResponse:
+) -> VersionModel:
     """Get the version information."""
 
     return await use_case.execute()
@@ -48,7 +51,7 @@ async def read_version(
 async def read_device_control(
     request: Request,
     use_case: Annotated[ReadDeviceControl, Depends(ReadDeviceControl)],
-) -> ReadDeviceControlResponse:
+) -> DeviceControlModel:
     """Get the device control configuration."""
     energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.home)
@@ -59,7 +62,7 @@ async def write_device_control(
     request: Request,
     disable_device_control: bool,
     use_case: Annotated[WriteDeviceControl, Depends(WriteDeviceControl)],
-) -> ReadDeviceControlResponse:
+) -> DeviceControlModel:
     """Update the device control configuration."""
     energy_assistant = get_energy_assistant(request)
     return await use_case.execute(disable_device_control, energy_assistant.home)
@@ -73,7 +76,7 @@ async def read(
     request: Request,
     device_id: Annotated[uuid.UUID, Path(..., description="ID of the device")],
     use_case: Annotated[ReadDeviceConfiguration, Depends(ReadDeviceConfiguration)],
-) -> ReadDeviceConfigResponse:
+) -> ConfigModel:
     """Get a device configuration."""
     energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.config, device_id)
@@ -88,7 +91,7 @@ async def write(
     data: dict,
     device_id: Annotated[uuid.UUID, Path(..., description="ID of the device to configure")],
     use_case: Annotated[WriteDeviceConfiguration, Depends(WriteDeviceConfiguration)],
-) -> ReadDeviceConfigResponse:
+) -> ConfigModel:
     """Update a device configuration."""
     energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.config, data, device_id, energy_assistant.home)
