@@ -1,9 +1,15 @@
 """Base utilities for API views to ensure consistency and reduce duplication."""
 
+from typing import TYPE_CHECKING
+
 from fastapi import HTTPException, Request
 
+if TYPE_CHECKING:
+    from energy_assistant.devices.home import Home
+    from energy_assistant.main import EnergyAssistant
 
-def get_energy_assistant(request: Request):
+
+def get_energy_assistant(request: Request) -> "EnergyAssistant":
     """Get energy assistant from request with consistent error handling.
 
     Args:
@@ -22,7 +28,7 @@ def get_energy_assistant(request: Request):
     return energy_assistant
 
 
-def get_home(request: Request):
+def get_home(request: Request) -> "Home":
     """Get home instance from request with consistent error handling.
 
     Args:
