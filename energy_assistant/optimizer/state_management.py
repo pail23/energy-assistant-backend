@@ -1,9 +1,11 @@
 """State management for EMHASS optimizer."""
 
 import uuid
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from energy_assistant.devices import StateId, StatesRepository
+from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL
 
@@ -27,8 +29,8 @@ class StateManager:
         self,
         home: Home,
         state_repository: StatesRepository,
-        no_var_loads_buffer,
-        get_forecast_value_func,
+        no_var_loads_buffer: FloatDataBuffer,
+        get_forecast_value_func: Callable[[str], float],
     ) -> None:
         """Calculate the power of the non variable/non controllable loads."""
         power = home.home_consumption_power
@@ -82,7 +84,7 @@ class StateManager:
             },
         )
 
-    def get_optimized_power(self, device_id: uuid.UUID, get_forecast_value_func) -> float:
+    def get_optimized_power(self, device_id: uuid.UUID, get_forecast_value_func: Callable[[str], float]) -> float:
         """Get the optimized power budget for a given device."""
         for i, deferrable_load_info in enumerate(self._optimzed_devices):
             if deferrable_load_info.device_id == device_id:

@@ -1,13 +1,12 @@
 """Tests for the config module."""
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from energy_assistant.devices import Location
 from energy_assistant.devices.homeassistant import Homeassistant
-from energy_assistant.optimizer.config import EmhassConfig, DEFAULT_HASS_ENTITY_PREFIX, DEFAULT_COST_FUNC
+from energy_assistant.optimizer.config import DEFAULT_COST_FUNC, DEFAULT_HASS_ENTITY_PREFIX, EmhassConfig
 from energy_assistant.storage.config import ConfigStorage
 
 
@@ -16,7 +15,7 @@ def mock_location() -> Location:
     """Create a mock location for testing."""
     location = MagicMock(spec=Location)
     location.latitude = 52.5
-    location.longitude = 13.4 
+    location.longitude = 13.4
     location.elevation = 50
     location.get_time_zone.return_value = "Europe/Berlin"
     return location
@@ -72,9 +71,9 @@ class TestEmhassConfig:
     ) -> None:
         """Test EmhassConfig initialization with configuration."""
         data_folder = "/test/data"
-        
+
         emhass_config = EmhassConfig(data_folder, mock_config_storage, mock_hass, mock_location)
-        
+
         assert emhass_config.solar_power_id == "sensor.solar_power"
         assert emhass_config.hass_entity_prefix == DEFAULT_HASS_ENTITY_PREFIX
         assert emhass_config.pv_forecast_method == DEFAULT_HASS_ENTITY_PREFIX
@@ -94,9 +93,9 @@ class TestEmhassConfig:
     ) -> None:
         """Test EmhassConfig initialization without configuration."""
         data_folder = "/test/data"
-        
+
         emhass_config = EmhassConfig(data_folder, empty_config_storage, mock_hass, mock_location)
-        
+
         assert emhass_config.solar_power_id is None
         assert emhass_config.pv_forecast_method == "homeassistant"
         assert emhass_config.cost_fun == DEFAULT_COST_FUNC
@@ -112,11 +111,11 @@ class TestEmhassConfig:
         hass = MagicMock(spec=Homeassistant)
         hass.url = "http://localhost:8123"  # No trailing slash
         hass.token = "test_token"
-        
+
         with patch("energy_assistant.optimizer.config.pathlib.Path.mkdir"), \
              patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False):
             emhass_config = EmhassConfig("/test/data", mock_config_storage, hass, mock_location)
-            
+
             # Check that URL is normalized in internal state
             assert emhass_config._hass_url == "http://localhost:8123/"
 
@@ -129,11 +128,11 @@ class TestEmhassConfig:
         hass = MagicMock(spec=Homeassistant)
         hass.url = "http://localhost:8123/"  # Already has trailing slash
         hass.token = "test_token"
-        
+
         with patch("energy_assistant.optimizer.config.pathlib.Path.mkdir"), \
              patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False):
             emhass_config = EmhassConfig("/test/data", mock_config_storage, hass, mock_location)
-            
+
             # Should not add another slash
             assert emhass_config._hass_url == "http://localhost:8123/"
 
@@ -149,7 +148,7 @@ class TestEmhassConfig:
     ) -> None:
         """Test generation of power no var loads ID."""
         emhass_config = EmhassConfig("/test/data", mock_config_storage, mock_hass, mock_location)
-        
+
         # Should generate a default ID
         assert emhass_config.power_no_var_loads_id.startswith("sensor.em_power_load_no_var_loads")
 
@@ -165,7 +164,7 @@ class TestEmhassConfig:
     ) -> None:
         """Test that retrieve_hass_conf is properly set up."""
         emhass_config = EmhassConfig("/test/data", mock_config_storage, mock_hass, mock_location)
-        
+
         assert emhass_config.retrieve_hass_conf["hass_url"] == "http://localhost:8123/"
         assert emhass_config.retrieve_hass_conf["long_lived_token"] == "test_token"
         assert emhass_config.retrieve_hass_conf["sensor_power_photovoltaics"] == "sensor.solar_power"
@@ -176,7 +175,7 @@ class TestEmhassConfig:
         assert emhass_config.retrieve_hass_conf["continual_publish"] is False
 
     @patch("energy_assistant.optimizer.config.pathlib.Path.mkdir")
-    @patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False)  
+    @patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False)
     def test_optim_conf_setup(
         self,
         mock_exists: MagicMock,
@@ -187,7 +186,7 @@ class TestEmhassConfig:
     ) -> None:
         """Test that optim_conf is properly set up."""
         emhass_config = EmhassConfig("/test/data", mock_config_storage, mock_hass, mock_location)
-        
+
         assert emhass_config.optim_conf["number_of_deferrable_loads"] == 0
 
     @patch("energy_assistant.optimizer.config.pathlib.Path.mkdir")
@@ -202,7 +201,7 @@ class TestEmhassConfig:
     ) -> None:
         """Test that plant_conf is properly set up."""
         emhass_config = EmhassConfig("/test/data", mock_config_storage, mock_hass, mock_location)
-        
+
         assert emhass_config.plant_conf["compute_curtailment"] is False
 
     @patch("energy_assistant.optimizer.config.pathlib.Path.mkdir")
@@ -217,7 +216,7 @@ class TestEmhassConfig:
     ) -> None:
         """Test that all properties can be accessed."""
         emhass_config = EmhassConfig("/test/data", mock_config_storage, mock_hass, mock_location)
-        
+
         assert isinstance(emhass_config.solar_power_id, str)
         assert isinstance(emhass_config.power_no_var_loads_id, str)
         assert isinstance(emhass_config.hass_entity_prefix, str)

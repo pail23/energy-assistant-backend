@@ -25,8 +25,7 @@ def mock_config() -> EmhassConfig:
 @pytest.fixture
 def mock_hass() -> Homeassistant:
     """Create a mock Home Assistant for testing."""
-    hass = MagicMock(spec=Homeassistant)
-    return hass
+    return MagicMock(spec=Homeassistant)
 
 
 @pytest.fixture
@@ -79,16 +78,16 @@ class TestForecastingManager:
         """Test PV forecast when using homeassistant method."""
         mock_config.pv_forecast_method = "homeassistant"
         mock_hass.async_get_pv_forecast = AsyncMock(return_value=[100, 200, 300])
-        
+
         mock_fcst = MagicMock()
-        
+
         result = await forecasting_manager.async_get_pv_forecast(mock_fcst)
-        
+
         mock_hass.async_get_pv_forecast.assert_called_once()
         assert isinstance(result, list)
         assert result == [100, 200, 300]
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_async_get_pv_forecast_other_method(
         self,
         forecasting_manager: ForecastingManager,
@@ -96,15 +95,15 @@ class TestForecastingManager:
     ) -> None:
         """Test PV forecast when using other methods."""
         mock_config.pv_forecast_method = "solcast"
-        
+
         mock_fcst = MagicMock()
         mock_weather_df = pd.DataFrame({"temp": [20, 25, 30]})
         mock_fcst.get_weather_forecast.return_value = mock_weather_df
         mock_power_series = pd.Series([100, 200, 300])
         mock_fcst.get_power_from_weather.return_value = mock_power_series
-        
+
         result = await forecasting_manager.async_get_pv_forecast(mock_fcst, set_mix_forecast=True)
-        
+
         mock_fcst.get_weather_forecast.assert_called_once_with(method="test_method")
         mock_fcst.get_power_from_weather.assert_called_once_with(
             mock_weather_df, True, pd.DataFrame()
@@ -119,19 +118,19 @@ class TestForecastingManager:
     ) -> None:
         """Test PV forecast with df_now parameter."""
         mock_config.pv_forecast_method = "solcast"
-        
+
         mock_fcst = MagicMock()
         mock_weather_df = pd.DataFrame({"temp": [20, 25, 30]})
         mock_fcst.get_weather_forecast.return_value = mock_weather_df
         mock_power_series = pd.Series([100, 200, 300])
         mock_fcst.get_power_from_weather.return_value = mock_power_series
-        
+
         df_now = pd.DataFrame({"current": [50]})
-        
+
         result = await forecasting_manager.async_get_pv_forecast(
             mock_fcst, set_mix_forecast=False, df_now=df_now
         )
-        
+
         mock_fcst.get_power_from_weather.assert_called_once_with(
             mock_weather_df, False, df_now
         )
@@ -143,15 +142,15 @@ class TestForecastingManager:
     ) -> None:
         """Test load forecast using ML forecaster."""
         pv_forecast = pd.Series([100, 200, 300], name="pv")
-        
+
         mock_ml_forecaster = MagicMock()
         mock_p_load_forecast = pd.Series([500, 600, 700], index=pv_forecast.index)
         mock_ml_forecaster.predict.return_value = mock_p_load_forecast
-        
+
         result_series, result_values = forecasting_manager.get_load_forecast(
             pv_forecast, mock_ml_forecaster
         )
-        
+
         mock_ml_forecaster.predict.assert_called_once()
         assert result_series.equals(mock_p_load_forecast)
         assert np.array_equal(result_values, np.array([500, 600, 700]))
@@ -163,17 +162,17 @@ class TestForecastingManager:
     ) -> None:
         """Test load forecast when ML forecaster raises an exception."""
         pv_forecast = pd.Series([100, 200, 300], name="pv")
-        
+
         mock_ml_forecaster = MagicMock()
         mock_ml_forecaster.predict.side_effect = Exception("Prediction failed")
-        
+
         result_series, result_values = forecasting_manager.get_load_forecast(
             pv_forecast, mock_ml_forecaster
         )
-        
+
         mock_ml_forecaster.predict.assert_called_once()
         mock_no_var_loads.average.assert_called_once()
-        
+
         # Should fall back to average values
         expected_values = [1000.0, 1000.0, 1000.0]
         assert result_series.tolist() == expected_values
@@ -187,13 +186,13 @@ class TestForecastingManager:
     ) -> None:
         """Test load forecast without ML forecaster."""
         pv_forecast = pd.Series([100, 200, 300], name="pv")
-        
+
         result_series, result_values = forecasting_manager.get_load_forecast(
             pv_forecast, None
         )
-        
+
         mock_no_var_loads.average.assert_called_once()
-        
+
         # Should use average values
         expected_values = [1000.0, 1000.0, 1000.0]
         assert result_series.tolist() == expected_values
@@ -208,12 +207,12 @@ class TestForecastingManager:
     ) -> None:
         """Test that exception during load forecast is logged."""
         pv_forecast = pd.Series([100, 200, 300], name="pv")
-        
+
         mock_ml_forecaster = MagicMock()
         mock_ml_forecaster.predict.side_effect = Exception("Prediction failed")
-        
+
         forecasting_manager.get_load_forecast(pv_forecast, mock_ml_forecaster)
-        
+
         mock_logger.warning.assert_called_once()
         warning_message = mock_logger.warning.call_args[0][0]
         assert "Forecasting the load failed" in warning_message

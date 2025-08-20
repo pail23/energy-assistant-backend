@@ -2,8 +2,8 @@
 
 from fastapi import HTTPException
 
-from energy_assistant.optimizer import EmhassOptimizer
 from energy_assistant.models.forecast import ForecastSchema
+from energy_assistant.optimizer import EmhassOptimizer
 
 from .schema import CreateModelResponse, TuneModelResponse
 

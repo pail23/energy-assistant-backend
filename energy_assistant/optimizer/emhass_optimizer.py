@@ -4,6 +4,7 @@ import logging
 import pathlib
 import uuid
 from datetime import datetime
+from typing import Any
 
 import pandas as pd
 from emhass.retrieve_hass import RetrieveHass  # type: ignore
@@ -109,11 +110,11 @@ class EmhassOptimizer(Optimizer):
         """Perform a forecast model fit from training data retrieved from Home Assistant."""
         return self._ml_model_manager.forecast_model_fit(only_if_file_does_not_exist, days_to_retrieve)
 
-    def forecast_model_tune(self):
+    def forecast_model_tune(self) -> Any:
         """Tune a forecast model hyperparameters using bayesian optimization."""
         return self._ml_model_manager.forecast_model_tune()
 
-    def forecast_model_predict(self, use_last_window: bool = True, debug: bool = False, mlf=None):
+    def forecast_model_predict(self, use_last_window: bool = True, debug: bool = False, mlf: Any | None = None) -> Any:
         """Perform a forecast model predict using a previously trained skforecast model."""
         return self._ml_model_manager.forecast_model_predict(use_last_window, debug, mlf)
 

@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from energy_assistant.optimizer import Optimizer
 from energy_assistant.devices import PowerModes, Session, SessionStorage, State, StateId, StatesRepository
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.heat_pump import HeatPumpDevice, SGReadyHeatPumpDevice
+from energy_assistant.optimizer import Optimizer
 from energy_assistant.settings import settings
 from energy_assistant.storage.config import ConfigStorage
 

@@ -55,9 +55,9 @@ class TestConcreteOptimizer:
         optimizer = ConcreteOptimizer()
         device_id1 = uuid.uuid4()
         device_id2 = uuid.uuid4()
-        
+
         result1 = optimizer.get_optimized_power(device_id1)
         result2 = optimizer.get_optimized_power(device_id2)
-        
+
         assert result1 == 100.0
         assert result2 == 100.0

@@ -109,9 +109,9 @@ class TestOptimizationManager:
         device1 = MagicMock(spec=LoadInfo)
         device2 = MagicMock(spec=LoadInfo)
         devices = [device1, device2]
-        
+
         optimization_manager.set_projected_load_devices(devices)
-        
+
         assert optimization_manager._projected_load_devices == devices
 
     @patch("energy_assistant.optimizer.optimization.utils")
@@ -134,20 +134,20 @@ class TestOptimizationManager:
             {"plant": "conf"}
         )
         mock_utils.get_days_list.return_value = ["2023-01-01", "2023-01-02"]
-        
+
         mock_forecast_instance = MagicMock()
         mock_forecast_instance.var_load_cost = [0.1, 0.2]
         mock_forecast_instance.var_prod_price = [0.15, 0.25]
         mock_forecast.return_value = mock_forecast_instance
-        
+
         mock_opt_instance = MagicMock()
         expected_result = pd.DataFrame({"result": [1, 2, 3]})
         mock_opt_instance.perform_perfect_forecast_optim.return_value = expected_result
         mock_optimization.return_value = mock_opt_instance
-        
+
         # Call the method
         result = optimization_manager.perfect_forecast_optim()
-        
+
         # Verify calls
         mock_utils.treat_runtimeparams.assert_called_once()
         mock_forecast.assert_called_once()
@@ -155,7 +155,7 @@ class TestOptimizationManager:
         mock_retrieve_hass.get_data.assert_called_once()
         mock_retrieve_hass.prepare_data.assert_called_once()
         mock_opt_instance.perform_perfect_forecast_optim.assert_called_once()
-        
+
         assert result.equals(expected_result)
 
     @patch("energy_assistant.optimizer.optimization.utils")
@@ -172,26 +172,26 @@ class TestOptimizationManager:
         # Setup basic mocks
         mock_utils.treat_runtimeparams.return_value = ("params", {}, {}, {})
         mock_utils.get_days_list.return_value = []
-        
+
         mock_forecast_instance = MagicMock()
         mock_forecast_instance.var_load_cost = []
         mock_forecast_instance.var_prod_price = []
         mock_forecast.return_value = mock_forecast_instance
-        
+
         mock_opt_instance = MagicMock()
         expected_result = pd.DataFrame()
         mock_opt_instance.perform_perfect_forecast_optim.return_value = expected_result
         mock_optimization.return_value = mock_opt_instance
-        
+
         # Call with debug=True
         result = optimization_manager.perfect_forecast_optim(debug=True)
-        
+
         # Verify the debug parameter is handled (implementation may vary)
         mock_opt_instance.perform_perfect_forecast_optim.assert_called_once()
         assert isinstance(result, pd.DataFrame)
 
     @patch("energy_assistant.optimizer.optimization.utils")
-    @patch("energy_assistant.optimizer.optimization.Forecast") 
+    @patch("energy_assistant.optimizer.optimization.Forecast")
     @patch("energy_assistant.optimizer.optimization.Optimization")
     def test_perfect_forecast_optim_save_data_false(
         self,
@@ -204,20 +204,20 @@ class TestOptimizationManager:
         # Setup basic mocks
         mock_utils.treat_runtimeparams.return_value = ("params", {}, {}, {})
         mock_utils.get_days_list.return_value = []
-        
+
         mock_forecast_instance = MagicMock()
         mock_forecast_instance.var_load_cost = []
         mock_forecast_instance.var_prod_price = []
         mock_forecast.return_value = mock_forecast_instance
-        
+
         mock_opt_instance = MagicMock()
         expected_result = pd.DataFrame()
         mock_opt_instance.perform_perfect_forecast_optim.return_value = expected_result
         mock_optimization.return_value = mock_opt_instance
-        
+
         # Call with save_data_to_file=False
         result = optimization_manager.perfect_forecast_optim(save_data_to_file=False)
-        
+
         mock_opt_instance.perform_perfect_forecast_optim.assert_called_once()
         assert isinstance(result, pd.DataFrame)
 
@@ -228,14 +228,14 @@ class TestOptimizationManager:
         device1.device_id = "device1"
         device1.power = 100.0
         device1.start_datetime = datetime(2023, 1, 1, 10, 0, tzinfo=UTC)
-        
+
         device2 = MagicMock(spec=LoadInfo)
         device2.device_id = "device2"
         device2.power = 200.0
         device2.start_datetime = datetime(2023, 1, 1, 14, 0, tzinfo=UTC)
-        
+
         optimization_manager.set_projected_load_devices([device1, device2])
-        
+
         # The method should return the projected load devices
         devices = optimization_manager._projected_load_devices
         assert len(devices) == 2
@@ -252,25 +252,25 @@ class TestOptimizationManager:
         with patch("energy_assistant.optimizer.optimization.utils") as mock_utils, \
              patch("energy_assistant.optimizer.optimization.Forecast") as mock_forecast, \
              patch("energy_assistant.optimizer.optimization.Optimization") as mock_optimization:
-            
+
             # Setup mocks
             mock_utils.treat_runtimeparams.return_value = ("params", {}, {}, {})
             mock_utils.get_days_list.return_value = []
-            
+
             mock_forecast_instance = MagicMock()
             mock_forecast_instance.var_load_cost = []
             mock_forecast_instance.var_prod_price = []
             mock_forecast.return_value = mock_forecast_instance
-            
+
             mock_opt_instance = MagicMock()
             mock_opt_instance.perform_perfect_forecast_optim.return_value = pd.DataFrame()
             mock_optimization.return_value = mock_opt_instance
-            
+
             optimization_manager.perfect_forecast_optim()
-            
+
             # Verify logging calls
             assert mock_logger.info.call_count >= 2  # At least "Setting up" and "Performing" messages
-            
+
             log_messages = [call.args[0] for call in mock_logger.info.call_args_list]
             assert any("Setting up needed data" in msg for msg in log_messages)
             assert any("Performing perfect forecast optimization" in msg for msg in log_messages)

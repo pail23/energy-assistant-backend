@@ -1,7 +1,6 @@
 """Tests for the state_management module."""
 
 from unittest.mock import MagicMock
-from uuid import UUID
 
 import pytest
 
@@ -34,20 +33,20 @@ def mock_home() -> Home:
     home.home_consumption_power = 1500.0
     home.self_sufficiency = 0.75
     home.self_consumption = 0.65
-    
+
     # Create mock devices
     device1 = MagicMock()
     device1.power_controllable = True
     device1.power = 200.0
-    
+
     device2 = MagicMock()
     device2.power_controllable = False
     device2.power = 100.0
-    
+
     device3 = MagicMock()
     device3.power_controllable = True
     device3.power = 300.0
-    
+
     home.devices = [device1, device2, device3]
     return home
 
@@ -104,7 +103,7 @@ class TestStateManager:
             mock_no_var_loads_buffer,
             mock_get_forecast_value_func,
         )
-        
+
         # Expected power calculation: home_consumption (1500) - controllable devices (200 + 300) = 1000
         expected_power = 1000.0
         mock_no_var_loads_buffer.add_data_point.assert_called_once_with(expected_power)
@@ -122,24 +121,24 @@ class TestStateManager:
         mock_home.home_consumption_power = 500.0
         mock_home.self_sufficiency = 0.75
         mock_home.self_consumption = 0.65
-        
+
         device1 = MagicMock()
         device1.power_controllable = True
         device1.power = 400.0
-        
+
         device2 = MagicMock()
         device2.power_controllable = True
         device2.power = 300.0
-        
+
         mock_home.devices = [device1, device2]
-        
+
         state_manager.update_repository_states(
             mock_home,
             mock_state_repository,
             mock_no_var_loads_buffer,
             mock_get_forecast_value_func,
         )
-        
+
         # Power should be clamped to 0
         mock_no_var_loads_buffer.add_data_point.assert_called_once_with(0.0)
 
@@ -159,7 +158,7 @@ class TestStateManager:
             mock_no_var_loads_buffer,
             mock_get_forecast_value_func,
         )
-        
+
         # Verify all expected states are set
         expected_calls = [
             # Power no var loads
@@ -168,7 +167,7 @@ class TestStateManager:
                 "1000.0",
                 {
                     "unit_of_measurement": "W",
-                    "state_class": "measurement", 
+                    "state_class": "measurement",
                     "device_class": "power",
                 }
             ),
@@ -221,17 +220,17 @@ class TestStateManager:
                 }
             ),
         ]
-        
+
         # Verify the number of calls
         assert mock_state_repository.set_state.call_count == len(expected_calls)
-        
+
         # Verify each call
         for i, expected_call in enumerate(expected_calls):
             actual_call = mock_state_repository.set_state.call_args_list[i]
             state_id, value, attributes = actual_call[0]
-            
+
             expected_state_id, expected_value, expected_attributes = expected_call
-            
+
             assert state_id.id == expected_state_id.id
             assert state_id.channel == expected_state_id.channel
             assert value == expected_value
@@ -248,22 +247,22 @@ class TestStateManager:
         """Test state updates with different entity prefix."""
         mock_config.hass_entity_prefix = "custom"
         state_manager = StateManager(mock_config)
-        
+
         state_manager.update_repository_states(
             mock_home,
             mock_state_repository,
             mock_no_var_loads_buffer,
             mock_get_forecast_value_func,
         )
-        
+
         # Check that custom prefix is used
         call_args_list = mock_state_repository.set_state.call_args_list
-        
+
         # Find calls with the custom prefix
         pv_call = next(call for call in call_args_list if call[0][0].id == "sensor.custom_p_pv")
         consumption_call = next(call for call in call_args_list if call[0][0].id == "sensor.custom_p_consumption")
         home_consumption_call = next(call for call in call_args_list if call[0][0].id == "sensor.custom_home_consumption")
-        
+
         assert pv_call is not None
         assert consumption_call is not None
         assert home_consumption_call is not None
@@ -281,24 +280,24 @@ class TestStateManager:
         mock_home.home_consumption_power = 1500.0
         mock_home.self_sufficiency = 0.75
         mock_home.self_consumption = 0.65
-        
+
         device1 = MagicMock()
         device1.power_controllable = False
         device1.power = 200.0
-        
+
         device2 = MagicMock()
         device2.power_controllable = False
         device2.power = 300.0
-        
+
         mock_home.devices = [device1, device2]
-        
+
         state_manager.update_repository_states(
             mock_home,
             mock_state_repository,
             mock_no_var_loads_buffer,
             mock_get_forecast_value_func,
         )
-        
+
         # Power should equal home consumption since no controllable devices to subtract
         mock_no_var_loads_buffer.add_data_point.assert_called_once_with(1500.0)
 
@@ -315,14 +314,14 @@ class TestStateManager:
         mock_home.self_sufficiency = 0.75
         mock_home.self_consumption = 0.65
         mock_home.devices = []
-        
+
         state_manager.update_repository_states(
             mock_home,
             mock_state_repository,
             mock_no_var_loads_buffer,
             mock_get_forecast_value_func,
         )
-        
+
         # Power should equal home consumption since no devices to subtract
         mock_no_var_loads_buffer.add_data_point.assert_called_once_with(1500.0)
 
@@ -339,19 +338,19 @@ class TestStateManager:
         mock_home.self_sufficiency = 0.754  # Should round to 75
         mock_home.self_consumption = 0.656  # Should round to 66
         mock_home.devices = []
-        
+
         state_manager.update_repository_states(
             mock_home,
             mock_state_repository,
             mock_no_var_loads_buffer,
             mock_get_forecast_value_func,
         )
-        
+
         # Find the self sufficiency and self consumption calls
         call_args_list = mock_state_repository.set_state.call_args_list
-        
+
         self_sufficiency_call = next(call for call in call_args_list if "self_sufficiency" in call[0][0].id)
         self_consumption_call = next(call for call in call_args_list if "self_consumption" in call[0][0].id)
-        
+
         assert self_sufficiency_call[0][1] == "75"  # 0.754 * 100 rounded = 75
         assert self_consumption_call[0][1] == "66"   # 0.656 * 100 rounded = 66
