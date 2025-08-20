@@ -1,6 +1,7 @@
 """Tests for the ml_models module."""
 
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import pandas as pd
@@ -45,6 +46,8 @@ def mock_config() -> EmhassConfig:
     config.plant_conf = {"test": "plant"}
     config.power_no_var_loads_id = "sensor.power_load"
     config.emhass_path_conf = {"emhass_conf_path": "/test/path"}
+    config.emhass_config = {"test": "config"}  # Add emhass_config for JSON serialization
+    config._data_folder = Path("/tmp/test_data")  # Add the missing data folder
     return config
 
 
@@ -82,32 +85,53 @@ class TestMLModelManager:
 
     def test_get_ml_runtime_params(self, ml_model_manager: MLModelManager) -> None:
         """Test getting ML runtime parameters."""
-        with patch.object(ml_model_manager, "_generate_ml_runtime_params") as mock_generate:
-            expected_params = {"test": "params"}
-            mock_generate.return_value = expected_params
+        # Set up some mock devices first
+        device1 = MagicMock()
+        device1.nominal_power = 1000
+        device1.duration = 7200  # 2 hours
+        device1.start_timestep = 0
+        device1.end_timestep = 24
+        device1.is_continous = True
+        device1.is_constant = False
+        ml_model_manager.set_optimized_devices([device1])
 
-            result = ml_model_manager.get_ml_runtime_params()
+        result = ml_model_manager.get_ml_runtime_params()
 
-            mock_generate.assert_called_once()
-            assert result == expected_params
+        assert isinstance(result, dict)
+        assert "number_of_deferrable_loads" in result
+        assert "nominal_power_of_deferrable_loads" in result
+        assert result["number_of_deferrable_loads"] == 1
+        assert result["nominal_power_of_deferrable_loads"] == [1000]
 
     def test_generate_ml_runtime_params_structure(self, ml_model_manager: MLModelManager) -> None:
         """Test the structure of generated ML runtime parameters."""
-        params = ml_model_manager._generate_ml_runtime_params()
+        # Set up some mock devices first
+        device1 = MagicMock()
+        device1.nominal_power = 1000
+        device1.duration = 7200  # 2 hours  
+        device1.start_timestep = 0
+        device1.end_timestep = 24
+        device1.is_continous = True
+        device1.is_constant = False
+        ml_model_manager.set_optimized_devices([device1])
+
+        params = ml_model_manager.get_ml_runtime_params()
 
         assert isinstance(params, dict)
-        assert "freq" in params
-        assert "freq" in params
-        assert "passed_data" in params
-        assert params["freq"] == 1.0  # 3600 seconds / 3600 = 1 hour
-
-        passed_data = params["passed_data"]
-        assert "model_type" in passed_data
-        assert "sklearn_model" in passed_data
-        assert "num_lags" in passed_data
-        assert "split_date_delta" in passed_data
-        assert "perform_backtest" in passed_data
-        assert passed_data["model_type"] == LOAD_FORECAST_MODEL_TYPE
+        assert "number_of_deferrable_loads" in params
+        assert "nominal_power_of_deferrable_loads" in params
+        assert "operating_hours_of_each_deferrable_load" in params
+        assert "start_timesteps_of_each_deferrable_load" in params
+        assert "end_timesteps_of_each_deferrable_load" in params
+        assert "treat_deferrable_load_as_semi_cont" in params
+        assert "set_deferrable_load_single_constant" in params
+        assert "days_to_retrieve" in params
+        assert "model_type" in params
+        assert "sklearn_model" in params
+        assert "num_lags" in params
+        assert "split_date_delta" in params
+        assert "perform_backtest" in params
+        assert params["model_type"] == LOAD_FORECAST_MODEL_TYPE
 
     @patch("energy_assistant.optimizer.ml_models.utils")
     @patch("energy_assistant.optimizer.ml_models.MLForecaster")
@@ -133,9 +157,15 @@ class TestMLModelManager:
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
         # Call the method
-        with patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2:
+        with patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2, \
+             patch("pathlib.Path.open", mock_open()) as mock_file, \
+             patch("energy_assistant.optimizer.ml_models.pickle.dump") as mock_pickle:
             mock_r2.return_value = 0.95
-            result = ml_model_manager.fit_load_forecast_model()
+            result = ml_model_manager.forecast_model_fit()
+
+            # Verify file operations
+            mock_file.assert_called_once()  # The file should be opened
+            mock_pickle.assert_called_once()  # The MLF should be pickled
 
         # Verify calls
         mock_utils.treat_runtimeparams.assert_called_once()
@@ -144,7 +174,9 @@ class TestMLModelManager:
         mock_ml_forecaster.fit.assert_called_once()
         mock_r2.assert_called_once()
 
-        assert isinstance(result, pd.DataFrame)
+        # The method returns the R2 score, not a DataFrame
+        assert isinstance(result, float)
+        assert result == 0.95
 
     @patch("energy_assistant.optimizer.ml_models.utils")
     @patch("energy_assistant.optimizer.ml_models.MLForecaster")
@@ -167,7 +199,7 @@ class TestMLModelManager:
 
         # Call with custom days
         with patch("energy_assistant.optimizer.ml_models.r2_score"):
-            result = ml_model_manager.fit_load_forecast_model(days_to_retrieve=1)
+            result = ml_model_manager.forecast_model_fit(days_to_retrieve=1)
 
         mock_utils.get_days_list.assert_called_once_with(1)
         assert isinstance(result, pd.DataFrame)
@@ -199,7 +231,7 @@ class TestMLModelManager:
         with patch("pathlib.Path.exists", return_value=True), \
              patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2:
             mock_r2.return_value = 0.98
-            result = ml_model_manager.tune_load_forecast_model()
+            result = ml_model_manager.forecast_model_tune()
 
         # Verify calls
         mock_file_open.assert_called_once()
@@ -215,7 +247,7 @@ class TestMLModelManager:
             patch("pathlib.Path.exists", return_value=False),
             pytest.raises(MLForecasterTuneError),
         ):
-            ml_model_manager.tune_load_forecast_model()
+            ml_model_manager.forecast_model_tune()
 
     @patch("energy_assistant.optimizer.ml_models.MLForecaster")
     @patch("builtins.open", new_callable=mock_open, read_data=b"pickled_model_data")
@@ -239,7 +271,7 @@ class TestMLModelManager:
 
         # Mock pathlib.Path.exists to return True
         with patch("pathlib.Path.exists", return_value=True):
-            result = ml_model_manager.predict_load_forecast()
+            result = ml_model_manager.forecast_model_predict()
 
         # Verify calls
         mock_file_open.assert_called_once()
@@ -251,7 +283,7 @@ class TestMLModelManager:
     def test_predict_load_forecast_file_not_found(self, ml_model_manager: MLModelManager) -> None:
         """Test prediction when model file doesn't exist."""
         with patch("pathlib.Path.exists", return_value=False):
-            result = ml_model_manager.predict_load_forecast()
+            result = ml_model_manager.forecast_model_predict()
             assert result is None
 
     @patch("energy_assistant.optimizer.ml_models.LOGGER")
@@ -277,7 +309,7 @@ class TestMLModelManager:
 
             mock_r2.return_value = 0.95
 
-            ml_model_manager.fit_load_forecast_model()
+            ml_model_manager.forecast_model_fit()
 
             # Verify R2 score is logged
             mock_logger.info.assert_called_with("R2 score = 0.95")
