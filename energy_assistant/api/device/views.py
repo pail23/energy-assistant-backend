@@ -1,4 +1,4 @@
-"""Views for home measurement API."""
+"""Views for device API."""
 
 import uuid
 from typing import Annotated
@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Path, Request
 
 from energy_assistant.models.schema import DeviceSchema
 
+from ..base import get_energy_assistant, get_home
 from .schema import (
     CreateDeviceRequest,
     CreateDeviceResponse,
@@ -34,13 +35,13 @@ async def read_all(
     filter_with_session_log_enties: bool,
     use_case: Annotated[ReadAllDevices, Depends(ReadAllDevices)],
 ) -> ReadAllDevicesResponse:
-    """Rest end point for read all devices."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
+    """Get all devices."""
+    energy_assistant = get_energy_assistant(request)
     return ReadAllDevicesResponse(
         devices=[
             device
             async for device in use_case.execute(
-                energy_assistant.home if energy_assistant is not None else None,
+                energy_assistant.home,
                 filter_with_session_log_enties,
             )
         ],
@@ -53,10 +54,10 @@ async def create(
     data: CreateDeviceRequest,
     use_case: Annotated[CreateDevice, Depends(CreateDevice)],
 ) -> CreateDeviceResponse:
-    """REST end point for creating a new device."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
+    """Create a new device."""
+    energy_assistant = get_energy_assistant(request)
     device_id = await use_case.execute(
-        data.device_type, data.device_name, data.config, energy_assistant.home if energy_assistant is not None else None
+        data.device_type, data.device_name, data.config, energy_assistant.home
     )
     return CreateDeviceResponse(device_id=str(device_id))
 
@@ -67,20 +68,21 @@ async def create(
 )
 async def read(
     request: Request,
-    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    device_id: Annotated[uuid.UUID, Path(..., description="ID of the device")],
     use_case: Annotated[ReadDevice, Depends(ReadDevice)],
 ) -> DeviceSchema:
-    """REST end point for read a device."""
-    return await use_case.execute(device_id, request.app.home)
+    """Get a device by ID."""
+    home = get_home(request)
+    return await use_case.execute(device_id, home)
 
 
 @router.get("/{device_id}/measurements")
 async def read_measurements(
     request: Request,
-    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    device_id: Annotated[uuid.UUID, Path(..., description="ID of the device")],
     use_case: Annotated[ReadDeviceMeasurements, Depends(ReadDeviceMeasurements)],
 ) -> ReadDeviceMeasurementsResponse:
-    """REST end point for read a device."""
+    """Get device measurements."""
     return ReadDeviceMeasurementsResponse(
         device_measurements=[device_measurement async for device_measurement in use_case.execute(device_id)],
     )
@@ -93,19 +95,20 @@ async def read_measurements(
 async def update_power_mode(
     request: Request,
     data: UpdateDevicePowerModeRequest,
-    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    device_id: Annotated[uuid.UUID, Path(..., description="ID of the device to update")],
     use_case: Annotated[UpdateDevicePowerMode, Depends(UpdateDevicePowerMode)],
 ) -> DeviceSchema:
     """Update the power mode of a device."""
-    return await use_case.execute(device_id, data.power_mode, request.app.home)
+    home = get_home(request)
+    return await use_case.execute(device_id, data.power_mode, home)
 
 
 @router.delete("/{device_id}", status_code=204)
 async def delete(
     request: Request,
-    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    device_id: Annotated[uuid.UUID, Path(..., description="ID of the device to delete")],
     use_case: Annotated[DeleteDevice, Depends(DeleteDevice)],
 ) -> None:
-    """REST end point for delete a device."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    await use_case.execute(device_id, energy_assistant.home if energy_assistant is not None else None)
+    """Delete a device."""
+    energy_assistant = get_energy_assistant(request)
+    await use_case.execute(device_id, energy_assistant.home)

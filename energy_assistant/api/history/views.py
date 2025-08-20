@@ -1,4 +1,4 @@
-"""Views for home measurement API."""
+"""Views for history API."""
 
 from datetime import date
 from typing import Annotated
@@ -26,7 +26,7 @@ async def read_difference(
     to_date: date,
     use_case: Annotated[ReadHomeMeasurementDifference, Depends(ReadHomeMeasurementDifference)],
 ) -> HomeMeasurementPeriodSchema:
-    """Get the difference of the measurements between to dates."""
+    """Get the measurement difference between two dates."""
     return await use_case.execute(from_date, to_date)
 
 
@@ -40,5 +40,5 @@ async def read_daily(
     to_date: date,
     use_case: Annotated[ReadHomeMeasurementDaily, Depends(ReadHomeMeasurementDaily)],
 ) -> HomeMeasurementDailySchema:
-    """Get the difference of the measurements between to dates."""
+    """Get daily measurements between two dates."""
     return await use_case.execute(from_date, to_date)

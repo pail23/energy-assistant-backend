@@ -1,4 +1,4 @@
-"""Schemas for home measurement api."""
+"""Schemas for history api."""
 
 import uuid
 from datetime import date

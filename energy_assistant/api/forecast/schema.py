@@ -1,4 +1,4 @@
-"""Schemas for home measurement api."""
+"""Schemas for forecast api."""
 
 from pydantic import BaseModel
 

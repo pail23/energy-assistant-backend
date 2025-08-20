@@ -1,4 +1,4 @@
-"""Views for home measurement API."""
+"""Views for session log API."""
 
 import uuid
 from typing import Annotated
@@ -17,5 +17,5 @@ async def read_all(
     use_case: Annotated[ReadAllLogEntries, Depends(ReadAllLogEntries)],
     device_id: uuid.UUID | None = None,
 ) -> ReadAllSessionLogEntriesResponse:
-    """Rest end point for read all devices."""
+    """Get all session log entries."""
     return ReadAllSessionLogEntriesResponse(entries=[entry async for entry in use_case.execute(device_id)])
