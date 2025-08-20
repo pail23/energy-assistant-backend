@@ -1,8 +1,10 @@
 """Simple tests for base API utilities without complex dependencies."""
 
-import pytest
-from fastapi import Request, HTTPException
+import inspect
 from unittest.mock import MagicMock
+
+import pytest
+from fastapi import HTTPException, Request
 
 from energy_assistant.api.base import get_energy_assistant, get_home
 
@@ -15,10 +17,10 @@ class TestGetEnergyAssistantSimple:
         # Arrange
         mock_energy_assistant = MagicMock()
         mock_energy_assistant.name = "test_assistant"
-        
+
         mock_app = MagicMock()
         mock_app.energy_assistant = mock_energy_assistant
-        
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
 
@@ -36,14 +38,14 @@ class TestGetEnergyAssistantSimple:
         # Simulate missing attribute by deleting it
         if hasattr(mock_app, 'energy_assistant'):
             delattr(mock_app, 'energy_assistant')
-            
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             get_energy_assistant(mock_request)
-        
+
         assert exc_info.value.status_code == 500
         assert "Energy Assistant not available" in exc_info.value.detail
 
@@ -52,14 +54,14 @@ class TestGetEnergyAssistantSimple:
         # Arrange
         mock_app = MagicMock()
         mock_app.energy_assistant = None
-        
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             get_energy_assistant(mock_request)
-        
+
         assert exc_info.value.status_code == 500
         assert "Energy Assistant not available" in exc_info.value.detail
 
@@ -72,10 +74,10 @@ class TestGetHomeSimple:
         # Arrange
         mock_home = MagicMock()
         mock_home.name = "test_home"
-        
+
         mock_app = MagicMock()
         mock_app.home = mock_home
-        
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
 
@@ -91,14 +93,14 @@ class TestGetHomeSimple:
         # Arrange
         mock_home = MagicMock()
         mock_home.name = "assistant_home"
-        
+
         mock_energy_assistant = MagicMock()
         mock_energy_assistant.home = mock_home
-        
+
         mock_app = MagicMock()
         mock_app.home = None  # Not directly available
         mock_app.energy_assistant = mock_energy_assistant
-        
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
 
@@ -115,14 +117,14 @@ class TestGetHomeSimple:
         mock_app = MagicMock()
         mock_app.home = None
         mock_app.energy_assistant = None
-        
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             get_home(mock_request)
-        
+
         assert exc_info.value.status_code == 500
         assert "Energy Assistant not available" in exc_info.value.detail
 
@@ -131,16 +133,16 @@ class TestGetHomeSimple:
         # Arrange
         mock_home = MagicMock()
         mock_home.name = "fallback_home"
-        
+
         mock_energy_assistant = MagicMock()
         mock_energy_assistant.home = mock_home
-        
+
         mock_app = MagicMock()
         # Remove home attribute entirely
         if hasattr(mock_app, 'home'):
             delattr(mock_app, 'home')
         mock_app.energy_assistant = mock_energy_assistant
-        
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_request.app = mock_app
 
@@ -166,11 +168,11 @@ class TestErrorHandlingConsistency:
         # Test get_energy_assistant error message
         with pytest.raises(HTTPException) as exc_info1:
             get_energy_assistant(mock_request)
-        
+
         # Test get_home error message (should be same since it calls get_energy_assistant)
         with pytest.raises(HTTPException) as exc_info2:
             get_home(mock_request)
-        
+
         # Both should have the same error message
         assert exc_info1.value.detail == exc_info2.value.detail
         assert exc_info1.value.status_code == exc_info2.value.status_code == 500
@@ -184,7 +186,7 @@ class TestErrorHandlingConsistency:
 
         with pytest.raises(HTTPException) as exc_info:
             get_energy_assistant(mock_request)
-        
+
         exception = exc_info.value
         assert isinstance(exception, HTTPException)
         assert exception.status_code == 500
@@ -217,15 +219,13 @@ class TestDocumentationAndSignatures:
 
     def test_function_signatures(self):
         """Test function signatures are correct."""
-        import inspect
-        
         # Test get_energy_assistant signature
         sig1 = inspect.signature(get_energy_assistant)
         params1 = list(sig1.parameters.keys())
         assert len(params1) == 1
         assert params1[0] == "request"
         assert sig1.parameters["request"].annotation == Request
-        
+
         # Test get_home signature
         sig2 = inspect.signature(get_home)
         params2 = list(sig2.parameters.keys())
@@ -242,14 +242,14 @@ class TestEdgeCases:
         # This tests the implementation detail that we use getattr with None default
         mock_request = MagicMock(spec=Request)
         mock_app = MagicMock()
-        
+
         # Create an app object that doesn't have energy_assistant attribute
         class MockApp:
             pass
-        
+
         mock_app = MockApp()
         mock_request.app = mock_app
-        
+
         # Should not raise AttributeError, but HTTPException
         with pytest.raises(HTTPException):
             get_energy_assistant(mock_request)
@@ -259,17 +259,17 @@ class TestEdgeCases:
         # Arrange
         direct_home = MagicMock()
         direct_home.source = "direct"
-        
+
         assistant_home = MagicMock()
         assistant_home.source = "assistant"
-        
+
         mock_energy_assistant = MagicMock()
         mock_energy_assistant.home = assistant_home
-        
+
         mock_app = MagicMock()
         mock_app.home = direct_home  # This should take priority
         mock_app.energy_assistant = mock_energy_assistant
-        
+
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
 

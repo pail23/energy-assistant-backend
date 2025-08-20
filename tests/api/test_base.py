@@ -1,8 +1,9 @@
 """Tests for the base API utilities."""
 
+from unittest.mock import MagicMock
+
 import pytest
 from fastapi import HTTPException, Request
-from unittest.mock import MagicMock
 
 from energy_assistant.api.base import get_energy_assistant, get_home
 
@@ -37,7 +38,7 @@ class TestGetEnergyAssistant:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             get_energy_assistant(mock_request)
-        
+
         assert exc_info.value.status_code == 500
         assert exc_info.value.detail == "Energy Assistant not available"
 
@@ -52,7 +53,7 @@ class TestGetEnergyAssistant:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             get_energy_assistant(mock_request)
-        
+
         assert exc_info.value.status_code == 500
         assert exc_info.value.detail == "Energy Assistant not available"
 
@@ -106,7 +107,7 @@ class TestGetHome:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             get_home(mock_request)
-        
+
         assert exc_info.value.status_code == 500
         assert exc_info.value.detail == "Energy Assistant not available"
 
@@ -122,7 +123,7 @@ class TestGetHome:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             get_home(mock_request)
-        
+
         assert exc_info.value.status_code == 500
         assert exc_info.value.detail == "Energy Assistant not available"
 
