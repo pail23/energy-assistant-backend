@@ -5,8 +5,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Request
 
-from energy_assistant.models.schema import DeviceSchema
-
 from ..base import get_energy_assistant, get_home
 from .schema import (
     CreateDeviceRequest,
@@ -70,7 +68,7 @@ async def read(
     request: Request,
     device_id: Annotated[uuid.UUID, Path(..., description="ID of the device")],
     use_case: Annotated[ReadDevice, Depends(ReadDevice)],
-) -> DeviceSchema:
+) -> ReadDeviceResponse:
     """Get a device by ID."""
     home = get_home(request)
     return await use_case.execute(device_id, home)
@@ -97,7 +95,7 @@ async def update_power_mode(
     data: UpdateDevicePowerModeRequest,
     device_id: Annotated[uuid.UUID, Path(..., description="ID of the device to update")],
     use_case: Annotated[UpdateDevicePowerMode, Depends(UpdateDevicePowerMode)],
-) -> DeviceSchema:
+) -> UpdateDevicePowerModeResponse:
     """Update the power mode of a device."""
     home = get_home(request)
     return await use_case.execute(device_id, data.power_mode, home)

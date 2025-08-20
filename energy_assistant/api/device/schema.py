@@ -1,4 +1,4 @@
-"""Schemas for home measurement api."""
+"""Schemas for device api."""
 
 from pydantic import BaseModel
 
@@ -10,7 +10,7 @@ class ReadDeviceResponse(DeviceSchema):
 
 
 class ReadAllDevicesResponse(BaseModel):
-    """API Response for reading all deviced."""
+    """API Response for reading all devices."""
 
     devices: list[DeviceSchema]
 
