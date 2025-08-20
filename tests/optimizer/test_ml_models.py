@@ -1,7 +1,7 @@
 """Tests for the ml_models module."""
 
-from unittest.mock import MagicMock, mock_open, patch
 import sys
+from unittest.mock import MagicMock, mock_open, patch
 
 import pandas as pd
 import pytest

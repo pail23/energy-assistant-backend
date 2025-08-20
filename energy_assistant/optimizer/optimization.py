@@ -3,7 +3,7 @@
 import json
 import logging
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -129,7 +129,7 @@ class OptimizationManager:
             opt_res.to_csv(self._config._data_folder / filename, index_label="timestamp")
         return opt_res
 
-    async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> Optional[pd.DataFrame]:
+    async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame | None:
         """Perform a call to the day-ahead optimization routine."""
         self._logger.info("Setting up needed data for a day ahead forecast")
 

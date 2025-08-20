@@ -4,7 +4,7 @@ import copy
 import json
 import logging
 import pickle
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -84,7 +84,7 @@ class MLModelManager:
     def forecast_model_fit(
         self,
         only_if_file_does_not_exist: bool = False,
-        days_to_retrieve: Optional[int] = None,
+        days_to_retrieve: int | None = None,
     ) -> float:
         """Perform a forecast model fit from training data retrieved from Home Assistant."""
         filename = LOAD_FORECAST_MODEL_TYPE + "_mlf.pkl"
@@ -174,8 +174,8 @@ class MLModelManager:
         self,
         use_last_window: bool = True,
         debug: bool = False,
-        mlf: Optional[Any] = None,
-    ) -> Optional[pd.Series]:
+        mlf: Any | None = None,
+    ) -> pd.Series | None:
         """Perform a forecast model predict using a previously trained skforecast model."""
         # Treat runtimeparams
         params: str = ""

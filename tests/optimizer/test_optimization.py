@@ -1,8 +1,8 @@
 """Tests for the optimization module."""
 
+import sys
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
-import sys
 
 import pandas as pd
 import pytest

@@ -1,7 +1,7 @@
 """Forecasting logic for EMHASS optimizer."""
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -46,8 +46,8 @@ class ForecastingManager:
     async def async_get_pv_forecast(
         self,
         fcst: Forecast,
-        set_mix_forecast: Optional[bool] = False,
-        df_now: Optional[pd.DataFrame] = None,
+        set_mix_forecast: bool | None = False,
+        df_now: pd.DataFrame | None = None,
     ) -> pd.Series:
         """Get the PV forecast."""
         if self._config.pv_forecast_method != "homeassistant":

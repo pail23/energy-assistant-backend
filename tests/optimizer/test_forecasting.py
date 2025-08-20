@@ -1,7 +1,7 @@
 """Tests for the forecasting module."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
 import sys
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 import pandas as pd

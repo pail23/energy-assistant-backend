@@ -1,7 +1,7 @@
 """Tests for the config module."""
 
-from unittest.mock import MagicMock, patch
 import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -9,8 +9,8 @@ import pytest
 mock_emhass = MagicMock()
 mock_emhass.utils = MagicMock()
 mock_emhass.utils.get_yaml_parse = MagicMock(return_value=(
-    {"test_retrieve": "config"}, 
-    {"test_optim": "config"}, 
+    {"test_retrieve": "config"},
+    {"test_optim": "config"},
     {"test_plant": "config"}
 ))
 sys.modules['emhass'] = mock_emhass

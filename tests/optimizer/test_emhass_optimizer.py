@@ -1,9 +1,9 @@
 """Tests for the main EmhassOptimizer class."""
 
+import sys
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import sys
 
 import pandas as pd
 import pytest
