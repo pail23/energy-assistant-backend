@@ -4,10 +4,18 @@ import logging
 import pathlib
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING, Optional
 
 import pandas as pd
-from emhass.retrieve_hass import RetrieveHass  # type: ignore
+
+# Conditional import for emhass - only import when needed
+if TYPE_CHECKING:
+    from emhass.retrieve_hass import RetrieveHass  # type: ignore
+else:
+    try:
+        from emhass.retrieve_hass import RetrieveHass  # type: ignore
+    except ImportError:
+        RetrieveHass = None  # type: ignore
 
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices import LoadInfo, Location, StatesRepository
@@ -17,7 +25,7 @@ from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.models.forecast import ForecastSchema, ForecastSerieSchema
 from energy_assistant.storage.config import ConfigStorage
 
-from .base import Optimizer
+from energy_assistant.optimizer_base import Optimizer
 from .config import EmhassConfig
 from .forecasting import ForecastingManager
 from .ml_models import MLModelManager
@@ -75,7 +83,7 @@ class EmhassOptimizer(Optimizer):
         self._state_manager = StateManager(self._config)
 
         # Initialize optimizer state
-        self._day_ahead_forecast: pd.DataFrame | None = None
+        self._day_ahead_forecast: Optional[pd.DataFrame] = None
         self._optimzed_devices: list = []
         self._projected_load_devices: list[LoadInfo] = []
 
@@ -105,7 +113,7 @@ class EmhassOptimizer(Optimizer):
     def forecast_model_fit(
         self,
         only_if_file_does_not_exist: bool = False,
-        days_to_retrieve: int | None = None,
+        days_to_retrieve: Optional[int] = None,
     ) -> float:
         """Perform a forecast model fit from training data retrieved from Home Assistant."""
         return self._ml_model_manager.forecast_model_fit(only_if_file_does_not_exist, days_to_retrieve)
@@ -114,7 +122,7 @@ class EmhassOptimizer(Optimizer):
         """Tune a forecast model hyperparameters using bayesian optimization."""
         return self._ml_model_manager.forecast_model_tune()
 
-    def forecast_model_predict(self, use_last_window: bool = True, debug: bool = False, mlf: Any | None = None) -> Any:
+    def forecast_model_predict(self, use_last_window: bool = True, debug: bool = False, mlf: Optional[Any] = None) -> Any:
         """Perform a forecast model predict using a previously trained skforecast model."""
         return self._ml_model_manager.forecast_model_predict(use_last_window, debug, mlf)
 

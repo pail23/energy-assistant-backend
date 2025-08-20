@@ -5,7 +5,7 @@ from abc import ABC
 
 import pytest
 
-from energy_assistant.optimizer.base import Optimizer
+from energy_assistant.optimizer_base import Optimizer
 
 
 class TestOptimizer:

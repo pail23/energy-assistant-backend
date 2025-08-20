@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.utility_meter import UtilityMeter
-from energy_assistant.optimizer.base import Optimizer
+from energy_assistant.optimizer_base import Optimizer
 
 from . import (
     EnergyIntegrator,

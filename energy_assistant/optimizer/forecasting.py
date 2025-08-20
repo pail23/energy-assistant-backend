@@ -1,11 +1,19 @@
 """Forecasting logic for EMHASS optimizer."""
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import pandas as pd
-from emhass.forecast import Forecast  # type: ignore
+
+# Conditional import for emhass
+if TYPE_CHECKING:
+    from emhass.forecast import Forecast  # type: ignore
+else:
+    try:
+        from emhass.forecast import Forecast  # type: ignore
+    except ImportError:
+        Forecast = None  # type: ignore
 
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices import Location
@@ -38,8 +46,8 @@ class ForecastingManager:
     async def async_get_pv_forecast(
         self,
         fcst: Forecast,
-        set_mix_forecast: bool | None = False,
-        df_now: pd.DataFrame | None = None,
+        set_mix_forecast: Optional[bool] = False,
+        df_now: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Get the PV forecast."""
         if self._config.pv_forecast_method != "homeassistant":

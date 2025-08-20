@@ -6,7 +6,7 @@ from energy_assistant.constants import POWER_HYSTERESIS
 from energy_assistant.devices import OnOffState, PowerModes, StateId, StatesRepository
 from energy_assistant.devices.analysis import FloatDataBuffer
 from energy_assistant.devices.homeassistant import HOMEASSISTANT_CHANNEL
-from energy_assistant.optimizer.base import Optimizer
+from energy_assistant.optimizer_base import Optimizer
 
 
 class OnOffController:

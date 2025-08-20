@@ -3,14 +3,28 @@
 import json
 import logging
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import pandas as pd
-from emhass import utils  # type: ignore
-from emhass.forecast import Forecast  # type: ignore
-from emhass.optimization import Optimization  # type: ignore
-from emhass.retrieve_hass import RetrieveHass  # type: ignore
+
+# Conditional imports for external dependencies
+if TYPE_CHECKING:
+    from emhass import utils  # type: ignore
+    from emhass.forecast import Forecast  # type: ignore
+    from emhass.optimization import Optimization  # type: ignore
+    from emhass.retrieve_hass import RetrieveHass  # type: ignore
+else:
+    try:
+        from emhass import utils  # type: ignore
+        from emhass.forecast import Forecast  # type: ignore
+        from emhass.optimization import Optimization  # type: ignore
+        from emhass.retrieve_hass import RetrieveHass  # type: ignore
+    except ImportError:
+        utils = None  # type: ignore
+        Forecast = None  # type: ignore
+        Optimization = None  # type: ignore
+        RetrieveHass = None  # type: ignore
 
 from energy_assistant.constants import ROOT_LOGGER_NAME
 from energy_assistant.devices import LoadInfo, Location
@@ -115,7 +129,7 @@ class OptimizationManager:
             opt_res.to_csv(self._config._data_folder / filename, index_label="timestamp")
         return opt_res
 
-    async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame | None:
+    async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> Optional[pd.DataFrame]:
         """Perform a call to the day-ahead optimization routine."""
         self._logger.info("Setting up needed data for a day ahead forecast")
 

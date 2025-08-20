@@ -1,10 +1,18 @@
 """Tests for the forecasting module."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
+import sys
 
 import numpy as np
 import pandas as pd
 import pytest
+
+# Mock external dependencies before importing the modules
+mock_emhass = MagicMock()
+mock_emhass.forecast = MagicMock()
+mock_emhass.forecast.Forecast = MagicMock()
+sys.modules['emhass'] = mock_emhass
+sys.modules['emhass.forecast'] = mock_emhass.forecast
 
 from energy_assistant.devices import Location
 from energy_assistant.devices.analysis import FloatDataBuffer

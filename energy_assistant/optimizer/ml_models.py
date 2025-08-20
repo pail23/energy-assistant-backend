@@ -4,13 +4,27 @@ import copy
 import json
 import logging
 import pickle
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Any
 
 import pandas as pd
-from emhass import utils  # type: ignore
-from emhass.machine_learning_forecaster import MLForecaster  # type: ignore
-from emhass.retrieve_hass import RetrieveHass  # type: ignore
-from sklearn.metrics import r2_score  # type: ignore
+
+# Conditional imports for external dependencies
+if TYPE_CHECKING:
+    from emhass import utils  # type: ignore
+    from emhass.machine_learning_forecaster import MLForecaster  # type: ignore
+    from emhass.retrieve_hass import RetrieveHass  # type: ignore
+    from sklearn.metrics import r2_score  # type: ignore
+else:
+    try:
+        from emhass import utils  # type: ignore
+        from emhass.machine_learning_forecaster import MLForecaster  # type: ignore
+        from emhass.retrieve_hass import RetrieveHass  # type: ignore
+        from sklearn.metrics import r2_score  # type: ignore
+    except ImportError:
+        utils = None  # type: ignore
+        MLForecaster = None  # type: ignore
+        RetrieveHass = None  # type: ignore
+        r2_score = None  # type: ignore
 
 from energy_assistant.constants import ROOT_LOGGER_NAME
 
@@ -70,7 +84,7 @@ class MLModelManager:
     def forecast_model_fit(
         self,
         only_if_file_does_not_exist: bool = False,
-        days_to_retrieve: int | None = None,
+        days_to_retrieve: Optional[int] = None,
     ) -> float:
         """Perform a forecast model fit from training data retrieved from Home Assistant."""
         filename = LOAD_FORECAST_MODEL_TYPE + "_mlf.pkl"
@@ -160,8 +174,8 @@ class MLModelManager:
         self,
         use_last_window: bool = True,
         debug: bool = False,
-        mlf: MLForecaster | None = None,
-    ) -> pd.Series | None:
+        mlf: Optional[Any] = None,
+    ) -> Optional[pd.Series]:
         """Perform a forecast model predict using a previously trained skforecast model."""
         # Treat runtimeparams
         params: str = ""

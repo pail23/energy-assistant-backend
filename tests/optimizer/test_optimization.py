@@ -2,9 +2,25 @@
 
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
+import sys
 
 import pandas as pd
 import pytest
+
+# Mock external dependencies before importing the modules
+mock_emhass = MagicMock()
+mock_emhass.utils = MagicMock()
+mock_emhass.forecast = MagicMock()
+mock_emhass.forecast.Forecast = MagicMock()
+mock_emhass.optimization = MagicMock()
+mock_emhass.optimization.Optimization = MagicMock()
+mock_emhass.retrieve_hass = MagicMock()
+mock_emhass.retrieve_hass.RetrieveHass = MagicMock()
+sys.modules['emhass'] = mock_emhass
+sys.modules['emhass.utils'] = mock_emhass.utils
+sys.modules['emhass.forecast'] = mock_emhass.forecast
+sys.modules['emhass.optimization'] = mock_emhass.optimization
+sys.modules['emhass.retrieve_hass'] = mock_emhass.retrieve_hass
 
 from energy_assistant.devices import LoadInfo, Location
 from energy_assistant.optimizer.config import EmhassConfig

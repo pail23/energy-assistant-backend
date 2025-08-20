@@ -3,9 +3,17 @@
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import sys
 
 import pandas as pd
 import pytest
+
+# Mock external dependencies before importing the modules
+mock_emhass = MagicMock()
+mock_emhass.retrieve_hass = MagicMock()
+mock_emhass.retrieve_hass.RetrieveHass = MagicMock()
+sys.modules['emhass'] = mock_emhass
+sys.modules['emhass.retrieve_hass'] = mock_emhass.retrieve_hass
 
 from energy_assistant.devices import LoadInfo, Location, StatesRepository
 from energy_assistant.devices.analysis import FloatDataBuffer

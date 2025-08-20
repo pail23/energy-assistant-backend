@@ -11,7 +11,7 @@ from energy_assistant.devices.evcc import HomeassistantEvccDevice
 from energy_assistant.devices.homeassistant_device import HomeassistantDevice, ReadOnlyHomeassistantDevice
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.devices.state_value import StateValue
-from energy_assistant.optimizer.base import Optimizer
+from energy_assistant.optimizer_base import Optimizer
 from energy_assistant.storage.config import ConfigStorage
 
 from . import (

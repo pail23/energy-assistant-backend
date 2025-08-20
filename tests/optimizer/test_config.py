@@ -1,8 +1,20 @@
 """Tests for the config module."""
 
 from unittest.mock import MagicMock, patch
+import sys
 
 import pytest
+
+# Mock external dependencies before importing the modules
+mock_emhass = MagicMock()
+mock_emhass.utils = MagicMock()
+mock_emhass.utils.get_yaml_parse = MagicMock(return_value=(
+    {"test_retrieve": "config"}, 
+    {"test_optim": "config"}, 
+    {"test_plant": "config"}
+))
+sys.modules['emhass'] = mock_emhass
+sys.modules['emhass.utils'] = mock_emhass.utils
 
 from energy_assistant.devices import Location
 from energy_assistant.devices.homeassistant import Homeassistant
@@ -39,7 +51,7 @@ def mock_config_storage() -> ConfigStorage:
     config.emhass.as_dict.return_value = {
         "plant_conf": {},
         "retrieve_hass_conf": {
-            "optimization_time_step": {"total_seconds": lambda: 3600}
+            "optimization_time_step": 3600
         },
         "optim_conf": {},
     }
@@ -76,7 +88,7 @@ class TestEmhassConfig:
 
         assert emhass_config.solar_power_id == "sensor.solar_power"
         assert emhass_config.hass_entity_prefix == DEFAULT_HASS_ENTITY_PREFIX
-        assert emhass_config.pv_forecast_method == DEFAULT_HASS_ENTITY_PREFIX
+        assert emhass_config.pv_forecast_method == "homeassistant"
         assert emhass_config.cost_fun == "profit"
         assert emhass_config.method_ts_round == "nearest"
         mock_mkdir.assert_called()

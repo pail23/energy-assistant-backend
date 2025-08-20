@@ -1,9 +1,28 @@
 """Tests for the ml_models module."""
 
 from unittest.mock import MagicMock, mock_open, patch
+import sys
 
 import pandas as pd
 import pytest
+
+# Mock external dependencies before importing the modules
+mock_emhass = MagicMock()
+mock_emhass.utils = MagicMock()
+mock_emhass.machine_learning_forecaster = MagicMock()
+mock_emhass.machine_learning_forecaster.MLForecaster = MagicMock()
+mock_emhass.retrieve_hass = MagicMock()
+mock_emhass.retrieve_hass.RetrieveHass = MagicMock()
+sys.modules['emhass'] = mock_emhass
+sys.modules['emhass.utils'] = mock_emhass.utils
+sys.modules['emhass.machine_learning_forecaster'] = mock_emhass.machine_learning_forecaster
+sys.modules['emhass.retrieve_hass'] = mock_emhass.retrieve_hass
+
+mock_sklearn = MagicMock()
+mock_sklearn.metrics = MagicMock()
+mock_sklearn.metrics.r2_score = MagicMock()
+sys.modules['sklearn'] = mock_sklearn
+sys.modules['sklearn.metrics'] = mock_sklearn.metrics
 
 from energy_assistant.optimizer.config import EmhassConfig
 from energy_assistant.optimizer.ml_models import (
