@@ -1,10 +1,11 @@
-"""Views for home measurement API."""
+"""Views for configuration API."""
 
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Depends, Path, Request
 
+from ..base import get_energy_assistant
 from .schema import (
     ConfigModel,
     DeviceControlModel,
@@ -31,10 +32,8 @@ async def read_configuration(
     request: Request,
     use_case: Annotated[ReadConfiguration, Depends(ReadConfiguration)],
 ) -> ConfigModel:
-    """Rest end point for read all devices."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    if energy_assistant is None:
-        raise HTTPException(status_code=500)
+    """Get the configuration."""
+    energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.config)
 
 
@@ -43,7 +42,7 @@ async def read_version(
     request: Request,
     use_case: Annotated[ReadVersion, Depends(ReadVersion)],
 ) -> VersionModel:
-    """Rest end point for read all devices."""
+    """Get the version information."""
 
     return await use_case.execute()
 
@@ -53,10 +52,8 @@ async def read_device_control(
     request: Request,
     use_case: Annotated[ReadDeviceControl, Depends(ReadDeviceControl)],
 ) -> DeviceControlModel:
-    """Rest end point for read all devices."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    if energy_assistant is None:
-        raise HTTPException(status_code=500)
+    """Get the device control configuration."""
+    energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.home)
 
 
@@ -66,11 +63,8 @@ async def write_device_control(
     disable_device_control: bool,
     use_case: Annotated[WriteDeviceControl, Depends(WriteDeviceControl)],
 ) -> DeviceControlModel:
-    """Rest end point for write device control."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    if energy_assistant is None:
-        raise HTTPException(status_code=500)
-
+    """Update the device control configuration."""
+    energy_assistant = get_energy_assistant(request)
     return await use_case.execute(disable_device_control, energy_assistant.home)
 
 
@@ -80,13 +74,11 @@ async def write_device_control(
 )
 async def read(
     request: Request,
-    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    device_id: Annotated[uuid.UUID, Path(..., description="ID of the device")],
     use_case: Annotated[ReadDeviceConfiguration, Depends(ReadDeviceConfiguration)],
 ) -> ConfigModel:
-    """REST end point for read a device configuration."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    if energy_assistant is None:
-        raise HTTPException(status_code=500)
+    """Get a device configuration."""
+    energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.config, device_id)
 
 
@@ -97,11 +89,9 @@ async def read(
 async def write(
     request: Request,
     data: dict,
-    device_id: Annotated[uuid.UUID, Path(..., description="")],
+    device_id: Annotated[uuid.UUID, Path(..., description="ID of the device to configure")],
     use_case: Annotated[WriteDeviceConfiguration, Depends(WriteDeviceConfiguration)],
 ) -> ConfigModel:
-    """REST end point for writing a device configuration."""
-    energy_assistant = request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None
-    if energy_assistant is None:
-        raise HTTPException(status_code=500)
+    """Update a device configuration."""
+    energy_assistant = get_energy_assistant(request)
     return await use_case.execute(energy_assistant.config, data, device_id, energy_assistant.home)

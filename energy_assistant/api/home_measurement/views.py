@@ -24,22 +24,22 @@ async def read_all(
     request: Request,
     use_case: Annotated[ReadAllHomeMeasurement, Depends(ReadAllHomeMeasurement)],
 ) -> ReadAllHomeMeasurementResponse:
-    """Rest end point for read all home measurements."""
+    """Get all home measurements."""
     return ReadAllHomeMeasurementResponse(
         home_measurements=[home_measurement async for home_measurement in use_case.execute()],
     )
 
 
 @router.get(
-    "/{HomeMeasurement_id}",
+    "/{home_measurement_id}",
     response_model=ReadHomeMeasurementResponse,
 )
 async def read(
     request: Request,
-    home_measurement_id: Annotated[int, Path(..., description="")],
+    home_measurement_id: Annotated[int, Path(..., description="ID of the home measurement")],
     use_case: Annotated[ReadHomeMeasurement, Depends(ReadHomeMeasurement)],
 ) -> HomeMeasurementSchema:
-    """REST end point for read a home measurement."""
+    """Get a home measurement by ID."""
     return await use_case.execute(home_measurement_id)
 
 
@@ -49,10 +49,10 @@ async def read(
 )
 async def read_by_date(
     request: Request,
-    measurement_date: Annotated[date, Path(..., description="")],
+    measurement_date: Annotated[date, Path(..., description="Date of the measurement")],
     use_case: Annotated[ReadHomeMeasurementByDate, Depends(ReadHomeMeasurementByDate)],
 ) -> HomeMeasurementSchema:
-    """REST end point for read a home measurement by date."""
+    """Get a home measurement by date."""
     return await use_case.execute(measurement_date)
 
 
@@ -62,18 +62,18 @@ async def read_by_date(
 )
 async def read_before_date(
     request: Request,
-    measurement_date: Annotated[date, Path(..., description="")],
+    measurement_date: Annotated[date, Path(..., description="Date before which to find measurement")],
     use_case: Annotated[ReadHomeMeasurementLastBeforeDate, Depends(ReadHomeMeasurementLastBeforeDate)],
 ) -> HomeMeasurementSchema:
-    """REST end point for read the last home measurement before a date."""
+    """Get the last home measurement before a date."""
     return await use_case.execute(measurement_date)
 
 
-@router.delete("/{HomeMeasurement_id}", status_code=204)
+@router.delete("/{home_measurement_id}", status_code=204)
 async def delete(
     request: Request,
-    home_measurement_id: Annotated[int, Path(..., description="")],
+    home_measurement_id: Annotated[int, Path(..., description="ID of the home measurement to delete")],
     use_case: Annotated[DeleteHomeMeasurement, Depends(DeleteHomeMeasurement)],
 ) -> None:
-    """REST end point for delete a home measurement."""
+    """Delete a home measurement."""
     await use_case.execute(home_measurement_id)
