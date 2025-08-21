@@ -83,6 +83,7 @@ class MLModelManager:
 
     def _process_runtime_params(self) -> dict:
         """Process and treat runtime parameters for ML forecasting."""
+        params = ""
         try:
             if utils:
                 result = utils.treat_runtimeparams(
@@ -95,16 +96,14 @@ class MLModelManager:
                     self._logger,
                 )  # type: ignore
                 # Handle both single return value and tuple return
-                if isinstance(result, list | tuple) and len(result) > 0:
-                    params: str = result[0]
-                else:
-                    params: str = str(result)
+
+                params = result[0] if (isinstance(result, list | tuple) and len(result) > 0) else str(result)
             else:
                 # Fallback when utils is not available
-                params: str = json.dumps(self.get_ml_runtime_params())
+                params = json.dumps(self.get_ml_runtime_params())
         except Exception:
             # Fallback for tests or when external dependencies fail
-            params: str = json.dumps(self.get_ml_runtime_params())
+            params = json.dumps(self.get_ml_runtime_params())
 
         params_dict: dict = json.loads(params)
         # Handle different parameter structures (with or without "passed_data" wrapper)
