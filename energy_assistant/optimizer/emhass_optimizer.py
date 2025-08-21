@@ -213,6 +213,17 @@ class EmhassOptimizer(Optimizer):
             return self._state_manager.get_optimized_power(device_id, self._get_forecast_value)
         raise OptimizerNotInitializedError
 
+    def _get_method(self) -> str:
+        """Get the method for rounding timestamps."""
+        if hasattr(self._config, "method_ts_round"):
+            if self._config.method_ts_round == "nearest":
+                return "nearest"
+            if self._config.method_ts_round == "first":
+                return "ffill"
+            if self._config.method_ts_round == "last":
+                return "bfill"
+        return "nearest"
+
     def _get_forecast_value(self, column_name: str) -> float:
         """Get a forecasted value."""
         if self._day_ahead_forecast is not None:
@@ -228,17 +239,7 @@ class EmhassOptimizer(Optimizer):
                     return 0
 
                 now_precise = datetime.now(timezone).replace(second=0, microsecond=0)
-                if hasattr(self._config, "method_ts_round"):
-                    if self._config.method_ts_round == "nearest":
-                        method = "nearest"
-                    elif self._config.method_ts_round == "first":
-                        method = "ffill"
-                    elif self._config.method_ts_round == "last":
-                        method = "bfill"
-                    else:
-                        method = "nearest"
-                else:
-                    method = "nearest"
+                method = self._get_method()
 
                 # Check if column exists before accessing it
                 if column_name not in self._day_ahead_forecast.columns:
