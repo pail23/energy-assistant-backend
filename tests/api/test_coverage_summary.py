@@ -40,28 +40,28 @@ class TestCoverageSummary:
         source2 = inspect.getsource(get_home)
 
         # Should contain proper error handling
-        assert 'HTTPException' in source1
-        assert 'status_code=500' in source1
-        assert 'Energy Assistant not available' in source1
+        assert "HTTPException" in source1
+        assert "status_code=500" in source1
+        assert "Energy Assistant not available" in source1
 
         # get_home should call get_energy_assistant for consistency
-        assert 'get_energy_assistant' in source2
+        assert "get_energy_assistant" in source2
 
         print("✓ Base module provides centralized error handling")
 
     def test_api_files_structure_is_maintained(self):
         """Test that API file structure is maintained after refactoring."""
-        api_dir = Path(__file__).parent.parent.parent / 'energy_assistant' / 'api'
+        api_dir = Path(__file__).parent.parent.parent / "energy_assistant" / "api"
 
         # Check that key API modules exist
         expected_modules = [
-            'config/views.py',
-            'device/views.py',
-            'home_measurement/views.py',
-            'forecast/views.py',
-            'history/views.py',
-            'sessionlogs/views.py',
-            'base.py'  # New module we added
+            "config/views.py",
+            "device/views.py",
+            "home_measurement/views.py",
+            "forecast/views.py",
+            "history/views.py",
+            "sessionlogs/views.py",
+            "base.py",  # New module we added
         ]
 
         for module_path in expected_modules:
@@ -72,16 +72,16 @@ class TestCoverageSummary:
 
     def test_no_old_patterns_in_api_files(self):
         """Test that old error handling patterns are not present."""
-        api_dir = Path(__file__).parent.parent.parent / 'energy_assistant' / 'api'
+        api_dir = Path(__file__).parent.parent.parent / "energy_assistant" / "api"
 
         # Old patterns that should not exist anymore
         old_patterns = [
             'request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None',
-            'if energy_assistant is None:\n        raise HTTPException(status_code=500)'
+            "if energy_assistant is None:\n        raise HTTPException(status_code=500)",
         ]
 
         # Check view files
-        for views_file in api_dir.glob('*/views.py'):
+        for views_file in api_dir.glob("*/views.py"):
             if views_file.exists():
                 content = views_file.read_text()
                 for pattern in old_patterns:
@@ -94,11 +94,11 @@ class TestCoverageSummary:
         test_dir = Path(__file__).parent
 
         expected_test_files = [
-            'test_base.py',
-            'test_base_simple.py',
-            'test_base_integration.py',
-            'test_refactoring_verification.py',
-            'test_coverage_summary.py'  # This file
+            "test_base.py",
+            "test_base_simple.py",
+            "test_base_integration.py",
+            "test_refactoring_verification.py",
+            "test_coverage_summary.py",  # This file
         ]
 
         for test_file in expected_test_files:
@@ -117,13 +117,13 @@ class TestCoverageSummary:
             assert doc is not None
 
             # Should have multiple sections
-            assert 'Args:' in doc
-            assert 'Returns:' in doc
-            assert 'Raises:' in doc
-            assert 'HTTPException' in doc
+            assert "Args:" in doc
+            assert "Returns:" in doc
+            assert "Raises:" in doc
+            assert "HTTPException" in doc
 
             # Should be multi-line (comprehensive)
-            assert len(doc.split('\n')) > 5
+            assert len(doc.split("\n")) > 5
 
         print("✓ Documentation quality is improved")
 
@@ -134,12 +134,12 @@ class TestCoverageSummary:
         sig2 = inspect.signature(get_home)
 
         # Should have proper Request type annotation
-        assert sig1.parameters['request'].annotation == Request
-        assert sig2.parameters['request'].annotation == Request
+        assert sig1.parameters["request"].annotation == Request
+        assert sig2.parameters["request"].annotation == Request
 
         # Check that HTTPException is imported in the base module
         source = inspect.getsource(base_module)
-        assert 'from fastapi import HTTPException, Request' in source
+        assert "from fastapi import HTTPException, Request" in source
 
         print("✓ Type safety has been improved")
 
@@ -150,11 +150,11 @@ class TestCoverageSummary:
 
         # Should contain core error handling logic
         assert 'getattr(request.app, "energy_assistant", None)' in base_source
-        assert 'HTTPException(status_code=500' in base_source
+        assert "HTTPException(status_code=500" in base_source
 
         # Functions should be concise (not overly complex)
-        get_energy_assistant_lines = len(inspect.getsource(get_energy_assistant).split('\n'))
-        get_home_lines = len(inspect.getsource(get_home).split('\n'))
+        get_energy_assistant_lines = len(inspect.getsource(get_energy_assistant).split("\n"))
+        get_home_lines = len(inspect.getsource(get_home).split("\n"))
 
         # Each function should be reasonably concise (including docstring)
         assert get_energy_assistant_lines < 25, "get_energy_assistant should be concise"
@@ -168,14 +168,14 @@ def run_all_coverage_tests():
     test = TestCoverageSummary()
 
     test_methods = [
-        'test_base_module_exists_and_functions_work',
-        'test_base_module_provides_error_handling',
-        'test_api_files_structure_is_maintained',
-        'test_no_old_patterns_in_api_files',
-        'test_test_files_exist',
-        'test_improved_documentation_quality',
-        'test_type_safety_improvements',
-        'test_code_reusability_achieved'
+        "test_base_module_exists_and_functions_work",
+        "test_base_module_provides_error_handling",
+        "test_api_files_structure_is_maintained",
+        "test_no_old_patterns_in_api_files",
+        "test_test_files_exist",
+        "test_improved_documentation_quality",
+        "test_type_safety_improvements",
+        "test_code_reusability_achieved",
     ]
 
     passed = 0

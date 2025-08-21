@@ -36,8 +36,8 @@ class TestGetEnergyAssistantSimple:
         # Arrange
         mock_app = MagicMock()
         # Simulate missing attribute by deleting it
-        if hasattr(mock_app, 'energy_assistant'):
-            delattr(mock_app, 'energy_assistant')
+        if hasattr(mock_app, "energy_assistant"):
+            delattr(mock_app, "energy_assistant")
 
         mock_request = MagicMock(spec=Request)
         mock_request.app = mock_app
@@ -139,8 +139,8 @@ class TestGetHomeSimple:
 
         mock_app = MagicMock()
         # Remove home attribute entirely
-        if hasattr(mock_app, 'home'):
-            delattr(mock_app, 'home')
+        if hasattr(mock_app, "home"):
+            delattr(mock_app, "home")
         mock_app.energy_assistant = mock_energy_assistant
 
         mock_request = MagicMock(spec=Request)

@@ -19,22 +19,25 @@ class TestAPIModulesUseBaseUtilities:
         # Check key API modules that were changed to use base utilities
         # Based on git diff, only these modules actually use the base utilities:
         api_modules = [
-            'energy_assistant.api.config.views',
-            'energy_assistant.api.device.views',
-            'energy_assistant.api.forecast.views'
+            "energy_assistant.api.config.views",
+            "energy_assistant.api.device.views",
+            "energy_assistant.api.forecast.views",
         ]
 
         for module_name in api_modules:
             try:
-                module = __import__(module_name, fromlist=[''])
+                module = __import__(module_name, fromlist=[""])
 
                 # Check if get_energy_assistant is imported and available
-                has_get_energy_assistant = hasattr(module, 'get_energy_assistant')
+                has_get_energy_assistant = hasattr(module, "get_energy_assistant")
 
                 # Some modules might import it differently, so check source
                 if not has_get_energy_assistant:
                     source = inspect.getsource(module)
-                    has_import = 'from ..base import get_energy_assistant' in source or 'from energy_assistant.api.base import get_energy_assistant' in source
+                    has_import = (
+                        "from ..base import get_energy_assistant" in source
+                        or "from energy_assistant.api.base import get_energy_assistant" in source
+                    )
                     assert has_import, f"Module {module_name} does not import get_energy_assistant"
 
                 print(f"✓ {module_name} imports base utilities correctly")
@@ -49,14 +52,14 @@ class TestAPIModulesUseBaseUtilities:
         # Define the old patterns we want to avoid
         old_patterns = [
             'request.app.energy_assistant if hasattr(request.app, "energy_assistant") else None',
-            'if energy_assistant is None:\n        raise HTTPException(status_code=500)',
-            'hasattr(request.app, "energy_assistant")'
+            "if energy_assistant is None:\n        raise HTTPException(status_code=500)",
+            'hasattr(request.app, "energy_assistant")',
         ]
 
         # Check the source files of API modules
-        api_dir = Path(__file__).parent.parent.parent / 'energy_assistant' / 'api'
+        api_dir = Path(__file__).parent.parent.parent / "energy_assistant" / "api"
 
-        for views_file in api_dir.glob('*/views.py'):
+        for views_file in api_dir.glob("*/views.py"):
             if views_file.exists():
                 content = views_file.read_text()
 
@@ -72,10 +75,12 @@ class TestAPIModulesUseBaseUtilities:
         """Test that base utilities are actually called in API modules."""
         try:
             # Check that get_energy_assistant is imported
-            assert hasattr(config_views, 'get_energy_assistant'), "get_energy_assistant not found in config views"
+            assert hasattr(config_views, "get_energy_assistant"), "get_energy_assistant not found in config views"
 
             # Verify it's the same function from our base module
-            assert config_views.get_energy_assistant is get_energy_assistant, "get_energy_assistant is not the same function from base module"
+            assert config_views.get_energy_assistant is get_energy_assistant, (
+                "get_energy_assistant is not the same function from base module"
+            )
 
             print("✓ Config views correctly imports and uses base utilities")
 
@@ -86,15 +91,15 @@ class TestAPIModulesUseBaseUtilities:
         """Test that all API modules use consistent error handling."""
         # This test verifies that if we can import modules, they use consistent patterns
         test_modules = [
-            ('energy_assistant.api.config.views', 'get_energy_assistant'),
-            ('energy_assistant.api.device.views', 'get_energy_assistant'),
+            ("energy_assistant.api.config.views", "get_energy_assistant"),
+            ("energy_assistant.api.device.views", "get_energy_assistant"),
         ]
 
         imported_functions = []
 
         for module_name, function_name in test_modules:
             try:
-                module = __import__(module_name, fromlist=[''])
+                module = __import__(module_name, fromlist=[""])
                 if hasattr(module, function_name):
                     func = getattr(module, function_name)
                     imported_functions.append((module_name, function_name, func))
@@ -107,7 +112,9 @@ class TestAPIModulesUseBaseUtilities:
         if len(imported_functions) > 1:
             first_func = imported_functions[0][2]
             for module_name, function_name, func in imported_functions[1:]:
-                assert func is first_func, f"Function {function_name} in {module_name} is not the same as base module function"
+                assert func is first_func, (
+                    f"Function {function_name} in {module_name} is not the same as base module function"
+                )
 
             print(f"✓ All {len(imported_functions)} modules use the same base utility functions")
         else:
@@ -124,8 +131,8 @@ class TestCodeQualityImprovements:
 
         # Should contain the key error handling logic
         assert 'getattr(request.app, "energy_assistant", None)' in base_source
-        assert 'HTTPException(status_code=500' in base_source
-        assert 'Energy Assistant not available' in base_source
+        assert "HTTPException(status_code=500" in base_source
+        assert "Energy Assistant not available" in base_source
 
         print("✓ Base utilities contain centralized error handling logic")
 
@@ -158,6 +165,6 @@ class TestCodeQualityImprovements:
             assert "HTTPException" in doc, f"Function {func.__name__} doesn't document HTTPException"
 
             # Check that docstring is not just a single line
-            assert len(doc.split('\n')) > 3, f"Function {func.__name__} has minimal docstring"
+            assert len(doc.split("\n")) > 3, f"Function {func.__name__} has minimal docstring"
 
         print("✓ All base utility functions have comprehensive documentation")
