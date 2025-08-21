@@ -66,7 +66,7 @@ class EmhassOptimizer(Optimizer):
                 hass.token,
                 self._config.retrieve_hass_conf["optimization_time_step"],
                 location.get_time_zone(),
-                str(self._config.emhass_config),
+                self._config.get_emhass_config_string(),
                 self._config.emhass_path_conf,
                 self._logger,
                 get_data_from_file=False,

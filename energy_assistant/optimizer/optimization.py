@@ -129,7 +129,9 @@ class OptimizationManager:
             opt_res.to_csv(self._config._data_folder / filename, index_label="timestamp")
         return opt_res
 
-    async def async_dayahead_forecast_optim(self, save_data_to_file: bool = False, debug: bool = False) -> pd.DataFrame | None:
+    async def async_dayahead_forecast_optim(
+        self, save_data_to_file: bool = False, debug: bool = False
+    ) -> pd.DataFrame | None:
         """Perform a call to the day-ahead optimization routine."""
         self._logger.info("Setting up needed data for a day ahead forecast")
 
@@ -292,7 +294,9 @@ class OptimizationManager:
         df_input_data = self._retrieve_hass.df_final.copy()
 
         # Get PV and load forecasts
-        p_pv_forecast = await self._forecasting_manager.async_get_pv_forecast(fcst, set_mix_forecast=True, df_now=df_input_data)
+        p_pv_forecast = await self._forecasting_manager.async_get_pv_forecast(
+            fcst, set_mix_forecast=True, df_now=df_input_data
+        )
 
         p_load_forecast = fcst.get_load_forecast(
             method=self._config.optim_conf["load_forecast_method"],
