@@ -143,6 +143,10 @@ class EmhassConfig:
             if "continual_publish" not in retrieve_hass_conf:
                 retrieve_hass_conf["continual_publish"] = False
 
+            # Ensure optimization_time_step is set (needed for RetrieveHass initialization)
+            if "optimization_time_step" not in retrieve_hass_conf:
+                retrieve_hass_conf["optimization_time_step"] = 30
+
             optim_conf["number_of_deferrable_loads"] = 0
             if "compute_curtailment" not in plant_conf:
                 plant_conf["compute_curtailment"] = False
