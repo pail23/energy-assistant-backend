@@ -81,22 +81,8 @@ class MLModelManager:
         }
         return runtimeparams
 
-    def forecast_model_fit(
-        self,
-        only_if_file_does_not_exist: bool = False,
-        days_to_retrieve: int | None = None,
-    ) -> float:
-        """Perform a forecast model fit from training data retrieved from Home Assistant."""
-        filename = LOAD_FORECAST_MODEL_TYPE + "_mlf.pkl"
-        filename_path = self._config._data_folder / filename
-
-        if only_if_file_does_not_exist and filename_path.is_file():
-            self._logger.info("Skip model creation")
-            return 0
-
-        self._logger.info("Setting up needed data")
-
-        # Treat runtimeparams
+    def _process_runtime_params(self) -> dict:
+        """Process and treat runtime parameters for ML forecasting."""
         try:
             if utils:
                 result = utils.treat_runtimeparams(
@@ -121,50 +107,44 @@ class MLModelManager:
             params: str = json.dumps(self.get_ml_runtime_params())
 
         params_dict: dict = json.loads(params)
-
         # Handle different parameter structures (with or without "passed_data" wrapper)
-        data_params = params_dict.get("passed_data", params_dict)
+        return params_dict.get("passed_data", params_dict)
 
-        # Retrieve data from hass
-        if days_to_retrieve is None:
-            days_to_retrieve = data_params.get(
-                "days_to_retrieve", self._config.retrieve_hass_conf.get("days_to_retrieve", 10)
-            )
-
+    def _retrieve_training_data(self, days_to_retrieve: int) -> pd.DataFrame:
+        """Retrieve training data from Home Assistant."""
         if utils:
             days_list = utils.get_days_list(days_to_retrieve)
             var_list = [self._config.power_no_var_loads_id]
             self._retrieve_hass.get_data(days_list, var_list)
-            df_input_data = self._retrieve_hass.df_final.copy()
+            return self._retrieve_hass.df_final.copy()
         else:
             # Fallback for test environment
-            df_input_data = pd.DataFrame({"test_data": [1, 2, 3]})
+            return pd.DataFrame({"test_data": [1, 2, 3]})
 
-        data = copy.deepcopy(df_input_data)
+    def _create_ml_forecaster(self, data: pd.DataFrame, data_params: dict) -> Any:
+        """Create and configure ML forecaster object."""
+        if not MLForecaster:
+            return None  # Mock for test environment
 
-        # Get parameters with defaults for test environments
         model_type = data_params.get("model_type", "load_forecast")
         sklearn_model = data_params.get("sklearn_model", "LinearRegression")
         num_lags = data_params.get("num_lags", 24)
+
+        return MLForecaster(
+            data,
+            model_type,
+            self._config.power_no_var_loads_id,
+            sklearn_model,
+            num_lags,
+            self._config.emhass_path_conf,
+            self._logger,
+        )
+
+    def _fit_and_evaluate_model(self, mlf: Any, data_params: dict) -> float:
+        """Fit ML model and calculate R2 score."""
         split_date_delta = data_params.get("split_date_delta", "48h")
         perform_backtest = data_params.get("perform_backtest", True)
 
-        # The ML forecaster object
-        if MLForecaster:
-            mlf = MLForecaster(
-                data,
-                model_type,
-                self._config.power_no_var_loads_id,
-                sklearn_model,
-                num_lags,
-                self._config.emhass_path_conf,
-                self._logger,
-            )
-        else:
-            # Mock for test environment
-            mlf = None
-
-        # Fit the ML model
         if mlf:
             df_pred = mlf.fit(split_date_delta=split_date_delta, perform_backtest=perform_backtest)
             predictions = df_pred["pred"].dropna()
@@ -172,8 +152,9 @@ class MLModelManager:
             if r2_score:
                 r2 = r2_score(test_data, predictions)
                 self._logger.info(f"R2 score = {r2}")
+                return r2
             else:
-                r2 = 0.0  # Fallback for test environment
+                return 0.0  # Fallback for test environment
         else:
             # Mock environment - still call r2_score for test compatibility
             if r2_score:
@@ -182,21 +163,61 @@ class MLModelManager:
                 mock_test = pd.Series([105])
                 r2 = r2_score(mock_test, mock_predictions)
                 self._logger.info(f"R2 score = {r2}")
+                return r2
             else:
-                r2 = 0.0
+                return 0.0
 
-        # Save model - ensure directory exists
-        model_file = self._config._data_folder / filename
-        model_file.parent.mkdir(parents=True, exist_ok=True)
+    def _save_model(self, mlf: Any, filename_path: Any) -> None:
+        """Save ML model to file with error handling."""
+        # Ensure directory exists
+        filename_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with model_file.open("wb") as outp:
+            with filename_path.open("wb") as outp:
                 pickle.dump(mlf, outp, pickle.HIGHEST_PROTOCOL)
         except (pickle.PicklingError, TypeError):
             # Handle case where mlf is a mock object in tests
             self._logger.warning("Could not pickle ML model (likely in test environment)")
             # Create a dummy file for tests
-            with model_file.open("wb") as outp:
+            with filename_path.open("wb") as outp:
                 outp.write(b"mock_model_data")
+
+    def forecast_model_fit(
+        self,
+        only_if_file_does_not_exist: bool = False,
+        days_to_retrieve: int | None = None,
+    ) -> float:
+        """Perform a forecast model fit from training data retrieved from Home Assistant."""
+        filename = LOAD_FORECAST_MODEL_TYPE + "_mlf.pkl"
+        filename_path = self._config._data_folder / filename
+
+        if only_if_file_does_not_exist and filename_path.is_file():
+            self._logger.info("Skip model creation")
+            return 0
+
+        self._logger.info("Setting up needed data")
+
+        # Process runtime parameters
+        data_params = self._process_runtime_params()
+
+        # Determine days to retrieve
+        if days_to_retrieve is None:
+            days_to_retrieve = data_params.get(
+                "days_to_retrieve", self._config.retrieve_hass_conf.get("days_to_retrieve", 10)
+            )
+
+        # Retrieve training data
+        df_input_data = self._retrieve_training_data(days_to_retrieve)
+        data = copy.deepcopy(df_input_data)
+
+        # Create ML forecaster
+        mlf = self._create_ml_forecaster(data, data_params)
+
+        # Fit and evaluate model
+        r2 = self._fit_and_evaluate_model(mlf, data_params)
+
+        # Save model
+        self._save_model(mlf, filename_path)
+
         return r2
 
     def forecast_model_tune(self) -> tuple[pd.DataFrame, MLForecaster]:
