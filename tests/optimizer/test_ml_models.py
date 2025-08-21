@@ -198,11 +198,12 @@ class TestMLModelManager:
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
         # Call with custom days
-        with patch("energy_assistant.optimizer.ml_models.r2_score"):
+        with patch("energy_assistant.optimizer.ml_models.r2_score", return_value=0.85) as mock_r2:
             result = ml_model_manager.forecast_model_fit(days_to_retrieve=1)
 
         mock_utils.get_days_list.assert_called_once_with(1)
-        assert isinstance(result, pd.DataFrame)
+        assert isinstance(result, float)
+        assert result == 0.85
 
     @patch("energy_assistant.optimizer.ml_models.MLForecaster")
     @patch("builtins.open", new_callable=mock_open, read_data=b"pickled_model_data")
@@ -215,31 +216,34 @@ class TestMLModelManager:
         ml_model_manager: MLModelManager,
     ) -> None:
         """Test successful tuning of load forecast model."""
-        # Setup mock model file
+        # Setup mock model that will be returned by pickle.load
         mock_model = MagicMock()
-        mock_pickle_load.return_value = mock_model
-
-        mock_ml_forecaster = MagicMock()
         mock_df_pred = pd.DataFrame({
             "pred": [100, 200, 300],
             "test": [105, 195, 295]
         })
-        mock_ml_forecaster.tune.return_value = mock_df_pred
+        mock_model.tune.return_value = mock_df_pred
+        mock_pickle_load.return_value = mock_model
+
+        # The MLForecaster class mock is not used in this test since we're loading from pickle
+        mock_ml_forecaster = MagicMock()
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
-        # Mock pathlib.Path.exists to return True
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2:
-            mock_r2.return_value = 0.98
+        # Mock pathlib.Path.is_file to return True  
+        with patch("pathlib.Path.is_file", return_value=True), \
+             patch("pathlib.Path.open", mock_open(read_data=b"pickled_model_data")) as mock_path_open:
             result = ml_model_manager.forecast_model_tune()
 
         # Verify calls
-        mock_file_open.assert_called_once()
+        mock_path_open.assert_called()
         mock_pickle_load.assert_called_once()
-        mock_ml_forecaster.tune.assert_called_once()
-        mock_r2.assert_called_once()
+        mock_model.tune.assert_called_once_with(debug=False)
 
-        assert isinstance(result, pd.DataFrame)
+        # Verify return value
+        assert isinstance(result, tuple)
+        df_pred_optim, mlf_returned = result
+        assert isinstance(df_pred_optim, pd.DataFrame)
+        assert df_pred_optim.equals(mock_df_pred)
 
     def test_tune_load_forecast_model_file_not_found(self, ml_model_manager: MLModelManager) -> None:
         """Test tuning when model file doesn't exist."""
@@ -260,24 +264,27 @@ class TestMLModelManager:
         ml_model_manager: MLModelManager,
     ) -> None:
         """Test successful load forecast prediction."""
-        # Setup mock model file
+        # Setup mock model that will be returned by pickle.load
         mock_model = MagicMock()
+        mock_prediction = pd.Series([100, 200, 300], name="predictions")
+        mock_model.predict.return_value = mock_prediction
         mock_pickle_load.return_value = mock_model
 
+        # The MLForecaster class mock is not used in this test since we're loading from pickle
         mock_ml_forecaster = MagicMock()
-        mock_prediction = pd.Series([100, 200, 300], name="predictions")
-        mock_ml_forecaster.predict.return_value = mock_prediction
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
-        # Mock pathlib.Path.exists to return True
-        with patch("pathlib.Path.exists", return_value=True):
+        # Mock pathlib.Path.is_file to return True (not exists)
+        with patch("pathlib.Path.is_file", return_value=True), \
+             patch("pathlib.Path.open", mock_open(read_data=b"pickled_model_data")) as mock_path_open:
             result = ml_model_manager.forecast_model_predict()
 
         # Verify calls
-        mock_file_open.assert_called_once()
+        mock_path_open.assert_called()
         mock_pickle_load.assert_called_once()
-        mock_ml_forecaster.predict.assert_called_once()
-
+        mock_model.predict.assert_called_once()
+        
+        # Verify result
         assert result.equals(mock_prediction)
 
     def test_predict_load_forecast_file_not_found(self, ml_model_manager: MLModelManager) -> None:
@@ -293,6 +300,9 @@ class TestMLModelManager:
         ml_model_manager: MLModelManager,
     ) -> None:
         """Test that logging occurs during model fitting."""
+        # Set the instance logger to use the mock
+        ml_model_manager._logger = mock_logger
+        
         with patch("energy_assistant.optimizer.ml_models.utils") as mock_utils, \
              patch("energy_assistant.optimizer.ml_models.MLForecaster") as mock_ml_forecaster_class, \
              patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2:

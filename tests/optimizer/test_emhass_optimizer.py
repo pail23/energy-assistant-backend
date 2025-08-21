@@ -100,9 +100,14 @@ class TestEmhassOptimizer:
         """Test get_optimized_power when forecast is available."""
         device_id = uuid.uuid4()
 
-        # Set up a day ahead forecast
+        # Set up optimized devices (needed for state manager to find the device)
+        mock_device = MagicMock()
+        mock_device.device_id = device_id
+        emhass_optimizer.set_optimized_devices([mock_device])
+
+        # Set up a day ahead forecast with the correct column name format
         mock_forecast = pd.DataFrame({
-            f"P_deferrable_{device_id}": [100, 200, 300],
+            "P_deferrable0": [100, 200, 300],  # Index 0 since it's the first device
             "other_column": [1, 2, 3]
         })
         emhass_optimizer._day_ahead_forecast = mock_forecast
@@ -111,7 +116,7 @@ class TestEmhassOptimizer:
         with patch.object(emhass_optimizer, "_get_forecast_value", return_value=150.0) as mock_get_value:
             result = emhass_optimizer.get_optimized_power(device_id)
 
-            mock_get_value.assert_called_once_with(f"P_deferrable_{device_id}")
+            mock_get_value.assert_called_once_with("P_deferrable0")
             assert result == 150.0
 
     def test_update_repository_states_delegates_to_state_manager(self, emhass_optimizer: EmhassOptimizer) -> None:
