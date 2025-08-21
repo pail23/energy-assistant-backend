@@ -8,13 +8,11 @@ import pytest
 # Mock external dependencies before importing the modules
 mock_emhass = MagicMock()
 mock_emhass.utils = MagicMock()
-mock_emhass.utils.get_yaml_parse = MagicMock(return_value=(
-    {"test_retrieve": "config"},
-    {"test_optim": "config"},
-    {"test_plant": "config"}
-))
-sys.modules['emhass'] = mock_emhass
-sys.modules['emhass.utils'] = mock_emhass.utils
+mock_emhass.utils.get_yaml_parse = MagicMock(
+    return_value=({"test_retrieve": "config"}, {"test_optim": "config"}, {"test_plant": "config"})
+)
+sys.modules["emhass"] = mock_emhass
+sys.modules["emhass.utils"] = mock_emhass.utils
 
 from energy_assistant.devices import Location
 from energy_assistant.devices.homeassistant import Homeassistant
@@ -50,9 +48,7 @@ def mock_config_storage() -> ConfigStorage:
     config.emhass = MagicMock()
     config.emhass.as_dict.return_value = {
         "plant_conf": {},
-        "retrieve_hass_conf": {
-            "optimization_time_step": 3600
-        },
+        "retrieve_hass_conf": {"optimization_time_step": 3600},
         "optim_conf": {},
     }
     return config
@@ -124,8 +120,10 @@ class TestEmhassConfig:
         hass.url = "http://localhost:8123"  # No trailing slash
         hass.token = "test_token"
 
-        with patch("energy_assistant.optimizer.config.pathlib.Path.mkdir"), \
-             patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False):
+        with (
+            patch("energy_assistant.optimizer.config.pathlib.Path.mkdir"),
+            patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False),
+        ):
             emhass_config = EmhassConfig("/test/data", mock_config_storage, hass, mock_location)
 
             # Check that URL is normalized in internal state
@@ -141,8 +139,10 @@ class TestEmhassConfig:
         hass.url = "http://localhost:8123/"  # Already has trailing slash
         hass.token = "test_token"
 
-        with patch("energy_assistant.optimizer.config.pathlib.Path.mkdir"), \
-             patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False):
+        with (
+            patch("energy_assistant.optimizer.config.pathlib.Path.mkdir"),
+            patch("energy_assistant.optimizer.config.pathlib.Path.exists", return_value=False),
+        ):
             emhass_config = EmhassConfig("/test/data", mock_config_storage, hass, mock_location)
 
             # Should not add another slash

@@ -169,7 +169,7 @@ class TestStateManager:
                     "unit_of_measurement": "W",
                     "state_class": "measurement",
                     "device_class": "power",
-                }
+                },
             ),
             # PV forecast
             (
@@ -179,7 +179,7 @@ class TestStateManager:
                     "unit_of_measurement": "W",
                     "state_class": "measurement",
                     "device_class": "power",
-                }
+                },
             ),
             # Consumption forecast
             (
@@ -189,7 +189,7 @@ class TestStateManager:
                     "unit_of_measurement": "W",
                     "state_class": "measurement",
                     "device_class": "power",
-                }
+                },
             ),
             # Home consumption
             (
@@ -199,7 +199,7 @@ class TestStateManager:
                     "unit_of_measurement": "W",
                     "state_class": "measurement",
                     "device_class": "power",
-                }
+                },
             ),
             # Self sufficiency
             (
@@ -208,7 +208,7 @@ class TestStateManager:
                 {
                     "unit_of_measurement": "%",
                     "state_class": "measurement",
-                }
+                },
             ),
             # Self consumption
             (
@@ -217,7 +217,7 @@ class TestStateManager:
                 {
                     "unit_of_measurement": "%",
                     "state_class": "measurement",
-                }
+                },
             ),
         ]
 
@@ -261,7 +261,9 @@ class TestStateManager:
         # Find calls with the custom prefix
         pv_call = next(call for call in call_args_list if call[0][0].id == "sensor.custom_p_pv")
         consumption_call = next(call for call in call_args_list if call[0][0].id == "sensor.custom_p_consumption")
-        home_consumption_call = next(call for call in call_args_list if call[0][0].id == "sensor.custom_home_consumption")
+        home_consumption_call = next(
+            call for call in call_args_list if call[0][0].id == "sensor.custom_home_consumption"
+        )
 
         assert pv_call is not None
         assert consumption_call is not None
@@ -353,4 +355,4 @@ class TestStateManager:
         self_consumption_call = next(call for call in call_args_list if "self_consumption" in call[0][0].id)
 
         assert self_sufficiency_call[0][1] == "75"  # 0.754 * 100 rounded = 75
-        assert self_consumption_call[0][1] == "66"   # 0.656 * 100 rounded = 66
+        assert self_consumption_call[0][1] == "66"  # 0.656 * 100 rounded = 66

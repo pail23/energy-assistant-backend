@@ -56,9 +56,7 @@ async def create(
 ) -> CreateDeviceResponse:
     """Create a new device."""
     energy_assistant = get_energy_assistant(request)
-    device_id = await use_case.execute(
-        data.device_type, data.device_name, data.config, energy_assistant.home
-    )
+    device_id = await use_case.execute(data.device_type, data.device_name, data.config, energy_assistant.home)
     return CreateDeviceResponse(device_id=str(device_id))
 
 

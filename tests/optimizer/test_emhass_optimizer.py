@@ -12,8 +12,8 @@ import pytest
 mock_emhass = MagicMock()
 mock_emhass.retrieve_hass = MagicMock()
 mock_emhass.retrieve_hass.RetrieveHass = MagicMock()
-sys.modules['emhass'] = mock_emhass
-sys.modules['emhass.retrieve_hass'] = mock_emhass.retrieve_hass
+sys.modules["emhass"] = mock_emhass
+sys.modules["emhass.retrieve_hass"] = mock_emhass.retrieve_hass
 
 from energy_assistant.devices import LoadInfo, Location, StatesRepository
 from energy_assistant.devices.analysis import FloatDataBuffer
@@ -51,9 +51,7 @@ def mock_config_storage() -> ConfigStorage:
     config.emhass = MagicMock()
     config.emhass.as_dict.return_value = {
         "plant_conf": {},
-        "retrieve_hass_conf": {
-            "optimization_time_step": MagicMock()
-        },
+        "retrieve_hass_conf": {"optimization_time_step": MagicMock()},
         "optim_conf": {},
     }
     config.emhass.as_dict.return_value["retrieve_hass_conf"]["optimization_time_step"].total_seconds.return_value = 3600
@@ -67,9 +65,11 @@ def emhass_optimizer(
     mock_location: Location,
 ) -> EmhassOptimizer:
     """Create an EmhassOptimizer instance for testing."""
-    with patch("energy_assistant.optimizer.emhass_optimizer.pathlib.Path.mkdir"), \
-         patch("energy_assistant.optimizer.emhass_optimizer.pathlib.Path.exists", return_value=False), \
-         patch("energy_assistant.optimizer.emhass_optimizer.RetrieveHass"):
+    with (
+        patch("energy_assistant.optimizer.emhass_optimizer.pathlib.Path.mkdir"),
+        patch("energy_assistant.optimizer.emhass_optimizer.pathlib.Path.exists", return_value=False),
+        patch("energy_assistant.optimizer.emhass_optimizer.RetrieveHass"),
+    ):
         return EmhassOptimizer("/test/data", mock_config_storage, mock_hass, mock_location)
 
 
@@ -106,10 +106,12 @@ class TestEmhassOptimizer:
         emhass_optimizer.set_optimized_devices([mock_device])
 
         # Set up a day ahead forecast with the correct column name format
-        mock_forecast = pd.DataFrame({
-            "P_deferrable0": [100, 200, 300],  # Index 0 since it's the first device
-            "other_column": [1, 2, 3]
-        })
+        mock_forecast = pd.DataFrame(
+            {
+                "P_deferrable0": [100, 200, 300],  # Index 0 since it's the first device
+                "other_column": [1, 2, 3],
+            }
+        )
         emhass_optimizer._day_ahead_forecast = mock_forecast
 
         # Mock the _get_forecast_value method
@@ -128,17 +130,16 @@ class TestEmhassOptimizer:
             emhass_optimizer.update_repository_states(mock_home, mock_state_repository)
 
             mock_update.assert_called_once_with(
-                mock_home,
-                mock_state_repository,
-                emhass_optimizer._no_var_loads,
-                emhass_optimizer._get_forecast_value
+                mock_home, mock_state_repository, emhass_optimizer._no_var_loads, emhass_optimizer._get_forecast_value
             )
 
     def test_perfect_forecast_optim_delegates_to_optimization_manager(self, emhass_optimizer: EmhassOptimizer) -> None:
         """Test that perfect_forecast_optim delegates to optimization manager."""
         expected_result = pd.DataFrame({"test": [1, 2, 3]})
 
-        with patch.object(emhass_optimizer._optimization_manager, "perfect_forecast_optim", return_value=expected_result) as mock_optim:
+        with patch.object(
+            emhass_optimizer._optimization_manager, "perfect_forecast_optim", return_value=expected_result
+        ) as mock_optim:
             result = emhass_optimizer.perfect_forecast_optim(save_data_to_file=True, debug=True)
 
             mock_optim.assert_called_once_with(True, True)
@@ -148,14 +149,18 @@ class TestEmhassOptimizer:
         """Test that get_ml_runtime_params delegates to ML model manager."""
         expected_params = {"freq": 1.0, "passed_data": {}}
 
-        with patch.object(emhass_optimizer._ml_model_manager, "get_ml_runtime_params", return_value=expected_params) as mock_get_params:
+        with patch.object(
+            emhass_optimizer._ml_model_manager, "get_ml_runtime_params", return_value=expected_params
+        ) as mock_get_params:
             result = emhass_optimizer.get_ml_runtime_params()
 
             mock_get_params.assert_called_once()
             assert result == expected_params
 
     @pytest.mark.asyncio
-    async def test_async_dayahead_forecast_optim_delegates_and_stores_result(self, emhass_optimizer: EmhassOptimizer) -> None:
+    async def test_async_dayahead_forecast_optim_delegates_and_stores_result(
+        self, emhass_optimizer: EmhassOptimizer
+    ) -> None:
         """Test that async_dayahead_forecast_optim delegates and stores result."""
         expected_result = pd.DataFrame({"forecast": [1, 2, 3]})
 
@@ -168,7 +173,9 @@ class TestEmhassOptimizer:
             assert emhass_optimizer._day_ahead_forecast.equals(expected_result)
 
     @pytest.mark.asyncio
-    async def test_async_naive_mpc_optim_delegates_to_optimization_manager(self, emhass_optimizer: EmhassOptimizer) -> None:
+    async def test_async_naive_mpc_optim_delegates_to_optimization_manager(
+        self, emhass_optimizer: EmhassOptimizer
+    ) -> None:
         """Test that async_naive_mpc_optim delegates to optimization manager."""
         expected_result = pd.DataFrame({"mpc": [1, 2, 3]})
 
@@ -184,7 +191,9 @@ class TestEmhassOptimizer:
         """Test that forecast_model_fit delegates to ML model manager."""
         expected_result = 0.95
 
-        with patch.object(emhass_optimizer._ml_model_manager, "forecast_model_fit", return_value=expected_result) as mock_fit:
+        with patch.object(
+            emhass_optimizer._ml_model_manager, "forecast_model_fit", return_value=expected_result
+        ) as mock_fit:
             result = emhass_optimizer.forecast_model_fit(only_if_file_does_not_exist=True, days_to_retrieve=30)
 
             mock_fit.assert_called_once_with(True, 30)
@@ -194,7 +203,9 @@ class TestEmhassOptimizer:
         """Test that forecast_model_tune delegates to ML model manager."""
         expected_result = 0.98
 
-        with patch.object(emhass_optimizer._ml_model_manager, "forecast_model_tune", return_value=expected_result) as mock_tune:
+        with patch.object(
+            emhass_optimizer._ml_model_manager, "forecast_model_tune", return_value=expected_result
+        ) as mock_tune:
             result = emhass_optimizer.forecast_model_tune()
 
             mock_tune.assert_called_once()
@@ -204,7 +215,9 @@ class TestEmhassOptimizer:
         """Test that forecast_model_predict delegates to ML model manager."""
         expected_result = pd.Series([100, 200, 300])
 
-        with patch.object(emhass_optimizer._ml_model_manager, "forecast_model_predict", return_value=expected_result) as mock_predict:
+        with patch.object(
+            emhass_optimizer._ml_model_manager, "forecast_model_predict", return_value=expected_result
+        ) as mock_predict:
             result = emhass_optimizer.forecast_model_predict()
 
             mock_predict.assert_called_once()
@@ -214,9 +227,10 @@ class TestEmhassOptimizer:
         """Test setting optimized devices updates all managers."""
         devices = ["device1", "device2"]
 
-        with patch.object(emhass_optimizer._ml_model_manager, "set_optimized_devices") as mock_ml_set, \
-             patch.object(emhass_optimizer._state_manager, "set_optimized_devices") as mock_state_set:
-
+        with (
+            patch.object(emhass_optimizer._ml_model_manager, "set_optimized_devices") as mock_ml_set,
+            patch.object(emhass_optimizer._state_manager, "set_optimized_devices") as mock_state_set,
+        ):
             emhass_optimizer.set_optimized_devices(devices)
 
             mock_ml_set.assert_called_once_with(devices)
@@ -237,10 +251,7 @@ class TestEmhassOptimizer:
 
     def test_get_forecast_value_with_forecast_available(self, emhass_optimizer: EmhassOptimizer) -> None:
         """Test _get_forecast_value when forecast data is available."""
-        mock_forecast = pd.DataFrame({
-            "P_PV": [100, 200, 300],
-            "P_Load": [400, 500, 600]
-        })
+        mock_forecast = pd.DataFrame({"P_PV": [100, 200, 300], "P_Load": [400, 500, 600]})
         emhass_optimizer._day_ahead_forecast = mock_forecast
 
         result = emhass_optimizer._get_forecast_value("P_PV")
@@ -255,9 +266,7 @@ class TestEmhassOptimizer:
 
     def test_get_forecast_value_column_not_found(self, emhass_optimizer: EmhassOptimizer) -> None:
         """Test _get_forecast_value when column is not found in forecast."""
-        mock_forecast = pd.DataFrame({
-            "P_Load": [400, 500, 600]
-        })
+        mock_forecast = pd.DataFrame({"P_Load": [400, 500, 600]})
         emhass_optimizer._day_ahead_forecast = mock_forecast
 
         result = emhass_optimizer._get_forecast_value("P_PV")

@@ -27,8 +27,8 @@ class TestBaseUtilitiesIntegration:
         # by checking the source code of the API modules
 
         # Check that base module functions are imported
-        assert hasattr(config_views, 'get_energy_assistant')
-        assert hasattr(device_views, 'get_energy_assistant')
+        assert hasattr(config_views, "get_energy_assistant")
+        assert hasattr(device_views, "get_energy_assistant")
 
     def test_mock_endpoint_error_handling(self):
         """Test that endpoints handle missing energy_assistant correctly."""
@@ -89,7 +89,7 @@ class TestErrorHandlingConsistency:
         # Test get_home error when energy_assistant not available
         mock_request.app.home = None
         # Remove energy_assistant attribute to simulate it not being set
-        delattr(mock_request.app, 'energy_assistant')
+        delattr(mock_request.app, "energy_assistant")
 
         with pytest.raises(HTTPException) as exc_info:
             get_home(mock_request)
@@ -124,13 +124,13 @@ class TestDocumentationAndTypeHints:
         """Test that base utility functions have proper type annotations."""
         # Check get_energy_assistant annotations
         sig = inspect.signature(get_energy_assistant)
-        assert 'request' in sig.parameters
-        assert sig.parameters['request'].annotation == Request
+        assert "request" in sig.parameters
+        assert sig.parameters["request"].annotation == Request
 
         # Check get_home annotations
         sig = inspect.signature(get_home)
-        assert 'request' in sig.parameters
-        assert sig.parameters['request'].annotation == Request
+        assert "request" in sig.parameters
+        assert sig.parameters["request"].annotation == Request
 
 
 class TestBackwardCompatibility:
@@ -141,14 +141,14 @@ class TestBackwardCompatibility:
         # Test that critical endpoints still exist and have the expected path structure
 
         # Check that routers exist and have expected prefixes
-        assert hasattr(config_views, 'router')
-        assert hasattr(device_views, 'router')
-        assert hasattr(home_measurement_views, 'router')
+        assert hasattr(config_views, "router")
+        assert hasattr(device_views, "router")
+        assert hasattr(home_measurement_views, "router")
 
         # Check that key functions exist
-        assert hasattr(config_views, 'read_configuration')
-        assert hasattr(device_views, 'read_all')
-        assert hasattr(home_measurement_views, 'read_all')
+        assert hasattr(config_views, "read_configuration")
+        assert hasattr(device_views, "read_all")
+        assert hasattr(home_measurement_views, "read_all")
 
     def test_response_model_consistency(self):
         """Test that response models are consistently defined."""

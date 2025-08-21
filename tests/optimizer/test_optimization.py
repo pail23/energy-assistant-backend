@@ -17,11 +17,11 @@ mock_emhass.optimization = MagicMock()
 mock_emhass.optimization.Optimization = MagicMock()
 mock_emhass.retrieve_hass = MagicMock()
 mock_emhass.retrieve_hass.RetrieveHass = MagicMock()
-sys.modules['emhass'] = mock_emhass
-sys.modules['emhass.utils'] = mock_emhass.utils
-sys.modules['emhass.forecast'] = mock_emhass.forecast
-sys.modules['emhass.optimization'] = mock_emhass.optimization
-sys.modules['emhass.retrieve_hass'] = mock_emhass.retrieve_hass
+sys.modules["emhass"] = mock_emhass
+sys.modules["emhass.utils"] = mock_emhass.utils
+sys.modules["emhass.forecast"] = mock_emhass.forecast
+sys.modules["emhass.optimization"] = mock_emhass.optimization
+sys.modules["emhass.retrieve_hass"] = mock_emhass.retrieve_hass
 
 from energy_assistant.devices import LoadInfo, Location
 from energy_assistant.optimizer.config import EmhassConfig
@@ -69,10 +69,12 @@ def mock_ml_model_manager() -> MLModelManager:
 def mock_retrieve_hass() -> MagicMock:
     """Create a mock RetrieveHass for testing."""
     retrieve_hass = MagicMock()
-    retrieve_hass.df_final = pd.DataFrame({
-        "sensor.solar_power": [100, 200, 300],
-        "sensor.power_load": [500, 600, 700],
-    })
+    retrieve_hass.df_final = pd.DataFrame(
+        {
+            "sensor.solar_power": [100, 200, 300],
+            "sensor.power_load": [500, 600, 700],
+        }
+    )
     return retrieve_hass
 
 
@@ -149,7 +151,7 @@ class TestOptimizationManager:
             "params",
             {"retrieve": "conf"},
             {"optim": "conf"},
-            {"plant": "conf"}
+            {"plant": "conf"},
         )
         mock_utils.get_days_list.return_value = ["2023-01-01", "2023-01-02"]
 
@@ -164,7 +166,7 @@ class TestOptimizationManager:
         mock_optimization.return_value = mock_opt_instance
 
         # Patch the pandas to_csv method to avoid file system operations
-        with patch.object(expected_result, 'to_csv') as mock_to_csv:
+        with patch.object(expected_result, "to_csv") as mock_to_csv:
             # Call the method
             result = optimization_manager.perfect_forecast_optim()
 
@@ -239,7 +241,7 @@ class TestOptimizationManager:
         mock_optimization.return_value = mock_opt_instance
 
         # Patch the pandas to_csv method to avoid file system operations
-        with patch.object(expected_result, 'to_csv') as mock_to_csv:
+        with patch.object(expected_result, "to_csv") as mock_to_csv:
             # Call with save_data_to_file=False
             result = optimization_manager.perfect_forecast_optim(save_data_to_file=False)
 
@@ -275,11 +277,12 @@ class TestOptimizationManager:
         optimization_manager: OptimizationManager,
     ) -> None:
         """Test that logging occurs during perfect forecast optimization."""
-        with patch("energy_assistant.optimizer.optimization.utils") as mock_utils, \
-             patch("energy_assistant.optimizer.optimization.Forecast") as mock_forecast, \
-             patch("energy_assistant.optimizer.optimization.Optimization") as mock_optimization, \
-             patch.object(optimization_manager, '_logger') as mock_logger:
-
+        with (
+            patch("energy_assistant.optimizer.optimization.utils") as mock_utils,
+            patch("energy_assistant.optimizer.optimization.Forecast") as mock_forecast,
+            patch("energy_assistant.optimizer.optimization.Optimization") as mock_optimization,
+            patch.object(optimization_manager, "_logger") as mock_logger,
+        ):
             # Setup mocks
             mock_utils.treat_runtimeparams.return_value = ("params", {}, {}, {})
             mock_utils.get_days_list.return_value = []
@@ -295,7 +298,7 @@ class TestOptimizationManager:
             mock_optimization.return_value = mock_opt_instance
 
             # Patch the pandas to_csv method to avoid file system operations
-            with patch.object(expected_result, 'to_csv') as mock_to_csv:
+            with patch.object(expected_result, "to_csv") as mock_to_csv:
                 optimization_manager.perfect_forecast_optim()
 
                 # Verify CSV save was called

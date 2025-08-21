@@ -109,7 +109,7 @@ class MLModelManager:
                     self._logger,
                 )  # type: ignore
                 # Handle both single return value and tuple return
-                if isinstance(result, (list, tuple)) and len(result) > 0:
+                if isinstance(result, list | tuple) and len(result) > 0:
                     params: str = result[0]
                 else:
                     params: str = str(result)
@@ -121,16 +121,15 @@ class MLModelManager:
             params: str = json.dumps(self.get_ml_runtime_params())
 
         params_dict: dict = json.loads(params)
-        
+
         # Handle different parameter structures (with or without "passed_data" wrapper)
-        if "passed_data" in params_dict:
-            data_params = params_dict["passed_data"]
-        else:
-            data_params = params_dict
-            
+        data_params = params_dict.get("passed_data", params_dict)
+
         # Retrieve data from hass
         if days_to_retrieve is None:
-            days_to_retrieve = data_params.get("days_to_retrieve", self._config.retrieve_hass_conf.get("days_to_retrieve", 10))
+            days_to_retrieve = data_params.get(
+                "days_to_retrieve", self._config.retrieve_hass_conf.get("days_to_retrieve", 10)
+            )
 
         if utils:
             days_list = utils.get_days_list(days_to_retrieve)
@@ -142,7 +141,7 @@ class MLModelManager:
             df_input_data = pd.DataFrame({"test_data": [1, 2, 3]})
 
         data = copy.deepcopy(df_input_data)
-        
+
         # Get parameters with defaults for test environments
         model_type = data_params.get("model_type", "load_forecast")
         sklearn_model = data_params.get("sklearn_model", "LinearRegression")
@@ -178,7 +177,7 @@ class MLModelManager:
         else:
             # Mock environment - still call r2_score for test compatibility
             if r2_score:
-                # Create mock data for r2 score calculation 
+                # Create mock data for r2 score calculation
                 mock_predictions = pd.Series([100])
                 mock_test = pd.Series([105])
                 r2 = r2_score(mock_test, mock_predictions)
@@ -211,13 +210,13 @@ class MLModelManager:
             try:
                 with filename_path.open("rb") as inp:
                     mlf = pickle.load(inp)
-            except (pickle.UnpicklingError, EOFError):
+            except (pickle.UnpicklingError, EOFError) as ex:
                 # Handle invalid pickle file (often created in tests)
-                self._logger.error(
+                self._logger.exception(
                     "The ML forecaster file was not found, please run a model fit method before this tune method",
                 )
-                raise MLForecasterTuneError
-            
+                raise MLForecasterTuneError from ex
+
             # Tune the model
             df_pred_optim = mlf.tune(debug=False)
 
@@ -256,41 +255,28 @@ class MLModelManager:
                     self._logger,
                 )  # type: ignore
                 # Handle both single return value and tuple return
-                if isinstance(result, (list, tuple)) and len(result) >= 4:
+                if isinstance(result, list | tuple) and len(result) >= 4:
                     params, retrieve_hass_conf, optim_conf, plant_conf = result[:4]
-                elif isinstance(result, (list, tuple)) and len(result) > 0:
+                elif isinstance(result, list | tuple) and len(result) > 0:
                     params = result[0]
-                    retrieve_hass_conf = self._config.retrieve_hass_conf
-                    optim_conf = self._config.optim_conf
-                    plant_conf = self._config.plant_conf
                 else:
                     params = str(result)
-                    retrieve_hass_conf = self._config.retrieve_hass_conf
-                    optim_conf = self._config.optim_conf
-                    plant_conf = self._config.plant_conf
             else:
                 # Fallback when utils is not available
                 params = json.dumps(self.get_ml_runtime_params())
-                retrieve_hass_conf = self._config.retrieve_hass_conf
-                optim_conf = self._config.optim_conf
-                plant_conf = self._config.plant_conf
         except Exception:
             # Fallback for tests or when external dependencies fail
             params = json.dumps(self.get_ml_runtime_params())
-            retrieve_hass_conf = self._config.retrieve_hass_conf
-            optim_conf = self._config.optim_conf
-            plant_conf = self._config.plant_conf
 
         params_dict: dict = json.loads(params)
-        
+
         # Handle different parameter structures (with or without "passed_data" wrapper)
-        if "passed_data" in params_dict:
-            data_params = params_dict["passed_data"]
-        else:
-            data_params = params_dict
-            
+        data_params = params_dict.get("passed_data", params_dict)
+
         # Retrieve data from hass
-        days_to_retrieve = data_params.get("days_to_retrieve", self._config.retrieve_hass_conf.get("days_to_retrieve", 10))
+        days_to_retrieve = data_params.get(
+            "days_to_retrieve", self._config.retrieve_hass_conf.get("days_to_retrieve", 10)
+        )
 
         if utils:
             days_list = utils.get_days_list(days_to_retrieve)
@@ -312,7 +298,7 @@ class MLModelManager:
                         mlf = pickle.load(inp)
                 except (pickle.UnpicklingError, EOFError):
                     # Handle invalid pickle file (often created in tests)
-                    self._logger.error(
+                    self._logger.exception(
                         "The ML forecaster file was not found, please run a model fit method before this predict method",
                     )
                     return None

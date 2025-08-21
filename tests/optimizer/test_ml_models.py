@@ -14,16 +14,16 @@ mock_emhass.machine_learning_forecaster = MagicMock()
 mock_emhass.machine_learning_forecaster.MLForecaster = MagicMock()
 mock_emhass.retrieve_hass = MagicMock()
 mock_emhass.retrieve_hass.RetrieveHass = MagicMock()
-sys.modules['emhass'] = mock_emhass
-sys.modules['emhass.utils'] = mock_emhass.utils
-sys.modules['emhass.machine_learning_forecaster'] = mock_emhass.machine_learning_forecaster
-sys.modules['emhass.retrieve_hass'] = mock_emhass.retrieve_hass
+sys.modules["emhass"] = mock_emhass
+sys.modules["emhass.utils"] = mock_emhass.utils
+sys.modules["emhass.machine_learning_forecaster"] = mock_emhass.machine_learning_forecaster
+sys.modules["emhass.retrieve_hass"] = mock_emhass.retrieve_hass
 
 mock_sklearn = MagicMock()
 mock_sklearn.metrics = MagicMock()
 mock_sklearn.metrics.r2_score = MagicMock()
-sys.modules['sklearn'] = mock_sklearn
-sys.modules['sklearn.metrics'] = mock_sklearn.metrics
+sys.modules["sklearn"] = mock_sklearn
+sys.modules["sklearn.metrics"] = mock_sklearn.metrics
 
 from energy_assistant.optimizer.config import EmhassConfig
 from energy_assistant.optimizer.ml_models import (
@@ -55,9 +55,12 @@ def mock_config() -> EmhassConfig:
 def mock_retrieve_hass() -> MagicMock:
     """Create a mock RetrieveHass for testing."""
     retrieve_hass = MagicMock()
-    retrieve_hass.df_final = pd.DataFrame({
-        "sensor.power_load": [100, 200, 300, 400, 500],
-    }, index=pd.date_range("2023-01-01", periods=5, freq="1h"))
+    retrieve_hass.df_final = pd.DataFrame(
+        {
+            "sensor.power_load": [100, 200, 300, 400, 500],
+        },
+        index=pd.date_range("2023-01-01", periods=5, freq="1h"),
+    )
     return retrieve_hass
 
 
@@ -108,7 +111,7 @@ class TestMLModelManager:
         # Set up some mock devices first
         device1 = MagicMock()
         device1.nominal_power = 1000
-        device1.duration = 7200  # 2 hours  
+        device1.duration = 7200  # 2 hours
         device1.start_timestep = 0
         device1.end_timestep = 24
         device1.is_continous = True
@@ -149,17 +152,16 @@ class TestMLModelManager:
         mock_utils.get_days_list.return_value = ["2023-01-01", "2023-01-02"]
 
         mock_ml_forecaster = MagicMock()
-        mock_df_pred = pd.DataFrame({
-            "pred": [100, 200, 300, None, None],
-            "test": [105, 195, 295, None, None]
-        })
+        mock_df_pred = pd.DataFrame({"pred": [100, 200, 300, None, None], "test": [105, 195, 295, None, None]})
         mock_ml_forecaster.fit.return_value = mock_df_pred
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
         # Call the method
-        with patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2, \
-             patch("pathlib.Path.open", mock_open()) as mock_file, \
-             patch("energy_assistant.optimizer.ml_models.pickle.dump") as mock_pickle:
+        with (
+            patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2,
+            patch("pathlib.Path.open", mock_open()) as mock_file,
+            patch("energy_assistant.optimizer.ml_models.pickle.dump") as mock_pickle,
+        ):
             mock_r2.return_value = 0.95
             result = ml_model_manager.forecast_model_fit()
 
@@ -198,7 +200,7 @@ class TestMLModelManager:
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
         # Call with custom days
-        with patch("energy_assistant.optimizer.ml_models.r2_score", return_value=0.85) as mock_r2:
+        with patch("energy_assistant.optimizer.ml_models.r2_score", return_value=0.85):
             result = ml_model_manager.forecast_model_fit(days_to_retrieve=1)
 
         mock_utils.get_days_list.assert_called_once_with(1)
@@ -218,10 +220,7 @@ class TestMLModelManager:
         """Test successful tuning of load forecast model."""
         # Setup mock model that will be returned by pickle.load
         mock_model = MagicMock()
-        mock_df_pred = pd.DataFrame({
-            "pred": [100, 200, 300],
-            "test": [105, 195, 295]
-        })
+        mock_df_pred = pd.DataFrame({"pred": [100, 200, 300], "test": [105, 195, 295]})
         mock_model.tune.return_value = mock_df_pred
         mock_pickle_load.return_value = mock_model
 
@@ -229,9 +228,11 @@ class TestMLModelManager:
         mock_ml_forecaster = MagicMock()
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
-        # Mock pathlib.Path.is_file to return True  
-        with patch("pathlib.Path.is_file", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=b"pickled_model_data")) as mock_path_open:
+        # Mock pathlib.Path.is_file to return True
+        with (
+            patch("pathlib.Path.is_file", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=b"pickled_model_data")) as mock_path_open,
+        ):
             result = ml_model_manager.forecast_model_tune()
 
         # Verify calls
@@ -275,15 +276,17 @@ class TestMLModelManager:
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
         # Mock pathlib.Path.is_file to return True (not exists)
-        with patch("pathlib.Path.is_file", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=b"pickled_model_data")) as mock_path_open:
+        with (
+            patch("pathlib.Path.is_file", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=b"pickled_model_data")) as mock_path_open,
+        ):
             result = ml_model_manager.forecast_model_predict()
 
         # Verify calls
         mock_path_open.assert_called()
         mock_pickle_load.assert_called_once()
         mock_model.predict.assert_called_once()
-        
+
         # Verify result
         assert result.equals(mock_prediction)
 
@@ -302,11 +305,12 @@ class TestMLModelManager:
         """Test that logging occurs during model fitting."""
         # Set the instance logger to use the mock
         ml_model_manager._logger = mock_logger
-        
-        with patch("energy_assistant.optimizer.ml_models.utils") as mock_utils, \
-             patch("energy_assistant.optimizer.ml_models.MLForecaster") as mock_ml_forecaster_class, \
-             patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2:
 
+        with (
+            patch("energy_assistant.optimizer.ml_models.utils") as mock_utils,
+            patch("energy_assistant.optimizer.ml_models.MLForecaster") as mock_ml_forecaster_class,
+            patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2,
+        ):
             # Setup mocks
             mock_params = '{"passed_data": {"model_type": "load_forecast", "sklearn_model": "LinearRegression", "num_lags": 48, "split_date_delta": "30d", "perform_backtest": true}}'
             mock_utils.treat_runtimeparams.return_value = [mock_params]

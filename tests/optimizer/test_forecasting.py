@@ -11,8 +11,8 @@ import pytest
 mock_emhass = MagicMock()
 mock_emhass.forecast = MagicMock()
 mock_emhass.forecast.Forecast = MagicMock()
-sys.modules['emhass'] = mock_emhass
-sys.modules['emhass.forecast'] = mock_emhass.forecast
+sys.modules["emhass"] = mock_emhass
+sys.modules["emhass.forecast"] = mock_emhass.forecast
 
 from energy_assistant.devices import Location
 from energy_assistant.devices.analysis import FloatDataBuffer
@@ -86,23 +86,22 @@ class TestForecastingManager:
     ) -> None:
         """Test PV forecast when using homeassistant method."""
         mock_config.pv_forecast_method = "homeassistant"
-        
+
         # Set up mock configuration with proper frequency
         mock_config.retrieve_hass_conf = {"optimization_time_step": "30min"}
-        
+
         # Create mock DataFrame with proper structure for pandas operations
-        mock_forecast_data = pd.DataFrame({
-            'sum': [100, 200, 300, 400],
-            'timestamp': pd.date_range('2023-01-01 00:00', periods=4, freq='h', tz='UTC')
-        })
-        mock_forecast_data.set_index('timestamp', inplace=True)
-        
+        mock_forecast_data = pd.DataFrame(
+            {"sum": [100, 200, 300, 400], "timestamp": pd.date_range("2023-01-01 00:00", periods=4, freq="h", tz="UTC")}
+        )
+        mock_forecast_data.set_index("timestamp", inplace=True)
+
         mock_hass.get_solar_forecast = AsyncMock(return_value=mock_forecast_data)
 
         mock_fcst = MagicMock()
         mock_fcst.forecast_dates = [
-            pd.Timestamp('2023-01-01 01:00', tz='UTC'),
-            pd.Timestamp('2023-01-01 03:00', tz='UTC')
+            pd.Timestamp("2023-01-01 01:00", tz="UTC"),
+            pd.Timestamp("2023-01-01 03:00", tz="UTC"),
         ]
 
         result = await forecasting_manager.async_get_pv_forecast(mock_fcst)
@@ -153,13 +152,9 @@ class TestForecastingManager:
 
         df_now = pd.DataFrame({"current": [50]})
 
-        result = await forecasting_manager.async_get_pv_forecast(
-            mock_fcst, set_mix_forecast=False, df_now=df_now
-        )
+        result = await forecasting_manager.async_get_pv_forecast(mock_fcst, set_mix_forecast=False, df_now=df_now)
 
-        mock_fcst.get_power_from_weather.assert_called_once_with(
-            mock_weather_df, False, df_now
-        )
+        mock_fcst.get_power_from_weather.assert_called_once_with(mock_weather_df, False, df_now)
         assert result.equals(mock_power_series)
 
     def test_get_load_forecast_with_ml_forecaster(
@@ -174,9 +169,7 @@ class TestForecastingManager:
         mock_p_load_forecast = pd.Series([500, 600, 700], index=pv_forecast.index)
         mock_fcst.get_load_forecast.return_value = mock_p_load_forecast
 
-        result_series, result_values = forecasting_manager.get_load_forecast(
-            mock_fcst, pv_forecast, "mlforecaster"
-        )
+        result_series, result_values = forecasting_manager.get_load_forecast(mock_fcst, pv_forecast, "mlforecaster")
 
         mock_fcst.get_load_forecast.assert_called_once_with(method="mlforecaster")
         assert result_series.equals(mock_p_load_forecast)
@@ -194,9 +187,7 @@ class TestForecastingManager:
         mock_fcst = MagicMock()
         mock_fcst.get_load_forecast.side_effect = Exception("Prediction failed")
 
-        result_series, result_values = forecasting_manager.get_load_forecast(
-            mock_fcst, pv_forecast, "mlforecaster"
-        )
+        result_series, result_values = forecasting_manager.get_load_forecast(mock_fcst, pv_forecast, "mlforecaster")
 
         mock_fcst.get_load_forecast.assert_called_once_with(method="mlforecaster")
         mock_no_var_loads.average.assert_called_once()
@@ -216,12 +207,10 @@ class TestForecastingManager:
         pv_forecast = pd.Series([100, 200, 300], name="pv")
 
         # Create a mock fcst that returns None (simulating no ML forecaster)
-        mock_fcst = MagicMock() 
+        mock_fcst = MagicMock()
         mock_fcst.get_load_forecast.side_effect = Exception("No forecaster available")
 
-        result_series, result_values = forecasting_manager.get_load_forecast(
-            mock_fcst, pv_forecast, "mlforecaster"
-        )
+        result_series, result_values = forecasting_manager.get_load_forecast(mock_fcst, pv_forecast, "mlforecaster")
 
         mock_no_var_loads.average.assert_called_once()
 
@@ -244,7 +233,7 @@ class TestForecastingManager:
         mock_fcst.get_load_forecast.side_effect = Exception("Prediction failed")
 
         # Patch the logger on the instance
-        with patch.object(forecasting_manager, '_logger') as mock_logger:
+        with patch.object(forecasting_manager, "_logger") as mock_logger:
             forecasting_manager.get_load_forecast(mock_fcst, pv_forecast, "mlforecaster")
 
             mock_logger.warning.assert_called_once()

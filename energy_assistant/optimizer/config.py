@@ -208,23 +208,26 @@ class EmhassConfig:
 
     def get_emhass_config_string(self) -> str:
         """Get the EMHASS configuration as a JSON string.
-        
+
         Returns:
             JSON string representation of the config, or default config for mocks/tests.
+
         """
         if self._emhass_config is None:
             return "{}"
-        
+
         # Try to serialize the config
         try:
             return json.dumps(self._emhass_config)
         except (TypeError, ValueError):
             # If serialization fails (e.g., Mock objects), return a valid default config
-            return json.dumps({
-                "pv_forecast_method": "homeassistant",
-                "costfun": "self-consumption",
-                "hass_entity_prefix": "emhass",
-            })
+            return json.dumps(
+                {
+                    "pv_forecast_method": "homeassistant",
+                    "costfun": "self-consumption",
+                    "hass_entity_prefix": "emhass",
+                }
+            )
 
     @property
     def emhass_path_conf(self) -> dict[str, Any]:

@@ -226,9 +226,9 @@ class EmhassOptimizer(Optimizer):
                         value = self._day_ahead_forecast.iloc[0][column_name]
                         return float(value)
                     return 0
-                
+
                 now_precise = datetime.now(timezone).replace(second=0, microsecond=0)
-                if hasattr(self._config, 'method_ts_round'):
+                if hasattr(self._config, "method_ts_round"):
                     if self._config.method_ts_round == "nearest":
                         method = "nearest"
                     elif self._config.method_ts_round == "first":
@@ -254,7 +254,6 @@ class EmhassOptimizer(Optimizer):
                 if idx_closest >= 0:
                     value = self._day_ahead_forecast.iloc[idx_closest][column_name]
                     return float(value)
-                return 0
             except Exception:
                 # Fallback for test environments or unexpected errors
                 if len(self._day_ahead_forecast) > 0 and column_name in self._day_ahead_forecast.columns:
