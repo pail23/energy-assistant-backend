@@ -117,9 +117,8 @@ class MLModelManager:
             var_list = [self._config.power_no_var_loads_id]
             self._retrieve_hass.get_data(days_list, var_list)
             return self._retrieve_hass.df_final.copy()
-        else:
-            # Fallback for test environment
-            return pd.DataFrame({"test_data": [1, 2, 3]})
+        # Fallback for test environment
+        return pd.DataFrame({"test_data": [1, 2, 3]})
 
     def _create_ml_forecaster(self, data: pd.DataFrame, data_params: dict) -> Any:
         """Create and configure ML forecaster object."""
@@ -153,19 +152,16 @@ class MLModelManager:
                 r2 = r2_score(test_data, predictions)
                 self._logger.info(f"R2 score = {r2}")
                 return r2
-            else:
-                return 0.0  # Fallback for test environment
-        else:
-            # Mock environment - still call r2_score for test compatibility
-            if r2_score:
-                # Create mock data for r2 score calculation
-                mock_predictions = pd.Series([100])
-                mock_test = pd.Series([105])
-                r2 = r2_score(mock_test, mock_predictions)
-                self._logger.info(f"R2 score = {r2}")
-                return r2
-            else:
-                return 0.0
+            return 0.0  # Fallback for test environment
+        # Mock environment - still call r2_score for test compatibility
+        if r2_score:
+            # Create mock data for r2 score calculation
+            mock_predictions = pd.Series([100])
+            mock_test = pd.Series([105])
+            r2 = r2_score(mock_test, mock_predictions)
+            self._logger.info(f"R2 score = {r2}")
+            return r2
+        return 0.0
 
     def _save_model(self, mlf: Any, filename_path: Any) -> None:
         """Save ML model to file with error handling."""
