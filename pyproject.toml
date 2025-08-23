@@ -28,7 +28,7 @@ dependencies = [
     "jinja2==3.1.6",
     "colorlog==6.9.0",
     "emhass==0.13.3",
-    "energy_assistant_frontend==0.0.68",
+    "energy_assistant_frontend==0.0.69",
     "hass-client==1.2.0",
 ]
 requires-python = ">=3.12"
