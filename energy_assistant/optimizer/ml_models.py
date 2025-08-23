@@ -138,13 +138,13 @@ class MLModelManager:
             self._logger,
         )
 
-    def _fit_and_evaluate_model(self, mlf: Any, data_params: dict) -> float:
+    def _fit_and_evaluate_model(self, mlf: MLForecaster, data_params: dict) -> float:
         """Fit ML model and calculate R2 score."""
         split_date_delta = data_params.get("split_date_delta", "48h")
         perform_backtest = data_params.get("perform_backtest", True)
 
         if mlf:
-            df_pred = mlf.fit(split_date_delta=split_date_delta, perform_backtest=perform_backtest)
+            df_pred, _df_pred_back = mlf.fit(split_date_delta=split_date_delta, perform_backtest=perform_backtest)
             predictions = df_pred["pred"].dropna()
             test_data = df_pred["test"].dropna()
             if r2_score:
