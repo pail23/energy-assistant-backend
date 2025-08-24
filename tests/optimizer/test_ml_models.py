@@ -153,17 +153,21 @@ class TestMLModelManager:
 
         mock_ml_forecaster = MagicMock()
         mock_df_pred = pd.DataFrame({"pred": [100, 200, 300, None, None], "test": [105, 195, 295, None, None]})
-        mock_ml_forecaster.fit.return_value = mock_df_pred
+        mock_ml_forecaster.fit.return_value = (mock_df_pred, mock_df_pred)
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
         # Call the method
         with (
             patch("energy_assistant.optimizer.ml_models.r2_score") as mock_r2,
+            patch("pathlib.Path.mkdir") as mock_mkdir,
             patch("pathlib.Path.open", mock_open()) as mock_file,
             patch("energy_assistant.optimizer.ml_models.pickle.dump") as mock_pickle,
         ):
             mock_r2.return_value = 0.95
             result = ml_model_manager.forecast_model_fit()
+
+            # Verify directory creation
+            mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
 
             # Verify file operations
             mock_file.assert_called_once()  # The file should be opened
@@ -196,7 +200,7 @@ class TestMLModelManager:
 
         mock_ml_forecaster = MagicMock()
         mock_df_pred = pd.DataFrame({"pred": [100], "test": [105]})
-        mock_ml_forecaster.fit.return_value = mock_df_pred
+        mock_ml_forecaster.fit.return_value = (mock_df_pred, mock_df_pred)
         mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
         # Call with custom days
@@ -318,7 +322,7 @@ class TestMLModelManager:
 
             mock_ml_forecaster = MagicMock()
             mock_df_pred = pd.DataFrame({"pred": [100], "test": [105]})
-            mock_ml_forecaster.fit.return_value = mock_df_pred
+            mock_ml_forecaster.fit.return_value = (mock_df_pred, mock_df_pred)
             mock_ml_forecaster_class.return_value = mock_ml_forecaster
 
             mock_r2.return_value = 0.95
