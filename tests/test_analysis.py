@@ -157,6 +157,21 @@ def test_total_duration_in_state_since() -> None:
     assert duration.total_seconds() == 14
 
 
+def test_total_duration_in_state_since_with_one_data_point() -> None:
+    """Test calculating the total duration in a given state since a specific time."""
+    data_buffer = OnOffDataBuffer()
+
+    now = datetime(2023, 1, 10, 10, 10, 20, tzinfo=time_zone)
+    since = datetime(2023, 1, 10, 10, 10, 5, tzinfo=time_zone)
+    data_buffer.add_data_point(True, datetime(2023, 1, 10, 10, 10, 10, tzinfo=time_zone))
+
+    duration = data_buffer.total_duration_in_state_since(True, since, now)
+    assert duration.total_seconds() == 10
+
+    duration = data_buffer.total_duration_in_state_since(False, since, now)
+    assert duration.total_seconds() == 0
+
+
 @pytest.fixture()
 def data_buffer() -> DataBuffer[int]:
     """Create a DataBuffer test fixture."""
