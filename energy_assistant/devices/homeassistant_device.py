@@ -30,6 +30,14 @@ from energy_assistant.optimizer_base import Optimizer
 LOGGER = logging.getLogger(ROOT_LOGGER_NAME)
 
 
+def format_timedelta(value: timedelta) -> str:
+    """Format a timedelta object as a string."""
+    total_seconds = int(value.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours}h {minutes}m {seconds}s"
+
+
 class ReadOnlyHomeassistantDevice(DeviceWithState):
     """A generic Home Assistant device without control ability."""
 
@@ -341,6 +349,6 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
         """Get the attributes of the device for the UI."""
         result: dict[str, str] = {
             **super().attributes,
-            "switched_on_time_since_midnight": f"{self.switched_on_time_since_midnight!s}",
+            "switched_on_time_since_midnight": f"{format_timedelta(self.switched_on_time_since_midnight)}",
         }
         return result
