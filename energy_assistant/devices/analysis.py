@@ -30,6 +30,11 @@ class DataBuffer(Generic[T]):
         """Create a DataBuffer instance."""
         self.data: deque = deque([], MAX_DATA_LEN)
 
+    @property
+    def empty(self) -> bool:
+        """Check if the buffer is empty."""
+        return len(self.data) == 0
+
     def add_data_point(self, value: T, time_stamp: datetime | None = None) -> None:
         """Add a new data point for tracking."""
         if time_stamp is None:
@@ -91,15 +96,17 @@ class OnOffDataBuffer(DataBuffer[bool]):
         if now is None:
             now = datetime.now(UTC)
         duration = timedelta(0)
-        last_time_stamp: datetime | None = None
+        last_data_point: DataPoint[bool] | None = None
         for data_point in self.data:
             if data_point.time_stamp < since:
                 continue
             if data_point.time_stamp > now:
                 break
-            if last_time_stamp is not None:
-                duration += data_point.time_stamp - last_time_stamp
-            last_time_stamp = data_point.time_stamp if data_point.value == state else None
+            if last_data_point is not None:
+                duration += data_point.time_stamp - last_data_point.time_stamp
+            last_data_point = data_point if data_point.value == state else None
+        if last_data_point is not None and last_data_point.value == state:
+            duration += now - last_data_point.time_stamp
         return duration
 
 

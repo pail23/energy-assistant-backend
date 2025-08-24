@@ -154,7 +154,7 @@ def test_total_duration_in_state_since() -> None:
     assert duration.total_seconds() == 1
 
     duration = data_buffer.total_duration_in_state_since(False, since, now)
-    assert duration.total_seconds() == 5
+    assert duration.total_seconds() == 14
 
 
 @pytest.fixture()

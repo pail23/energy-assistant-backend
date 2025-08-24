@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from energy_assistant.constants import (
     DEFAULT_NOMINAL_DURATION,
@@ -298,15 +298,12 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
         state: bool = self._output_state.value == "on" if self._output_state is not None else False
         new_state = state
         if self.power_mode == PowerModes.PV:
-            midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
             if state:
                 max_grid_power = grid_exported_power_data.get_max_for(self._switch_off_delay)
                 if (
                     max_grid_power < self.nominal_power * (1 - POWER_HYSTERESIS)
                     and self._output_states.duration_in_state(True).total_seconds() > self._min_on_duration
-                ) or self._output_states.total_duration_in_state_since(
-                    True, midnight
-                ).total_seconds() > self._max_on_per_day:
+                ) or self.switched_on_time_since_midnight.total_seconds() > self._max_on_per_day:
                     new_state = False
             else:
                 # If the device is off, we check if the average power is below the nominal power
@@ -314,8 +311,7 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
                 min_grid_power = grid_exported_power_data.get_min_for(self._switch_on_delay)
                 if (
                     min_grid_power > self.nominal_power * (1 + POWER_HYSTERESIS)
-                    and self._output_states.total_duration_in_state_since(True, midnight).total_seconds()
-                    < self._max_on_per_day
+                    and self.switched_on_time_since_midnight.total_seconds() < self._max_on_per_day
                 ):
                     new_state = True
 
@@ -331,3 +327,20 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
                 "on" if new_state else "off",
             )
             self._output_states.add_data_point(new_state)
+        elif self._output_states.empty:
+            self._output_states.add_data_point(new_state)
+
+    @property
+    def switched_on_time_since_midnight(self) -> timedelta:
+        """Get the time the device has been switched on since midnight."""
+        midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        return self._output_states.total_duration_in_state_since(True, midnight)
+
+    @property
+    def attributes(self) -> dict[str, str]:
+        """Get the attributes of the device for the UI."""
+        result: dict[str, str] = {
+            **super().attributes,
+            "switched_on_time_since_midnight": f"{self.switched_on_time_since_midnight!s}",
+        }
+        return result
