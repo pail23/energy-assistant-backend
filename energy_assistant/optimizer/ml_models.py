@@ -194,14 +194,15 @@ class MLModelManager:
         # Process runtime parameters
         data_params = self._process_runtime_params()
 
+        dtr = 10
         # Determine days to retrieve
         if days_to_retrieve is None:
-            days_to_retrieve = data_params.get(
-                "days_to_retrieve", self._config.retrieve_hass_conf.get("days_to_retrieve", 10)
-            )
+            dtr = data_params.get("days_to_retrieve", int(self._config.retrieve_hass_conf.get("days_to_retrieve", 10)))
+        else:
+            dtr = days_to_retrieve
 
         # Retrieve training data
-        df_input_data = self._retrieve_training_data(days_to_retrieve)
+        df_input_data = self._retrieve_training_data(dtr)
         data = copy.deepcopy(df_input_data)
 
         # Create ML forecaster
