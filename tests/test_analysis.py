@@ -32,6 +32,14 @@ def power_data_with_trailing_zeros() -> FloatDataBuffer:
     return result
 
 
+def test_add_data_point_if_different(power_data: FloatDataBuffer) -> None:
+    """Test adding a data point only if it's different from the last one."""
+    assert len(power_data.data) == 20
+    power_data.add_data_point_if_different(19, datetime(2023, 1, 10, 10, 10, 21, tzinfo=time_zone))
+    assert len(power_data.data) == 20
+    assert power_data.data[-1].value == 19
+
+
 def test_min(power_data: FloatDataBuffer) -> None:
     """Test the data buffer minimum calculation."""
     min = power_data.get_min_for(5, datetime(2023, 1, 10, 10, 10, 21, tzinfo=time_zone))

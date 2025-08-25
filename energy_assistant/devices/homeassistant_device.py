@@ -304,6 +304,7 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
         if self._output_id is None:
             return
         state: bool = self._output_state.value == "on" if self._output_state is not None else False
+
         new_state = state
         if self.power_mode == PowerModes.PV:
             if state:
@@ -334,9 +335,7 @@ class HomeassistantDevice(ReadOnlyHomeassistantDevice):
                 ),
                 "on" if new_state else "off",
             )
-            self._output_states.add_data_point(new_state)
-        elif self._output_states.empty:
-            self._output_states.add_data_point(new_state)
+        self._output_states.add_data_point_if_different(new_state)
 
     @property
     def switched_on_time_since_midnight(self) -> timedelta:

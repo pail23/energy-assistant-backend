@@ -41,6 +41,13 @@ class DataBuffer(Generic[T]):
             time_stamp = datetime.now(UTC)
         self.data.append(DataPoint[T](value, time_stamp))
 
+    def add_data_point_if_different(self, value: T, time_stamp: datetime | None = None) -> None:
+        """Add a new data point for tracking."""
+        if time_stamp is None:
+            time_stamp = datetime.now(UTC)
+        if self.empty or self.data[-1].value != value:
+            self.data.append(DataPoint[T](value, time_stamp))
+
     def get_data_for(
         self,
         timespan: float,
