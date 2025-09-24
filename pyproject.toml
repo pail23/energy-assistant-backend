@@ -18,7 +18,7 @@ dependencies = [
     "SQLAlchemy==2.0.43",
     "requests==2.32.5",
     "fastapi[standard]==0.117.1",
-    "pydantic-settings==2.10.1",
+    "pydantic-settings==2.11.0",
     "pyyaml >= 6.0.2",
     "alembic==1.16.5",
     "aiosqlite==0.21.0",
