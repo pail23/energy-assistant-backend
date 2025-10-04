@@ -68,7 +68,7 @@ class OptimizationManager:
 
         # Treat runtimeparams
         params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, _retrieve_hass_conf, _optim_conf, _plant_conf = utils.treat_runtimeparams(
             None,
             json.dumps(self._config.emhass_config),
             self._config.retrieve_hass_conf,
@@ -80,8 +80,8 @@ class OptimizationManager:
 
         fcst = Forecast(
             self._config.retrieve_hass_conf,
-            optim_conf,
-            plant_conf,
+            _optim_conf,
+            _plant_conf,
             params,
             self._config.emhass_path_conf,
             self._logger,
@@ -90,8 +90,8 @@ class OptimizationManager:
 
         opt = Optimization(
             self._config.retrieve_hass_conf,
-            optim_conf,
-            plant_conf,
+            _optim_conf,
+            _plant_conf,
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._config.cost_fun,
@@ -142,7 +142,7 @@ class OptimizationManager:
             self._logger.warning("Falling back to the naive load forecaster.")
 
         # Treat runtimeparams
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, _retrieve_hass_conf, _optim_conf, _plant_conf = utils.treat_runtimeparams(
             json.dumps(self._ml_model_manager.get_ml_runtime_params()),
             json.dumps(self._config.emhass_config),
             self._config.retrieve_hass_conf,
@@ -155,8 +155,8 @@ class OptimizationManager:
 
         fcst = Forecast(
             self._config.retrieve_hass_conf,
-            optim_conf,
-            plant_conf,
+            _optim_conf,
+            _plant_conf,
             params,
             self._config.emhass_path_conf,
             self._logger,
@@ -165,8 +165,8 @@ class OptimizationManager:
 
         opt = Optimization(
             self._config.retrieve_hass_conf,
-            optim_conf,
-            plant_conf,
+            _optim_conf,
+            _plant_conf,
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._config.cost_fun,
@@ -249,7 +249,7 @@ class OptimizationManager:
 
         # Treat runtimeparams
         params: str = ""
-        params, retrieve_hass_conf, optim_conf, plant_conf = utils.treat_runtimeparams(
+        params, _retrieve_hass_conf, _optim_conf, _plant_conf = utils.treat_runtimeparams(
             json.dumps(runtimeparams),
             json.dumps(self._config.emhass_config),
             self._config.retrieve_hass_conf,
@@ -261,8 +261,8 @@ class OptimizationManager:
 
         fcst = Forecast(
             self._config.retrieve_hass_conf,
-            optim_conf,
-            plant_conf,
+            _optim_conf,
+            _plant_conf,
             params,
             self._config.emhass_path_conf,
             self._logger,
@@ -271,8 +271,8 @@ class OptimizationManager:
 
         opt = Optimization(
             self._config.retrieve_hass_conf,
-            optim_conf,
-            plant_conf,
+            _optim_conf,
+            _plant_conf,
             fcst.var_load_cost,
             fcst.var_prod_price,
             self._config.cost_fun,

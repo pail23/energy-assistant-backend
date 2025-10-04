@@ -273,7 +273,7 @@ class MLModelManager:
                 )  # type: ignore
                 # Handle both single return value and tuple return
                 if isinstance(result, list | tuple) and len(result) >= 4:
-                    params, retrieve_hass_conf, optim_conf, plant_conf = result[:4]
+                    params, _retrieve_hass_conf, _optim_conf, _plant_conf = result[:4]
                 elif isinstance(result, list | tuple) and len(result) > 0:
                     params = result[0]
                 else:

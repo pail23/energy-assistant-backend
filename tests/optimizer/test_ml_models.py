@@ -246,7 +246,7 @@ class TestMLModelManager:
 
         # Verify return value
         assert isinstance(result, tuple)
-        df_pred_optim, mlf_returned = result
+        df_pred_optim, _mlf_returned = result
         assert isinstance(df_pred_optim, pd.DataFrame)
         assert df_pred_optim.equals(mock_df_pred)
 
