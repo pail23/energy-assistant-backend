@@ -16,7 +16,7 @@ jobs:
     outputs:
       version: ${{ steps.vars.outputs.tag }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
       - name: Get tag
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
@@ -64,7 +64,7 @@ jobs:
         run: sleep 60s
         shell: bash
       - name: "Checkout the repository"
-        uses: "actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd" # v5
+        uses: "actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3" # v6
 
       - name: Log in to the Container registry
         uses: docker/login-action@28fdb31ff34708d19615a74d67103ddc2ea9725c
