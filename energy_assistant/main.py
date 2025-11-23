@@ -35,7 +35,6 @@ from energy_assistant.devices.home import Home
 from energy_assistant.devices.homeassistant import Homeassistant
 from energy_assistant.devices.registry import DeviceTypeRegistry
 from energy_assistant.importer.homeassistant import import_data
-from energy_assistant.mqtt import MqttConnection
 from energy_assistant.optimizer import EmhassOptimizer
 from energy_assistant.settings import settings
 from energy_assistant.storage.config import ConfigStorage
@@ -56,7 +55,7 @@ class EnergyAssistant:
     home: Home
     hass: Homeassistant | None
     optimizer: EmhassOptimizer
-    mqtt: MqttConnection | None
+    # mqtt: MqttConnection | None
     db: Database
     config: EnergyAssistantConfig
     should_stop = False
@@ -163,8 +162,8 @@ async def background_task(ea: EnergyAssistant) -> None:
     repositories: list[StatesRepository] = []
     if ea.hass is not None:
         repositories.append(ea.hass)
-    if ea.mqtt is not None:
-        repositories.append(ea.mqtt)
+    #    if ea.mqtt is not None:
+    #        repositories.append(ea.mqtt)
     state_repository = StatesMultipleRepositories(repositories)
     logger = logging.getLogger(ROOT_LOGGER_NAME)
     while not ea.should_stop:
@@ -182,21 +181,6 @@ async def background_task(ea: EnergyAssistant) -> None:
             logger.exception("error in the background task")
         # print(f"refresh from home assistant completed in {datetime.now().timestamp() - delta_t} s")
         await asyncio.sleep(30)
-
-
-def create_mqtt_connection(config: ConfigStorage) -> MqttConnection | None:
-    """Create an mqtt connection based on the config."""
-
-    mqtt_config = config.mqtt
-    if mqtt_config is not None:
-        mqtt_host = mqtt_config.get("host")
-        mqtt_username = mqtt_config.get("username")
-        mqtt_password = mqtt_config.get("password")
-        mqtt_topic = mqtt_config.get("topic")
-        mqtt_connection = MqttConnection(mqtt_host, mqtt_username, mqtt_password, mqtt_topic)
-        mqtt_connection.connect()
-        return mqtt_connection
-    return None
 
 
 async def open_hass_connection(config: ConfigStorage) -> Homeassistant | None:
@@ -343,8 +327,8 @@ async def init_app() -> EnergyAssistant:
             result.optimizer = optimizer
             app.optimizer = optimizer  # type: ignore
 
-        mqtt_connection: MqttConnection | None = create_mqtt_connection(config)
-        result.mqtt = mqtt_connection
+        # mqtt_connection: MqttConnection | None = create_mqtt_connection(config)
+        # result.mqtt = mqtt_connection
 
         home_config = config.home
         if home_config is not None and home_config.get("name") is not None:

@@ -166,7 +166,7 @@ class EmhassOptimizer(Optimizer):
             df = df.rename(columns={"P_PV": "pv_forecast"})
             df.to_csv(temp_folder / forecast_filename, index_label="time_stamp")
 
-            while not pd.notnull(df["pv_forecast"][0]) and len(df.index) > 0:
+            while not pd.notnull(df["pv_forecast"].iloc[0]) and len(df.index) > 0:
                 df = df.drop(df.index[0])
 
             pv_series = [x for x in df["pv"].to_list() if pd.notnull(x)]
