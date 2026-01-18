@@ -21,7 +21,7 @@ dependencies = [
     "pydantic-settings==2.12.0",
     "pyyaml >= 6.0.2",
     "alembic==1.18.1",
-    "aiosqlite==0.21.0",
+    "aiosqlite==0.22.1",
     "python-dotenv",
     "apscheduler==3.11.2",
     "paho-mqtt==2.1.0",
