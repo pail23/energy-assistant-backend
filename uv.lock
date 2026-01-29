@@ -478,7 +478,7 @@ wheels = [
 
 [[package]]
 name = "emhass"
-version = "0.16.1"
+version = "0.16.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -506,9 +506,9 @@ dependencies = [
     { name = "waitress" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/af/b00206b8de266db580adcf867370d5d93ab6ac422210202653c9375e65a1/emhass-0.16.1.tar.gz", hash = "sha256:8505804a034bfd7f5a8b1e9d4f56eaaf80194a8d14729649e0b72c159ff78207", size = 2289761, upload-time = "2026-01-23T10:32:57.008Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/67/0f/86e4b46b01d72dc0496b03cc9e8b5eba173e007249826498dd94eb9f54f0/emhass-0.16.2.tar.gz", hash = "sha256:26292e6767560c69901e1ebfa7632807f0c70242e0d61229c8633a6e3fbdfa2a", size = 2291427, upload-time = "2026-01-29T16:18:44.127Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/03/10135fe70775b74dc3a28d0b6309d59222d5b995271dde956f67357bc796/emhass-0.16.1-py3-none-any.whl", hash = "sha256:55eb96f54ad89e050a6b833901d5213c75ed335c1c65c1fca3a8fa41e6808344", size = 2298663, upload-time = "2026-01-23T10:32:55.006Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/3a/090bd052471d9d6b308e349fceb4606ddddbb1f8a4c502e4feba9a0cd202/emhass-0.16.2-py3-none-any.whl", hash = "sha256:fa73e74e906c35d1a93a6da279b71c649c3c7e44fb225478f17ff2b938f26ed6", size = 2300256, upload-time = "2026-01-29T16:18:41.817Z" },
 ]
 
 [[package]]
@@ -558,7 +558,7 @@ requires-dist = [
     { name = "alembic", specifier = "==1.18.2" },
     { name = "apscheduler", specifier = "==3.11.2" },
     { name = "colorlog", specifier = "==6.10.1" },
-    { name = "emhass", specifier = "==0.16.1" },
+    { name = "emhass", specifier = "==0.16.2" },
     { name = "energy-assistant-frontend", specifier = "==0.0.70" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.128.0" },
     { name = "hass-client", specifier = "==1.2.0" },
@@ -2383,15 +2383,15 @@ wheels = [
 
 [[package]]
 name = "uvicorn"
-version = "0.35.0"
+version = "0.30.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "h11" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5e/42/e0e305207bb88c6b8d3061399c6a961ffe5fbb7e2aa63c9234df7259e9cd/uvicorn-0.35.0.tar.gz", hash = "sha256:bc662f087f7cf2ce11a1d7fd70b90c9f98ef2e2831556dd078d131b96cc94a01", size = 78473, upload-time = "2025-06-28T16:15:46.058Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/01/5e637e7aa9dd031be5376b9fb749ec20b86f5a5b6a49b87fabd374d5fa9f/uvicorn-0.30.6.tar.gz", hash = "sha256:4b15decdda1e72be08209e860a1e10e92439ad5b97cf44cc945fcbee66fc5788", size = 42825, upload-time = "2024-08-13T09:27:35.098Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/e2/dc81b1bd1dcfe91735810265e9d26bc8ec5da45b4c0f6237e286819194c3/uvicorn-0.35.0-py3-none-any.whl", hash = "sha256:197535216b25ff9b785e29a0b79199f55222193d47f820816e7da751e9bc8d4a", size = 66406, upload-time = "2025-06-28T16:15:44.816Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/8e/cdc7d6263db313030e4c257dd5ba3909ebc4e4fb53ad62d5f09b1a2f5458/uvicorn-0.30.6-py3-none-any.whl", hash = "sha256:65fd46fe3fda5bdc1b03b94eb634923ff18cd35b2f084813ea79d1f103f711b5", size = 62835, upload-time = "2024-08-13T09:27:33.536Z" },
 ]
 
 [package.optional-dependencies]
