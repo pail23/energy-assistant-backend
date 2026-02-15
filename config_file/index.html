@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Configuration - Energy Assistant</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Configuration";
+        var mkdocs_page_input_path = "config_file.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Energy Assistant
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configuration</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Configuration</a>
+    <ul class="current">
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../device_models/">Devices</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../about/">About</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Energy Assistant</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Configuration</li>
+      <li class="breadcrumb-item active">Configuration</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="energy-assistant-configuration-file">Energy Assistant Configuration file</h1>
+<p>The <code>energy_assistant.yaml</code> file is used to configure Energy Assistant. An starting point for your configuration file can be found <a href="https://raw.githubusercontent.com/pail23/energy-assistant-backend/main/energy_assistant.yaml.dist">here</a>.</p>
+<h1 id="home">Home</h1>
+<p>Configure the main attributes of your home.</p>
+<h2 id="state-values">State Values</h2>
+<p>Some configuration items are configured as state values. There are the following formats supported:</p>
+<h3 id="direct-assignment">Direct assignment:</h3>
+<pre><code>value_name: homeassistant entity
+</code></pre>
+<p>Example:</p>
+<pre><code>grid_supply_power: sensor.grid_supply_power
+</code></pre>
+<h3 id="scaling-or-inverting">Scaling or inverting</h3>
+<pre><code>value_name:
+  value: homeassistant entity
+  scale: The value will be multiplied with this scaling value (float)
+  inverted: Whether the value will be inverted (bool)
+</code></pre>
+<p>Example:</p>
+<pre><code>grid_supply_power:
+  value: sensor.grid_supply_power
+  scale: 0.001
+</code></pre>
+<h3 id="jinja2-templates">Jinja2 Templates</h3>
+<pre><code>value_name:
+  template: jinja2 template
+  scale: The value will be multiplied with this scaling value (float)
+  inverted: Whether the value will be inverted (bool)
+</code></pre>
+<p>Example:</p>
+<pre><code>grid_supply_power:
+  template: {{sensor.grid_supply_power_1 + sensor.grid_supply_power_2}}
+  scale: 0.001
+</code></pre>
+<h2 id="parameters-for-home">Parameters for Home</h2>
+<p>The following values need to be set (not optional):</p>
+<ul>
+<li><code>name</code>: The name of the home to be displayed in the user interface.</li>
+<li><code>solar_power</code>: Home Assistant entity name for the currently produced solar power. This is can be configured using the state value format described above.</li>
+<li><code>solar_energy</code>: Home Assistant entity name for the total amount of solar energy produced by the house. Optionally this value can be generated by the integration helper in Home Assistant. This is can be configured using the state value format described above.</li>
+<li><code>grid_supply_power</code>: Home Assistant entity name for the current power measured at the connection point of the house to the grid. This value can be positive (exporting energy to the grid) or negative (importing energy from the grid). This is can be configured using the state value format described above.</li>
+<li><code>grid_inverted</code>: If set to True, you can invert the <code>grid_supply_power</code>.</li>
+<li><code>imported_energy</code>: Home Assistant entity name for the total amount of energy imported from the grid. This is can be configured using the state value format described above.</li>
+<li><code>exported_energy</code>: Home Assistant entity name for the total amount of energy imported from the grid. This is can be configured using the state value format described above.</li>
+</ul>
+<h2 id="devices">Devices</h2>
+<p>This is a list of the devices to monitored and managed by the Energy Assistant.</p>
+<ul>
+<li><code>name</code>: The name of the device to be displayed in the user interface.</li>
+<li><code>id</code>: GUID of the device. This value needs to be a valid guid and needs to be unique.</li>
+<li><code>type</code>: This can either be <code>evcc</code>, <code>power-state-device</code>, <code>homeassistant</code> or <code>stiebel-eltron</code></li>
+<li><code>store_sessions</code>: Needs to be set to true in case you want to log the sessions of the devie in the Session Log.</li>
+</ul>
+<h3 id="evcc-type"><code>evcc</code> type</h3>
+<p>This is a device (e.g. a charger) managed by Evcc. You need to configure a MQTT connection for the Evcc connect.
+In order to use evcc in Energy Assistant, the <a href="https://github.com/marq24/ha-evcc">evcc component</a> must be used in Home Assistant.</p>
+<ul>
+<li><code>load_point_name</code>: The Evcc name of the load point. This needs to be part of the home assistant entity id (e.g. my load point &rarr; my_load_point)</li>
+</ul>
+<h3 id="homeassistant-type"><code>homeassistant</code> type</h3>
+<p>This is a device managed by Home Assistant. Energy Assistant will display the current power consumption and provides different statistics on energy consumption like self sufficiency.</p>
+<p>In case you are setting the <code>model</code> and <code>manufacturer</code> or the <code>state</code>, the device will detect it's state (<code>on</code> or <code>off</code>) based on the power consumption. This state information can then be used to log the sessions of the device (in case <code>store_sessions</code> is set to <code>True</code>). Example: You have a dish washer connected through a smart plug. This device type the detects if the dishwasher is running or not.</p>
+<ul>
+<li><code>icon</code>: mdi icon shown in the UI</li>
+<li><code>power</code>: Home Assistant entity for the current power consumption of the device (in Watt)</li>
+<li><code>energy</code>: Home Assistant entity for the total energy meter of the device (in kWh). In case the device does not provide this entity, you can setup a integration helper in Home Assistant. This is can be configured using the state value format described above.</li>
+<li><code>manufacturer</code>: Manufacturer of the device.</li>
+<li><code>model</code>: Model of the device</li>
+<li><code>output</code>: In case you want Energy Assistant to control the device (pv mode or optimized mode), you need to set this value to the id of the homeassistant switch entity controlling the power of the device.</li>
+<li><code>nominal_power</code>: Expected nominal power consumption (in Watts) of the device in case the device is running.</li>
+<li><code>nominal_duration</code>: Expected nominal time (in seconds) the device is running per day.</li>
+<li>
+<p><code>constant</code>: <code>True</code> if the power of the device should not be interrupted when the device is running. In this case, there is only one startup per 24h in the <code>Optimized</code> mode.</p>
+</li>
+<li>
+<p><code>state</code>: In case Energy Assistant has not yet a pre-configured <a href="../device_models/">model</a> of your device, you can configure the state detection with this entry.</p>
+</li>
+<li><code>state_on</code>:<ul>
+<li><code>threshold</code>: The device is detected as <code>on</code> when the power goes above this value (in Volt)</li>
+</ul>
+</li>
+<li><code>state_off</code>:<ul>
+<li><code>threshold</code>: The device is detected as <code>off</code> when the power goes above this value (in Volt). In addition the following items are considered:</li>
+<li><code>trailing_zeros_for</code>: The power needs to be below <code>threshold</code> for <code>trailing_zeros_for</code> seconds.</li>
+</ul>
+</li>
+</ul>
+<p>In case neither <code>manufacturer</code> or <code>model</code> nor <code>state</code> is defined, the following defaults are used:</p>
+<ul>
+<li>Device is <code>on</code> if power is above 2 Watt</li>
+<li>Device is <code>off</code> if power is 0 Watt for 10 seconds</li>
+</ul>
+<p>Energy Assistant is providing detection for the device types listed <a href="../device_models/">here</a>.</p>
+<h3 id="heat-pump-type"><code>heat-pump</code> type</h3>
+<p>This device type is used for Stiebel Eltron heat pumps. Often, you will configure two instances: One for heating, one for water heating.</p>
+<ul>
+<li><code>state</code>: Home Assistant entity for the state of the device (<code>on</code> or <code>off</code>)</li>
+<li><code>energy</code>: Home Assistant entity for total energy. This is can be configured using the state value format described above.</li>
+<li><code>temperature</code>: Home Assistant entity for the current temperature</li>
+<li><code>comfort_target_temperature</code>: Home Assistant entity for the target temperature</li>
+<li><code>target_temperature_normal</code>: Target temperature for normal operation</li>
+<li><code>target_temperatrure_pv</code>: Target temperature for the case when enough PV power is available or the timeslot for the Optimized Energy consumption is now.</li>
+<li><code>nominal_power</code>: The nominal power of the heat pump.</li>
+</ul>
+<h2 id="example">Example:</h2>
+<pre><code>home:
+  name: &quot;My Home&quot;
+  solar_power: sensor.solaredge_i1_ac_power
+  solar_energy: sensor.solaredge_i1_ac_energy_kwh
+  grid_supply_power:
+    value: sensor.solaredge_m1_ac_power
+    inverted: true
+  imported_energy: sensor.solaredge_m1_imported_kwh
+  exported_energy: sensor.solaredge_m1_exported_kwh
+  devices:
+    - name: Evcc loadpoint 1
+      id: 7d480adc-2c45-4de9-8f36-063c5dea0253
+      type: evcc
+      evcc_topic: &quot;evcc&quot;
+      load_point_id: 1
+      store_sessions: true
+    - name: Tumbler
+      id: 75203c88-216f-4712-8a94-80513793f7e1
+      type: power-state-device
+      power: sensor.tumbler_power
+      energy:
+        value: sensor.tumbler_energy
+        scale: 0.001
+      store_sessions: true
+      manufacturer: v-zug
+      model: Adora TS WP
+    - name: Server
+      id: eb6b3f0a-1175-4ff3-9ebe-8c22663cba48
+      type: homeassistant
+      icon: mdi-server-network
+      power: sensor.server_power
+      energy:
+        value: sensor.server_energy
+        scale: 0.001
+</code></pre>
+<h1 id="mqtt">Mqtt</h1>
+<p>The mqtt configuration is only needed in case you would like to interface with <a href="https://evcc.io/">evcc</a>.</p>
+<p>Example:</p>
+<pre><code>mqtt:
+  host: homeassistant.stadel15.net
+  username: smarthome
+  password: smarthome!23
+  topic: energyassistant
+</code></pre>
+<h1 id="emhass">Emhass</h1>
+<p>The Emhass configuration section is described in the <a href="https://emhass.readthedocs.io/en/latest/config.html">Emhass documentation</a>.</p>
+<p>The following keys in the Emhass configuration are provided by Energy Assistant itself. In case you are using those keys, Energy Assistant will overwrite the values:</p>
+<ul>
+<li>hass_url</li>
+<li>long_lived_token</li>
+<li>var_PV</li>
+<li>var_load</li>
+<li>var_replace_zero</li>
+<li>var_interp</li>
+<li>time_zone</li>
+<li>lat</li>
+<li>lon</li>
+<li>
+<p>alt</p>
+</li>
+<li>
+<p>num_def_loads</p>
+</li>
+<li>P_deferrable_nom</li>
+<li>def_total_hours</li>
+<li>treat_def_as_semi_cont</li>
+<li>set_def_constant</li>
+</ul>
+<h1 id="home-assistant">Home Assistant</h1>
+<p>This section is only used in case you run Energy Assistant stand alone (not as Home Assistant addon).</p>
+<ul>
+<li><code>url</code>: URL of the home assistant instance you want to connect to.</li>
+<li><code>token</code>: <a href="https://www.home-assistant.io/docs/authentication/">Long lived access token</a> from Home Assistant.</li>
+</ul>
+<p>Example:</p>
+<pre><code>homeassistant:
+  url: https://homeassistant.example.net
+  token: &quot;your long lived home assistant token&quot;
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../installation/" class="btn btn-neutral float-left" title="Installation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../device_models/" class="btn btn-neutral float-right" title="Devices">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../installation/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../device_models/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
