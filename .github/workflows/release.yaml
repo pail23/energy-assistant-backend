@@ -97,7 +97,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/energy-assistant-server
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@f64672cf50fa6f34ab7b194daf79d0161632a3ae
+        uses: docker/build-push-action@dbac3ca1e5410ec04d2cce48cfbcfa3175fb8f4f
         with:
           context: .
           platforms: linux/amd64
