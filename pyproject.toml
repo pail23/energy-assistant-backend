@@ -29,7 +29,7 @@ dependencies = [
     "colorlog==6.10.1",
     "emhass==0.17.1",
     "energy_assistant_frontend==0.0.70",
-    "hass-client==1.2.0",
+    "hass-client==1.2.3",
 ]
 requires-python = ">=3.13"
 

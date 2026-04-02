@@ -561,7 +561,7 @@ requires-dist = [
     { name = "emhass", specifier = "==0.17.1" },
     { name = "energy-assistant-frontend", specifier = "==0.0.70" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.135.3" },
-    { name = "hass-client", specifier = "==1.2.0" },
+    { name = "hass-client", specifier = "==1.2.3" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "paho-mqtt", specifier = "==2.1.0" },
     { name = "pydantic-settings", specifier = "==2.13.1" },
@@ -825,14 +825,14 @@ wheels = [
 
 [[package]]
 name = "hass-client"
-version = "1.2.0"
+version = "1.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/e2/3907d9f4c008e46e793c4364ad9655b0c4afad43d675555eb2faf164b9d3/hass_client-1.2.0.tar.gz", hash = "sha256:c7a8ba3ab7ceddf506f9eadd808d3b4aa34ebb05c89509aecd6daa422f1ee916", size = 15488, upload-time = "2024-07-05T21:46:23.106Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/60/7da4ec1f6657ea3db6ac44c867be6a99d73ea63f68bb6931698cb4b70ee3/hass_client-1.2.3.tar.gz", hash = "sha256:b4bf8ef6757d64857ade829a3bda2bab8b797ffc5ee8fecdd0a6fd4f526736b0", size = 15607, upload-time = "2026-04-02T16:46:24.447Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/71/19/e60ea7c8cc22a85f484106087634623dab686adb521e2fb756de57c12048/hass_client-1.2.0-py3-none-any.whl", hash = "sha256:e73f4af3646cbe614b30b45ec07adccf39281157cc6377ec7651f1ab48a8c9bc", size = 15282, upload-time = "2024-07-05T21:46:21.35Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/79/6f199f824c151b1b04270e4b117658676e033f4cf1fece1ae481b07774b6/hass_client-1.2.3-py3-none-any.whl", hash = "sha256:cc9f55daced223370bcda7e8dc4c9aa923ded1d0ac96733c1e74cd072e1f4099", size = 15345, upload-time = "2026-04-02T16:46:23.532Z" },
 ]
 
 [[package]]
