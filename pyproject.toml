@@ -43,7 +43,7 @@ dev = [
   "ruff==0.14.14",
   "pytest==9.0.3",
   "pytest-asyncio==1.4.0",
-  "pytest-aiohttp==1.1.0",
+  "pytest-aiohttp==1.1.1",
   "pytest-cov==7.1.0",
   "pytest-env",
   "pre-commit==4.6.0",
