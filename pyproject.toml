@@ -15,7 +15,7 @@ classifiers = [
 ]
 keywords = ["energy assistant", "home assistant"]
 dependencies = [
-    "SQLAlchemy==2.0.50",
+    "SQLAlchemy==2.0.51",
     "requests==2.34.2",
     "fastapi[standard]==0.137.1",
     "pydantic-settings==2.14.1",
